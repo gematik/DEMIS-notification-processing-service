@@ -1,0 +1,141 @@
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Validation_VAL_Profile_Minimum"
+          }
+        ]
+      },
+      "diagnostics": "Composition.status: minimum required = 1, but only found 0 (from http://hl7.org/fhir/StructureDefinition/Composition|4.0.1)",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[0].resource/*Composition/6ed88a19-70e9-3292-8272-b45740eb82b6*/",
+        "Line 23, Col 26"
+      ]
+    },
+    {
+      "severity": "error",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Validation_VAL_Profile_Minimum"
+          }
+        ]
+      },
+      "diagnostics": "Composition.status: minimum required = 1, but only found 0 (from https://demis.rki.de/fhir/StructureDefinition/NotificationLaboratory|1.3.0)",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[0].resource/*Composition/6ed88a19-70e9-3292-8272-b45740eb82b6*/",
+        "Line 23, Col 26"
+      ]
+    },
+    {
+      "severity": "information",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Terminology_TX_NoValid_18"
+          }
+        ]
+      },
+      "diagnostics": "The value provided ('20422') is not in the value set 'Iso 3166 Part 1: 2 Letter Codes' (http://hl7.org/fhir/ValueSet/iso3166-1-2|4.0.1), and a code is recommended to come from this value set) (error message = Unknown code '20422' for in-memory expansion of ValueSet 'http://hl7.org/fhir/ValueSet/iso3166-1-2')",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[1].resource/*Patient/aabb3705-f9f3-37e9-b2bb-6f3da1f55bd3*/.address[0].country",
+        "Line 123, Col 55"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Rule bsnr-1: 'Eine BSNR muss 9-stellig numerisch sein' Failed"
+          }
+        ]
+      },
+      "diagnostics": "Rule bsnr-1: 'Eine BSNR muss 9-stellig numerisch sein' Failed",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[3].resource/*Organization/f66f699c-4ca5-3c54-9405-d2ef4305791e*/.identifier[1].value",
+        "Line 160, Col 56"
+      ]
+    },
+    {
+      "severity": "information",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Terminology_TX_NoValid_18"
+          }
+        ]
+      },
+      "diagnostics": "The value provided ('20422') is not in the value set 'Iso 3166 Part 1: 2 Letter Codes' (http://hl7.org/fhir/ValueSet/iso3166-1-2|4.0.1), and a code is recommended to come from this value set) (error message = Unknown code '20422' for in-memory expansion of ValueSet 'http://hl7.org/fhir/ValueSet/iso3166-1-2')",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[3].resource/*Organization/f66f699c-4ca5-3c54-9405-d2ef4305791e*/.address[0].country",
+        "Line 189, Col 55"
+      ]
+    },
+    {
+      "severity": "information",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Terminology_TX_NoValid_18"
+          }
+        ]
+      },
+      "diagnostics": "The value provided ('20422') is not in the value set 'Iso 3166 Part 1: 2 Letter Codes' (http://hl7.org/fhir/ValueSet/iso3166-1-2|4.0.1), and a code is recommended to come from this value set) (error message = Unknown code '20422' for in-memory expansion of ValueSet 'http://hl7.org/fhir/ValueSet/iso3166-1-2')",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[5].resource/*Organization/e9dddc3f-2110-38ad-9f1a-479f2a656074*/.address[0].country",
+        "Line 240, Col 55"
+      ]
+    },
+    {
+      "severity": "information",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Terminology_TX_NoValid_3_CC"
+          }
+        ]
+      },
+      "diagnostics": "None of the codings provided are in the value set 'LOINC Diagnostic Report Codes' (http://hl7.org/fhir/ValueSet/report-codes|4.0.1), and a coding is recommended to come from this value set) (codes = https://demis.rki.de/fhir/CodeSystem/notificationCategory#cvdp)",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[6].resource/*DiagnosticReport/3feae929-5b17-32aa-94e1-37355cbb32f0*/.code",
+        "Line 265, Col 30"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Terminology_PassThrough_TX_Message"
+          }
+        ]
+      },
+      "diagnostics": "Unknown code in fragment CodeSystem 'http://loinc.org#LA11882-0' for 'http://loinc.org#LA11882-0'",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[7].resource/*Observation/5f375f7f-b7ed-35f1-a304-28dc77e8c6e1*/.value.ofType(CodeableConcept).coding[0]",
+        "Line 332, Col 38"
+      ]
+    }
+  ]
+}

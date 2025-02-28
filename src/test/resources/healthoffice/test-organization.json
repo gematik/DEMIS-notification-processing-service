@@ -1,0 +1,22 @@
+{
+  "resourceType": "Organization",
+  "id": "test-int",
+  "identifier": [ {
+    "system": "https://demis.rki.de/fhir/CodeSystem/reportingSite",
+    "value": "test-int"
+  } ],
+  "name": "Test Gesundheitsamt | Test Department",
+  "telecom": [ {
+    "system": "phone"
+  }, {
+    "system": "fax"
+  }, {
+    "system": "email",
+    "value": "test@test.com"
+  } ],
+  "address": [ {
+    "line": [ "Teststraße" ],
+    "city": "Teststadt",
+    "postalCode": "00000"
+  } ]
+}

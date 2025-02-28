@@ -1,0 +1,28 @@
+{
+  "type": "disease",
+  "notificationCategory": "6.1",
+  "routes": [
+    {
+      "type": "specific_receiver",
+      "specificReceiverId": "1.",
+      "optional": false,
+      "actions": [
+        "pseudo_copy"
+      ]
+    },
+    {
+      "type": "responsible_health_office",
+      "specificReceiverId": "1.01.0.53.",
+      "optional": false,
+      "actions": [
+        "encryption"
+      ]
+    }
+  ],
+  "healthOffices": {
+    "NOTIFIED_PERSON_PRIMARY": "1.01.0.53.",
+    "SUBMITTER": "1.11.0.05.01.",
+    "NOTIFIER": "1.11.0.11.01."
+  },
+  "responsible": "1.01.0.53."
+}

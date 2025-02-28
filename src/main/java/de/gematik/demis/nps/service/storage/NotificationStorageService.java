@@ -1,0 +1,75 @@
+package de.gematik.demis.nps.service.storage;
+
+/*-
+ * #%L
+ * notification-processing-service
+ * %%
+ * Copyright (C) 2025 gematik GmbH
+ * %%
+ * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+ * European Commission – subsequent versions of the EUPL (the "Licence").
+ * You may not use this work except in compliance with the Licence.
+ *
+ * You find a copy of the Licence in the "Licence" file or at
+ * https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+ * In case of changes by gematik find details in the "Readme" file.
+ *
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ * #L%
+ */
+
+import de.gematik.demis.fhirparserlibrary.FhirParser;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.Binary;
+import org.hl7.fhir.r4.model.Bundle;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class NotificationStorageService {
+
+  private final FhirParser fhirParser;
+  private final TransactionBundleFactory factory;
+  private final NcapiClient client;
+
+  @Value("${nps.apikey.ncapi}")
+  private String apiKey;
+
+  /**
+   * can be removed when feature flag notifications.7_4 is removed
+   *
+   * <p>Use {@link #storeNotifications(List)} instead
+   *
+   * @param encryptedBinaryNotification
+   * @param encryptedSubsidiaryNotification
+   * @param anonymizedNotification
+   * @deprecated forRemoval = true
+   */
+  @Deprecated(forRemoval = true)
+  public void storeNotification(
+      final Binary encryptedBinaryNotification,
+      final Binary encryptedSubsidiaryNotification,
+      final Bundle anonymizedNotification) {
+
+    final Bundle transactionBundle =
+        factory.createTransactionBundle(
+            encryptedBinaryNotification, encryptedSubsidiaryNotification, anonymizedNotification);
+
+    final String json = fhirParser.encodeToJson(transactionBundle);
+    // TODO define timeouts (in application.yaml)
+    client.sendNotificationToNotificationClearingAPI("Bearer " + apiKey, json);
+  }
+
+  public void storeNotifications(List<IBaseResource> notificationsToForward) {
+    final Bundle transactionBundle = factory.createTransactionBundle(notificationsToForward);
+    final String json = fhirParser.encodeToJson(transactionBundle);
+    client.sendNotificationToNotificationClearingAPI("Bearer " + apiKey, json);
+  }
+}

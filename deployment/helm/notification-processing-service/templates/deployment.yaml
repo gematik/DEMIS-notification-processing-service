@@ -1,0 +1,173 @@
+{{/* Check required values and define variables */}}
+{{- $dockerRepository := .Values.required.image.repository | required ".Values.required.image.repository is required." -}}
+{{- $dockerImage := .Values.required.image.name | required ".Values.required.image.name is required." -}}
+{{- $dockerTag := .Values.required.image.tag | default .Chart.AppVersion -}}
+{{- $customEnvVars := .Values.customEnvVars -}}
+{{- $secretApiKeyName := .Values.config.secret.api.name | required ".Values.config.secret.api.name is required." -}}
+{{- $secretApiKeyEntry := .Values.config.secret.api.key -}}
+{{- $redisSecretKeyName := .Values.config.secret.redis.name | required ".Values.config.secret.redis.name is required." -}}
+{{- $redisKeyEntry := .Values.config.secret.redis.key -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "notification-processing-service.fullversionname" . }}
+  labels:
+    {{- include "notification-processing-service.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "notification-processing-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "notification-processing-service.selectorLabels" . | nindent 8 }}
+        {{- include "notification-processing-service.deploymentLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "notification-processing-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # Mount Data
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+        {{- if .Values.debug.enable }}
+        - name: jfr-volume
+          emptyDir: {}
+        {{- end }}
+        - name: api-key-secret-volume
+          secret:
+            secretName: {{ $secretApiKeyName }}
+            items:
+              - key: {{ $secretApiKeyEntry }}
+                path: nps/apikey/ncapi
+        - name: redis-cus-secret-volume
+          secret:
+            secretName: {{ $redisSecretKeyName }}
+            items:
+              - key: {{ $redisKeyEntry }}
+                path: spring/data/redis/password
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ $dockerRepository }}/{{ $dockerImage }}:{{ $dockerTag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- /* If entrypoint and parameters are both defined, configure them */ -}}
+          {{- if .Values.application.entrypoint }}
+          {{- if .Values.application.parameters }}
+          {{- with .Values.application.entrypoint }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.application.parameters }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          # Set the Environment Variables for the container
+          env:
+            - name: "TZ"
+              value: "Europe/Berlin"
+            {{- if .Values.debug.enable }}
+            - name: "JAVA_TOOL_OPTIONS"
+              value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:9000"
+            {{- end }}
+            {{- if $customEnvVars }}
+            # Custom Environment Variables
+            {{- range $_, $key := keys $customEnvVars | sortAlpha }}
+            - name: {{ $key | quote }}
+              value: {{ get $customEnvVars $key | quote }}
+            {{- end }}
+            {{- end }}
+            # Set Spring Configuration Import from Folder Structure
+            - name: "SPRING_CONFIG_IMPORT"
+              value: "optional:configtree:/secrets/*/"
+          # Mount Volumes in container
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: "/tmp"
+            {{- if .Values.debug.enable }}
+            - name: jfr-volume
+              mountPath: "/jfrdump"
+            {{- end }}
+            - name: api-key-secret-volume
+              readOnly: true
+              mountPath: "/secrets/api"
+            - name: redis-cus-secret-volume
+              readOnly: true
+              mountPath: "/secrets/redis"
+          # Ports to be exposed from the container
+          ports:
+            - name: nps-port
+              containerPort: 8080
+              protocol: TCP
+            {{- if .Values.debug.enable }}
+            - name: debug-port
+              containerPort: 9000
+              protocol: TCP
+            {{- end }}
+          # Performs checks to verify that the application is successfully started
+          # The Application is marked as failed after periodSeconds*failureThreshold seconds
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: nps-port
+            failureThreshold: 10
+            periodSeconds: 30
+          # Use SpringBoot Actuator Liveness Check
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: nps-port
+            failureThreshold: 3
+            periodSeconds: 30
+          # Use SpringBoot Actuator Readiness Check
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: nps-port
+            failureThreshold: 5
+            periodSeconds: 10
+          {{- with .Values.resources }}
+          # Define Limits and Requested Resources (CPU/RAM)
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ include "notification-processing-service.name" . }}
+              - key: version
+                operator: In
+                values:
+                - {{ .Chart.AppVersion | quote }}
+            topologyKey: "kubernetes.io/hostname"
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

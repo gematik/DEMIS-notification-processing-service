@@ -1,0 +1,30 @@
+fullName: notification-processing-service
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+istio:
+  virtualService:
+    gateways:
+      - demis-gateway
+    hosts: {}
+    http:
+      match:
+        - uri:
+            prefix: /notification-api/
+        - uri:
+            prefix: /hospitalization/
+      rewrite:
+        uri: /
+      timeout: null
+      retries:
+        enable: false
+        retryOn: null
+  subsets:
+    main:
+      version: 1.0.0
+      weight: "100"
+# activate Traffic mirroring, also called shadowing with the following lines
+#      mirror:
+#        version: 1.1.0
+#        mirrorPercentage: 0

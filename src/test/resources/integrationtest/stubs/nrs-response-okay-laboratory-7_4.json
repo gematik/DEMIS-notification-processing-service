@@ -1,0 +1,16 @@
+{
+  "type": "laboratory",
+  "notificationCategory": "7.4",
+  "routes": [
+    {
+      "type": "specific_receiver",
+      "specificReceiverId": "1.",
+      "actions": [
+        "no_action"
+      ],
+      "optional": false
+    }
+  ],
+  "healthOffices": {},
+  "responsible": "1."
+}

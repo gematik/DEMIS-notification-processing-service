@@ -1,0 +1,20 @@
+{
+  "type": "laboratory",
+  "notificationCategory": "7.1",
+  "routes": [
+    {
+      "type": "test-user",
+      "specificReceiverId": "test-int",
+      "optional": false,
+      "actions": [
+        "encryption"
+      ]
+    }
+  ],
+  "healthOffices": {
+    "NOTIFIED_PERSON_PRIMARY": "1.01.0.53.",
+    "SUBMITTER": "1.11.0.05.01.",
+    "NOTIFIER": "1.11.0.11.01."
+  },
+  "responsible": "test-int"
+}

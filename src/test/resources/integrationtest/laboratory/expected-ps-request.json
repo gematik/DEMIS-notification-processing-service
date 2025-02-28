@@ -1,0 +1,8 @@
+{
+  "notificationBundleId": "1a3a16aa-64e0-5eb1-8601-018fc3794b6e",
+  "type": "demisPseudonymizationRequest",
+  "diseaseCode": "cvd",
+  "familyName": "Mustermann",
+  "firstName": "Maxime",
+  "dateOfBirth": "11.02.1950"
+}

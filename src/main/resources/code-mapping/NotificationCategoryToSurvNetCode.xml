@@ -1,0 +1,730 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+  #%L
+  notification-processing-service
+  %%
+  Copyright (C) 2025 gematik GmbH
+  %%
+  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+  European Commission – subsequent versions of the EUPL (the "Licence").
+  You may not use this work except in compliance with the Licence.
+  
+  You find a copy of the Licence in the "Licence" file or at
+  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+  
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the Licence is distributed on an "AS IS" basis,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+  In case of changes by gematik find details in the "Readme" file.
+  
+  See the Licence for the specific language governing permissions and limitations under the Licence.
+  #L%
+  -->
+
+<ConceptMap xmlns="http://hl7.org/fhir">
+    <id value="NotificationCategoryToTransmissionCategory"/>
+    <url value="https://demis.rki.de/fhir/ConceptMap/NotificationCategoryToTransmissionCategory"/>
+    <version value="1.0.1"/>
+    <name value="NotificationCategoryToTransmissionCategory"/>
+    <title value="NotificationCategoryToTransmissionCategory"/>
+    <status value="active"/>
+    <date value="2023-10-10"/>
+    <description
+            value="Die ConceptMap NotificationCategoryToTransmissionCategory ordnet die Meldetatbestände der Erregernachweismeldung den 3-Buchstaben-Codes der Übermittlungskategorien aus SurvNet zu."/>
+    <sourceUri value="https://demis.rki.de/fhir/CodeSystem/notificationCategory"/>
+    <targetUri value="https://demis.rki.de/fhir/CodeSystem/transmissionCategory"/>
+    <group>
+        <source value="https://demis.rki.de/fhir/CodeSystem/notificationCategory"/>
+        <target value="https://demis.rki.de/fhir/CodeSystem/transmissionCategory"/>
+        <element>
+            <code value="advp"/>
+            <display value="Adenoviren; Meldepflicht nur für den direkten Nachweis im Konjunktivalabstrich"/>
+            <target>
+                <code value="adv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="banp"/>
+            <display value="Bacillus anthracis"/>
+            <target>
+                <code value="ban"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="bpsp"/>
+            <display value="Bordetella pertussis, Bordetella parapertussis"/>
+            <target>
+                <code value="bps"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="bovp"/>
+            <display value="humanpathogene Bornaviren; Meldepflicht nur für den direkten Nachweis"/>
+            <target>
+                <code value="bov"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="borp"/>
+            <display value="Borrelia recurrentis"/>
+            <target>
+                <code value="bor"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="brup"/>
+            <display value="Brucella sp."/>
+            <target>
+                <code value="bru"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="camp"/>
+            <display value="Campylobacter spp. (darmpathogen)"/>
+            <target>
+                <code value="cam"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ckvp"/>
+            <display value="Chikungunya-Virus"/>
+            <target>
+                <code value="ckv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="chlp"/>
+            <display value="Chlamydia psittaci"/>
+            <target>
+                <code value="chl"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="clop"/>
+            <display value="Clostridium botulinum oder Toxinnachweis"/>
+            <target>
+                <code value="clo"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="corp"/>
+            <display value="Corynebacterium spp. (Toxin bildend)"/>
+            <target>
+                <code value="cor"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="coxp"/>
+            <display value="Coxiella burnetii"/>
+            <target>
+                <code value="cox"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="denp"/>
+            <display value="Denguevirus"/>
+            <target>
+                <code value="den"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cryp"/>
+            <display value="humanpathogene Cryptosporidium sp."/>
+            <target>
+                <code value="cry"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ebvp"/>
+            <display value="Ebolavirus"/>
+            <target>
+                <code value="ebv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ehcp"/>
+            <display value="E. coli (enterohämorrhagische Stämme) (EHEC)"/>
+            <target>
+                <code value="ehc"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ecop"/>
+            <display value="Escherichia coli (sonstige darmpathogene Stämme)"/>
+            <target>
+                <code value="eco"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="frtp"/>
+            <display value="Francisella tularensis"/>
+            <target>
+                <code value="frt"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="fsvp"/>
+            <display value="FSME-Virus"/>
+            <target>
+                <code value="fsv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="gfvp"/>
+            <display value="Gelbfiebervirus"/>
+            <target>
+                <code value="gfv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="gilp"/>
+            <display value="Giardia lamblia"/>
+            <target>
+                <code value="gil"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hinp"/>
+            <display value="Haemophilus influenzae; Meldepflicht nur für den direkten Nachweis aus Liquor oder Blut"/>
+            <target>
+                <code value="hin"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="havp"/>
+            <display value="Hepatitis-A-Virus"/>
+            <target>
+                <code value="hav"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hbvp"/>
+            <display value="Hepatitis-B-Virus; Meldepflicht für alle Nachweise"/>
+            <target>
+                <code value="hbv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hcvp"/>
+            <display value="Hepatitis-C-Virus; Meldepflicht für alle Nachweise"/>
+            <target>
+                <code value="hcv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hdvp"/>
+            <display value="Hepatitis-D-Virus; Meldepflicht für alle Nachweise"/>
+            <target>
+                <code value="hdv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hevp"/>
+            <display value="Hepatitis-E-Virus"/>
+            <target>
+                <code value="hev"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="htvp"/>
+            <display value="Hantavirus"/>
+            <target>
+                <code value="htv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="invp"/>
+            <display value="Influenzavirus; Meldepflicht nur für den direkten Nachweis"/>
+            <target>
+                <code value="inv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="lsvp"/>
+            <display value="Lassavirus"/>
+            <target>
+                <code value="lsv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="legp"/>
+            <display value="Legionella sp."/>
+            <target>
+                <code value="leg"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="lepp"/>
+            <display value="humanpathogene Leptospira sp."/>
+            <target>
+                <code value="lep"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="lisp"/>
+            <display
+                    value="Listeria monocytogenes; Meldepflicht nur für den direkten Nachweis aus Blut, Liquor oder anderen normalerweise sterilen Substraten sowie aus Abstrichen von Neugeborenen"/>
+            <target>
+                <code value="lis"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mbvp"/>
+            <display value="Marburgvirus"/>
+            <target>
+                <code value="mbv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="msvp"/>
+            <display value="Masernvirus"/>
+            <target>
+                <code value="msv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mrsp"/>
+            <display value="Middle-East-Respiratory-Syndrome-Coronavirus (MERS-CoV)"/>
+            <target>
+                <code value="mrs"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mpvp"/>
+            <display value="Mumpsvirus"/>
+            <target>
+                <code value="mpv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mpxp"/>
+            <display value="Orthopockenviren (Mpoxvirus)"/>
+            <target>
+                <code value="mpx"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mylp"/>
+            <display value="Mycobacterium leprae"/>
+            <target>
+                <code value="myl"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mytp"/>
+            <display
+                    value="Mycobacterium tuberculosis, Mycobacterium africanum, Mycobacterium bovis; Meldepflicht für den direkten Erregernachweis sowie nachfolgend für das Ergebnis der Resistenzbestimmung; vorab auch für den Nachweis säurefester Stäbchen im Sputum"/>
+            <target>
+                <code value="myt"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="neip"/>
+            <display
+                    value="Neisseria meningitidis; Meldepflicht nur für den direkten Nachweis aus Liquor, Blut, hämorrhagischen Hautinfiltraten oder anderen normalerweise sterilen Substraten"/>
+            <target>
+                <code value="nei"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="novp"/>
+            <display value="Norovirus"/>
+            <target>
+                <code value="nov"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="opxp"/>
+            <display value="Orthopockenviren (sonstige Orthopockenviren)"/>
+            <target>
+                <code value="opx"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="povp"/>
+            <display value="Poliovirus"/>
+            <target>
+                <code value="pov"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="rbvp"/>
+            <display value="Rabiesvirus"/>
+            <target>
+                <code value="rbv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ricp"/>
+            <display value="Rickettsia prowazekii"/>
+            <target>
+                <code value="ric"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="rtvp"/>
+            <display value="Rotavirus"/>
+            <target>
+                <code value="rtv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ruvp"/>
+            <display value="Rubellavirus"/>
+            <target>
+                <code value="ruv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="spap"/>
+            <display value="Salmonella Paratyphi; Meldepflicht für alle direkten Nachweise"/>
+            <target>
+                <code value="spa"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="styp"/>
+            <display value="Salmonella Typhi; Meldepflicht für alle direkten Nachweise"/>
+            <target>
+                <code value="sty"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="salp"/>
+            <display value="Salmonella (sonstige)"/>
+            <target>
+                <code value="sal"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cvdp"/>
+            <display value="Severe-Acute-Respiratory-Syndrome-Coronavirus-2 (SARS-CoV-2)"/>
+            <target>
+                <code value="cvd"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cvsp"/>
+            <display value="Severe-Acute-Respiratory-Syndrome-Coronavirus (SARS-CoV)"/>
+            <target>
+                <code value="cvs"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ship"/>
+            <display value="Shigella sp."/>
+            <target>
+                <code value="shi"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="spnp"/>
+            <display
+                    value="Streptococcus pneumoniae; Meldepflicht nur für den direkten Nachweis aus Liquor, Blut, Gelenkpunktat oder anderen normalerweise sterilen Substraten"/>
+            <target>
+                <code value="spn"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="trip"/>
+            <display value="Trichinella spiralis"/>
+            <target>
+                <code value="tri"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="vzvp"/>
+            <display value="Varizella-Zoster-Virus"/>
+            <target>
+                <code value="vzv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="vchp"/>
+            <display
+                    value="Vibrio spp. (humanpathogen); soweit ausschließlich eine Ohrinfektion vorliegt nur bei Vibrio cholerae"/>
+            <target>
+                <code value="vch"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="wnvp"/>
+            <display value="West-Nil-Virus"/>
+            <target>
+                <code value="wnv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ypsp"/>
+            <display value="Yersinia pestis"/>
+            <target>
+                <code value="yps"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="yenp"/>
+            <display value="Yersinia spp. (darmpathogen)"/>
+            <target>
+                <code value="yen"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="zkvp"/>
+            <display value="Zika-Virus"/>
+            <target>
+                <code value="zkv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="abvp"/>
+            <display value="Arboviren (sonstige)"/>
+            <target>
+                <code value="abv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hfap"/>
+            <display value="Andere Erreger hämorrhagischer Fieber"/>
+            <target>
+                <code value="hfa"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mrap"/>
+            <display
+                    value="Staphylococcus aureus (Methicillin-resistente Stämme); Meldepflicht nur für den Nachweis aus Blut oder Liquor"/>
+            <target>
+                <code value="mra"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ebcp"/>
+            <display
+                    value="Enterobacterales bei Nachweis einer Carbapenemase-Determinante oder mit verminderter Empfindlichkeit gegenüber Carbapenemen außer bei natürlicher Resistenz; Meldepflicht nur bei Infektion oder Kolonisation"/>
+            <target>
+                <code value="ebc"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="acbp"/>
+            <display
+                    value="Acinetobacter spp. bei Nachweis einer Carbapenemase-Determinante oder mit verminderter Empfindlichkeit gegenüber Carbapenemen außer bei natürlicher Resistenz; Meldepflicht nur bei Infektion oder Kolonisation"/>
+            <target>
+                <code value="acb"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="wbkp"/>
+            <display
+                    value="Krankheitserreger unter Berücksichtigung der Art der Krankheitserreger und der Häufigkeit ihres Nachweises wenn Hinweise auf eine schwerwiegende Gefahr für die Allgemeinheit bestehen"/>
+            <target>
+                <code value="wbk"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="pkvp"/>
+            <display value="Orthopockenviren (Variolavirus)"/>
+            <target>
+                <code value="pkv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="rsvp"/>
+            <display value="Respiratorisches-Synzytial-Virus"/>
+            <target>
+                <code value="rsv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="astp"/>
+            <display value="Astroviren"/>
+            <target>
+                <code value="ast"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="bobp"/>
+            <display value="(Lyme-) Borreliose, Borrelia burgdorferi"/>
+            <target>
+                <code value="bob"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cltp"/>
+            <display value="Tetanus, Clostridium tetani"/>
+            <target>
+                <code value="clt"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cymp"/>
+            <display value="Cytomegalie, Cytomegalievirus"/>
+            <target>
+                <code value="cym"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="eahp"/>
+            <display value="Amoebiasis, Entamoeba histolytica"/>
+            <target>
+                <code value="eah"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="etvp"/>
+            <display value="Enteroviren"/>
+            <target>
+                <code value="etv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="gbsp"/>
+            <display
+                    value="Gruppe-B-Streptokokken (GBS); Meldepflicht nur für den direkten Nachweis bei Schwangeren und Neugeborenen"/>
+            <target>
+                <code value="gbs"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hfmp"/>
+            <display value="Hand-Fuß-Mund-Krankheit"/>
+            <target>
+                <code value="hfm"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mpmp"/>
+            <display value="Mycoplasmen"/>
+            <target>
+                <code value="mpm"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="pinp"/>
+            <display value="Parainfluenzavirus"/>
+            <target>
+                <code value="pin"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="pvbp"/>
+            <display value="Ringelröteln, Parvovirus B 19"/>
+            <target>
+                <code value="pvb"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="spyp"/>
+            <display value="Scharlach, Beta-hämolysierenden Streptokokken der Gruppe A"/>
+            <target>
+                <code value="spy"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="adep"/>
+            <display value="Adenoviren; Meldepflicht bei akuter Infektion für Nachweise aus allen Körpermaterialien"/>
+            <target>
+                <code value="ade"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="caup"/>
+            <display value="Candida auris; Meldepflicht nur für den direkten Nachweis"/>
+            <target>
+                <code value="cau"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="plap"/>
+            <display value="Plasmodium spp. (Malaria)"/>
+            <target>
+                <code value="pla"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+    </group>
+</ConceptMap>

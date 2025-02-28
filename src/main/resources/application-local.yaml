@@ -1,0 +1,27 @@
+logging:
+    level:
+        de.gematik.demis.nps: debug
+
+nps:
+    client:
+        validation: "http://localhost:9010"
+        lifecycle-vs: "http://localhost:9011"
+        routing: "http://localhost:9012"
+        pdfgen: "http://localhost:9013"
+        pseudonymization: "http://localhost:9014"
+        pseudo-storage: "http://localhost:9015"
+        ncapi: "http://localhost:9016"
+        futs: "http://localhost:9017"
+
+spring:
+    data:
+        redis:
+            host: localhost
+            password: password
+            port: 11379
+    cloud:
+        openfeign:
+            client:
+                config:
+                    default:
+                        loggerLevel: full

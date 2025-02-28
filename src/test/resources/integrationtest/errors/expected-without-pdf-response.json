@@ -1,0 +1,166 @@
+{
+  "resourceType": "Parameters",
+  "meta": {
+    "profile": [
+      "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationResponseParameters"
+    ]
+  },
+  "parameter": [
+    {
+      "name": "bundle",
+      "resource": {
+        "resourceType": "Bundle",
+        "meta": {
+          "profile": [
+            "https://demis.rki.de/fhir/StructureDefinition/ReceiptBundle"
+          ]
+        },
+        "type": "collection",
+        "entry": [
+          {
+            "fullUrl": "https://demis.rki.de/fhir/Composition/fee6005e-5686-4b7b-b6ee-98b0e98a9d42",
+            "resource": {
+              "resourceType": "Composition",
+              "id": "fee6005e-5686-4b7b-b6ee-98b0e98a9d42",
+              "meta": {
+                "profile": [
+                  "https://demis.rki.de/fhir/StructureDefinition/NotificationReceipt"
+                ]
+              },
+              "extension": [
+                {
+                  "url": "https://demis.rki.de/fhir/StructureDefinition/ReceivedNotification",
+                  "valueIdentifier": {
+                    "system": "https://demis.rki.de/fhir/NamingSystem/NotificationBundleId",
+                    "value": "1a3a16aa-64e0-5eb1-8601-018fc3794b6e"
+                  }
+                }
+              ],
+              "status": "final",
+              "type": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "77999-1",
+                    "display": "Case notification comment"
+                  }
+                ]
+              },
+              "date": "2024-01-02T14:19:29+01:00",
+              "author": [
+                {
+                  "reference": "Organization/DEMIS"
+                }
+              ],
+              "title": "Meldevorgangsquittung",
+              "relatesTo": [
+                {
+                  "code": "appends",
+                  "targetReference": {
+                    "type": "Composition",
+                    "identifier": {
+                      "system": "https://demis.rki.de/fhir/NamingSystem/NotificationId",
+                      "value": "e8d8cc43-32c2-4f93-8eaf-b2f3e6deb2a9"
+                    }
+                  }
+                }
+              ],
+              "section": [
+                {
+                  "title": "Zuständiges Gesundheitsamt",
+                  "code": {
+                    "text": "Zuständiges Gesundheitsamt"
+                  },
+                  "entry": [
+                    {
+                      "reference": "Organization/1.01.0.53."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "fullUrl": "https://demis.rki.de/fhir/Organization/DEMIS",
+            "resource": {
+              "resourceType": "Organization",
+              "id": "DEMIS",
+              "name": "DEMIS",
+              "contact": [
+                {
+                  "telecom": [
+                    {
+                      "system": "email",
+                      "value": "demis-support@rki.de"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "fullUrl": "https://demis.rki.de/fhir/Organization/1.01.0.53.",
+            "resource": {
+              "resourceType": "Organization",
+              "id": "1.01.0.53.",
+              "identifier": [
+                {
+                  "system": "https://demis.rki.de/fhir/CodeSystem/reportingSite",
+                  "value": "1.01.0.53."
+                }
+              ],
+              "name": "Kreis Herzogtum Lauenburg | Gesundheitsamt",
+              "telecom": [
+                {
+                  "system": "phone",
+                  "value": "+49 4541 888-380"
+                },
+                {
+                  "system": "fax",
+                  "value": "+49 4541 888-259"
+                },
+                {
+                  "system": "email",
+                  "value": "gesundheitsdienste@kreis-rz.de"
+                }
+              ],
+              "address": [
+                {
+                  "line": [
+                    "Barlachstr. 4"
+                  ],
+                  "city": "Ratzeburg",
+                  "postalCode": "23909"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "operationOutcome",
+      "resource": {
+        "resourceType": "OperationOutcome",
+        "meta": {
+          "profile": [
+            "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationResponse"
+          ]
+        },
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"></div>"
+        },
+        "issue": [
+          {
+            "severity": "information",
+            "code": "informational",
+            "details": {
+              "text": "All OK"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

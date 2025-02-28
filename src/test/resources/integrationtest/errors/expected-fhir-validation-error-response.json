@@ -1,0 +1,62 @@
+{
+  "resourceType": "OperationOutcome",
+  "meta": {
+    "profile": [
+      "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationResponse"
+    ]
+  },
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"></div>"
+  },
+  "issue": [
+    {
+      "severity": "error",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Validation_VAL_Profile_Minimum"
+          }
+        ]
+      },
+      "diagnostics": "Composition.status: minimum required = 1, but only found 0 (from http://hl7.org/fhir/StructureDefinition/Composition|4.0.1)",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[0].resource/*Composition/6ed88a19-70e9-3292-8272-b45740eb82b6*/",
+        "Line 23, Col 26"
+      ]
+    },
+    {
+      "severity": "error",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Validation_VAL_Profile_Minimum"
+          }
+        ]
+      },
+      "diagnostics": "Composition.status: minimum required = 1, but only found 0 (from https://demis.rki.de/fhir/StructureDefinition/NotificationLaboratory|1.3.0)",
+      "location": [
+        "Parameters.parameter[0].resource/*Bundle/null*/.entry[0].resource/*Composition/6ed88a19-70e9-3292-8272-b45740eb82b6*/",
+        "Line 23, Col 26"
+      ]
+    },
+    {
+      "severity": "error",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "code": "FHIR_VALIDATION_ERROR"
+          }
+        ]
+      },
+      "location": [
+        "fee6005e-5686-4b7b-b6ee-98b0e98a9d42"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: notification-processing-service
+description: DEMIS Notification Processing Service Helm Chart
+type: application
+version: 1.4.0
+appVersion: "1.4.0"

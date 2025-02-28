@@ -1,0 +1,39 @@
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "warning",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Rule bsnr-1: 'Eine BSNR muss 9-stellig numerisch sein' Failed"
+          }
+        ]
+      },
+      "diagnostics": "Rule bsnr-1: 'Eine BSNR muss 9-stellig numerisch sein' Failed",
+      "location": [
+        "Bundle.entry[3].resource/*Organization/ec6e6fc0-4b0f-4fc6-b638-eaf85d1308ef*/.identifier[1].value",
+        "Line 155, Col 32"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/java-core-messageId",
+            "code": "Terminology_PassThrough_TX_Message"
+          }
+        ]
+      },
+      "diagnostics": "Unknown code in fragment CodeSystem 'http://loinc.org#LA11882-0' for 'http://loinc.org#LA11882-0'",
+      "location": [
+        "Bundle.entry[7].resource/*Observation/4cf6dbcb-07b4-4794-bbd3-c052a1d67135*/.value.ofType(CodeableConcept).coding[0]",
+        "Line 327, Col 14"
+      ]
+    }
+  ]
+}

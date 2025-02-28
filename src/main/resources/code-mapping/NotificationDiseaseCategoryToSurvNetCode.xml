@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  #%L
+  notification-processing-service
+  %%
+  Copyright (C) 2025 gematik GmbH
+  %%
+  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+  European Commission – subsequent versions of the EUPL (the "Licence").
+  You may not use this work except in compliance with the Licence.
+  
+  You find a copy of the Licence in the "Licence" file or at
+  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+  
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the Licence is distributed on an "AS IS" basis,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+  In case of changes by gematik find details in the "Readme" file.
+  
+  See the Licence for the specific language governing permissions and limitations under the Licence.
+  #L%
+  -->
+
+<ConceptMap xmlns="http://hl7.org/fhir">
+    <id value="NotificationDiseaseCategoryToTransmissionCategory"/>
+    <url value="https://demis.rki.de/fhir/ConceptMap/NotificationDiseaseCategoryToTransmissionCategory"/>
+    <version value="1.1.0"/>
+    <name value="NotificationDiseaseCategoryToTransmissionCategory"/>
+    <title value="NotificationDiseaseCategoryToTransmissionCategory"/>
+    <status value="active"/>
+    <date value="2023-10-10"/>
+    <description
+            value="Die ConceptMap NotificationDiseaseCategoryToTransmissionCategory ordnet die Meldetatbestände der Erkrankungsmeldung den 3-Buchstaben-Codes der Übermittlungskategorien aus SurvNet zu."/>
+    <sourceUri value="https://demis.rki.de/fhir/CodeSystem/notificationDiseaseCategory"/>
+    <targetUri value="https://demis.rki.de/fhir/CodeSystem/transmissionCategory"/>
+    <group>
+        <source value="https://demis.rki.de/fhir/CodeSystem/notificationDiseaseCategory"/>
+        <target value="https://demis.rki.de/fhir/CodeSystem/transmissionCategory"/>
+        <element>
+            <code value="band"/>
+            <display value="Milzbrand"/>
+            <target>
+                <code value="ban"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="bpsd"/>
+            <display value="Keuchhusten"/>
+            <target>
+                <code value="bps"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="clod"/>
+            <display value="Botulismus"/>
+            <target>
+                <code value="clo"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cord"/>
+            <display value="Diphtherie"/>
+            <target>
+                <code value="cor"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cvdd"/>
+            <display value="Coronavirus-Krankheit-2019 (COVID-19)"/>
+            <target>
+                <code value="cvd"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hfad"/>
+            <display value="Hämorrhagisches Fieber"/>
+            <target>
+                <code value="hfa"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="dend"/>
+            <display value="Denguefieber"/>
+            <target>
+                <code value="den"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ebvd"/>
+            <display value="Ebolafieber"/>
+            <target>
+                <code value="ebv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="gfvd"/>
+            <display value="Gelbfieber"/>
+            <target>
+                <code value="gfv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="lsvd"/>
+            <display value="Lassafieber"/>
+            <target>
+                <code value="lsv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mbvd"/>
+            <display value="Marburgfieber"/>
+            <target>
+                <code value="mbv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="povd"/>
+            <display value="Poliomyelitis"/>
+            <target>
+                <code value="pov"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cdfd"/>
+            <display value="Clostridioides difficile"/>
+            <target>
+                <code value="cdf"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="cjkd"/>
+            <display value="Creutzfeldt-Jakob-Krankheit (CJK)"/>
+            <target>
+                <code value="cjk"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="havd"/>
+            <display value="Hepatitis A"/>
+            <target>
+                <code value="hav"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hbvd"/>
+            <display value="Hepatitis B"/>
+            <target>
+                <code value="hbv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hcvd"/>
+            <display value="Hepatitis C"/>
+            <target>
+                <code value="hcv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hdvd"/>
+            <display value="Hepatitis D"/>
+            <target>
+                <code value="hdv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hevd"/>
+            <display value="Hepatitis E"/>
+            <target>
+                <code value="hev"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="htvd"/>
+            <display value="Hantavirus"/>
+            <target>
+                <code value="htv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="husd"/>
+            <display value="Hämolytisch-urämisches Syndrom (HUS)"/>
+            <target>
+                <code value="hus"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="hxxd"/>
+            <display value="Akute Virushepatitis"/>
+            <target>
+                <code value="hxx"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="izvd"/>
+            <display value="Zoonotische Influenza"/>
+            <target>
+                <code value="izv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mpvd"/>
+            <display value="Mumps"/>
+            <target>
+                <code value="mpv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mpxd"/>
+            <display value="Mpox"/>
+            <target>
+                <code value="mpx"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="msvd"/>
+            <display value="Masern"/>
+            <target>
+                <code value="msv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mybd"/>
+            <display value="Behandlungsabbruch Tuberkulose"/>
+            <target>
+                <code value="myb"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="mytd"/>
+            <display value="Tuberkulose"/>
+            <target>
+                <code value="myt"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="neid"/>
+            <display value="Meningokokken"/>
+            <target>
+                <code value="nei"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="opxd"/>
+            <display value="Andere Orthopockenviren"/>
+            <target>
+                <code value="opx"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="pkvd"/>
+            <display value="Pocken"/>
+            <target>
+                <code value="pkv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="rbvd"/>
+            <display value="Tollwut"/>
+            <target>
+                <code value="rbv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ruvd"/>
+            <display value="Röteln postnatal"/>
+            <target>
+                <code value="ruv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="rund"/>
+            <display value="Röteln konnatal"/>
+            <target>
+                <code value="run"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="spad"/>
+            <display value="Paratyphus"/>
+            <target>
+                <code value="spa"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="styd"/>
+            <display value="Typhus"/>
+            <target>
+                <code value="sty"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="sxxd"/>
+            <display value="Verdacht auf Paratyphus/Typhus"/>
+            <target>
+                <code value="sxx"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ttvd"/>
+            <display value="Tollwutexpositionsverdacht"/>
+            <target>
+                <code value="ttv"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="vchd"/>
+            <display value="Cholera"/>
+            <target>
+                <code value="vch"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="vzwd"/>
+            <display value="Windpocken"/>
+            <target>
+                <code value="vzw"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="vzzd"/>
+            <display value="Zoster"/>
+            <target>
+                <code value="vzz"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="ypsd"/>
+            <display value="Pest"/>
+            <target>
+                <code value="yps"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+        <element>
+            <code value="sspd"/>
+            <display value="Subakute Sklerosierende Panenzephalitis (SSPE)"/>
+            <target>
+                <code value="ssp"/>
+                <equivalence value="relatedto"/>
+            </target>
+        </element>
+    </group>
+</ConceptMap>

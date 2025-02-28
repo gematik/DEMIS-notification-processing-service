@@ -1,0 +1,28 @@
+spring:
+  data:
+    redis:
+      repositories:
+        enabled: false
+      lettuce:
+        pool:
+          enabled: false
+
+nps:
+  client:
+    validation: "http://localhost:${wiremock.server.port}/VS"
+    lifecycle-vs: "http://localhost:${wiremock.server.port}/LVS"
+    routing: "http://localhost:${wiremock.server.port}/NRS"
+    pdfgen: "http://localhost:${wiremock.server.port}/PDF"
+    pseudonymization: "http://localhost:${wiremock.server.port}/PS"
+    pseudo-storage: "http://localhost:${wiremock.server.port}/PSS"
+    ncapi: "http://localhost:${wiremock.server.port}/NCAPI"
+    futs: "http://localhost:${wiremock.server.port}/FUTS"
+
+  certificate-dir: src/test/resources/certificates
+  outcome-issue-threshold: error
+
+  testuser:
+    health-office: test-int
+    sender-is-destination: false
+    ids:
+      - irrelevant

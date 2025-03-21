@@ -22,6 +22,7 @@ package de.gematik.demis.nps.service.notification;
  * #L%
  */
 
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Bundles;
 import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import java.util.Objects;
@@ -45,6 +46,7 @@ public class Notification {
   private boolean testUser;
   private String diseaseCode;
   private String originalNotificationAsJson;
+  // Check for null can be removed once 7.4 OR 7.3 is available
   @CheckForNull private RoutingOutputDto routingOutputDto;
 
   public String getBundleIdentifier() {
@@ -55,15 +57,17 @@ public class Notification {
   }
 
   public Optional<String> getCompositionIdentifier() {
-    return Optional.ofNullable(getComposition().getIdentifier()).map(Identifier::getValue);
+    return Bundles.compositionFrom(bundle)
+        .map(Composition::getIdentifier)
+        .map(Identifier::getValue);
   }
 
   public Patient getNotifiedPerson() {
-    if (getComposition().getSubject().getResource() instanceof Patient notifiedPerson) {
-      return notifiedPerson;
-    }
-    throw new IllegalStateException(
-        "validated notification has no Notified Person (Patient resource)");
+    final Optional<Patient> patient = Bundles.subjectFrom(bundle);
+    return patient.orElseThrow(
+        () ->
+            new IllegalStateException(
+                "validated notification has no Notified Person (Patient resource)"));
   }
 
   public Optional<String> getResponsibleHealthOfficeId() {
@@ -75,7 +79,7 @@ public class Notification {
   }
 
   public Composition getComposition() {
-    // Profile rule: composition is always the first resource entry
-    return (Composition) bundle.getEntryFirstRep().getResource();
+    return Bundles.compositionFrom(bundle)
+        .orElseThrow(() -> new IllegalStateException("Validated notification has no Composition"));
   }
 }

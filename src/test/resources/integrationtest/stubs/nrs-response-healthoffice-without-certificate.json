@@ -1,5 +1,9 @@
 {"type": "laboratory",
   "notificationCategory": "7.1",
+  "bundleActions": [{
+    "type": "no_action",
+    "optional": false
+  }],
   "routes": [
     {
       "type": "specific_receiver",

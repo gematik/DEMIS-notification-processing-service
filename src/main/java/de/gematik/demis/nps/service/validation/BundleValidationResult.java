@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.notification;
+package de.gematik.demis.nps.service.validation;
 
 /*-
  * #%L
@@ -22,29 +22,10 @@ package de.gematik.demis.nps.service.notification;
  * #L%
  */
 
-import static de.gematik.demis.nps.error.ErrorCode.NRS_PARSING_ERROR;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import de.gematik.demis.nps.error.NpsServiceException;
-
-public enum Action {
-  ENCRYPTION,
-  PSEUDO_COPY,
-  PSEUDO_ORIGINAL,
-  NO_ACTION;
-
-  @JsonCreator
-  public static Action fromValue(String value) {
-    try {
-      return Action.valueOf(value.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      throw new NpsServiceException(NRS_PARSING_ERROR, "Invalid action: " + value);
-    }
-  }
-
-  @JsonValue
-  public String toValue() {
-    return this.name().toLowerCase();
-  }
-}
+/**
+ * Contains results of Bundle validation
+ *
+ * @param isValid
+ * @param reason
+ */
+public record BundleValidationResult(boolean isValid, String reason) {}

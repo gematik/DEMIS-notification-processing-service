@@ -123,12 +123,6 @@
               "name": "Test Gesundheitsamt | Test Department",
               "telecom": [
                 {
-                  "system": "phone"
-                },
-                {
-                  "system": "fax"
-                },
-                {
                   "system": "email",
                   "value": "test@test.com"
                 }

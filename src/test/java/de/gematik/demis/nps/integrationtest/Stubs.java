@@ -54,7 +54,7 @@ class Stubs {
   static String getRequestBody(final UrlPattern urlPattern) {
     final List<LoggedRequest> requests = WireMock.findAll(WireMock.postRequestedFor(urlPattern));
     assertThat(requests).hasSize(1);
-    return requests.get(0).getBodyAsString();
+    return requests.getFirst().getBodyAsString();
   }
 
   static ResponseDefinitionBuilder okJsonResource(final String resourceName) {

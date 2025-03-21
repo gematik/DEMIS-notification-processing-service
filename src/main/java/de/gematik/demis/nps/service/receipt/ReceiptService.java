@@ -57,7 +57,7 @@ public class ReceiptService {
     if (healthOfficeOrganization != null) {
       receiptBuilder.addResponsibleHealthOffice(healthOfficeOrganization);
     } else {
-      log.warn("No Organization info for health office " + responsibleHealthOfficeId);
+      log.warn("No Organization info for health office {}", responsibleHealthOfficeId);
     }
     notification.getCompositionIdentifier().ifPresent(receiptBuilder::addRelatesNotificationId);
 

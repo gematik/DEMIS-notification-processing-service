@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.notification;
+package de.gematik.demis.nps.service.processing;
 
 /*-
  * #%L
@@ -28,16 +28,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import de.gematik.demis.nps.error.NpsServiceException;
 
-public enum Action {
-  ENCRYPTION,
-  PSEUDO_COPY,
-  PSEUDO_ORIGINAL,
-  NO_ACTION;
+public enum BundleActionType {
+  CREATE_PSEUDONYM_RECORD,
+  NO_ACTION,
+  UNKNOWN;
 
   @JsonCreator
-  public static Action fromValue(String value) {
+  public static BundleActionType fromValue(String value) {
     try {
-      return Action.valueOf(value.toUpperCase());
+      return BundleActionType.valueOf(value.toUpperCase());
     } catch (IllegalArgumentException e) {
       throw new NpsServiceException(NRS_PARSING_ERROR, "Invalid action: " + value);
     }

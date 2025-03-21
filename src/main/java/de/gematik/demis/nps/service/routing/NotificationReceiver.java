@@ -23,7 +23,7 @@ package de.gematik.demis.nps.service.routing;
  */
 
 import de.gematik.demis.nps.service.notification.Action;
-import java.util.Set;
+import java.util.SequencedSet;
 
 /**
  * holds information about a receiver of a notification and the necessary modifications to be
@@ -31,8 +31,8 @@ import java.util.Set;
  *
  * @param type
  * @param specificReceiverId
- * @param actions
+ * @param actions Requires a sequenced set, because the order of Actions is important
  * @param optional
  */
 public record NotificationReceiver(
-    String type, String specificReceiverId, Set<Action> actions, boolean optional) {}
+    String type, String specificReceiverId, SequencedSet<Action> actions, boolean optional) {}

@@ -1,6 +1,10 @@
 {
   "type": "disease",
   "notificationCategory": "6.1",
+  "bundleActions": [{
+    "type": "create_pseudonym_record",
+    "optional": true
+  }],
   "routes": [
     {
       "type": "specific_receiver",

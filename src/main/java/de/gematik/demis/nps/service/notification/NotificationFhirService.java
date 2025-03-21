@@ -93,27 +93,6 @@ public class NotificationFhirService {
         .build();
   }
 
-  public Notification read(
-      final String fhirNotification,
-      final MessageType contentType,
-      final String sender,
-      final boolean testUserFlag,
-      final NotificationType notificationType) {
-    final Bundle bundle = fhirParser.parseBundleOrParameter(fhirNotification, contentType);
-    String encoded = fhirNotification;
-    if (contentType.toString().toLowerCase().contains("xml")) {
-      encoded = fhirParser.encodeToJson(bundle);
-    }
-    return Notification.builder()
-        .bundle(bundle)
-        .type(notificationType)
-        .sender(sender)
-        .testUser(isTestUser(testUserFlag, sender))
-        .diseaseCode(getDiseaseCode(bundle, notificationType))
-        .originalNotificationAsJson(encoded)
-        .build();
-  }
-
   public void cleanAndEnrichNotification(final Notification notification, final String requestId) {
     // Remove unwanted information and data
     cleaner.cleanNotification(notification.getBundle());

@@ -1,0 +1,395 @@
+package de.gematik.demis.nps.service.processing;
+
+/*-
+ * #%L
+ * notification-processing-service
+ * %%
+ * Copyright (C) 2025 gematik GmbH
+ * %%
+ * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+ * European Commission – subsequent versions of the EUPL (the "Licence").
+ * You may not use this work except in compliance with the Licence.
+ *
+ * You find a copy of the Licence in the "Licence" file or at
+ * https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+ * In case of changes by gematik find details in the "Readme" file.
+ *
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ * #L%
+ */
+
+import static de.gematik.demis.nps.service.notification.Action.ENCRYPTION;
+import static de.gematik.demis.nps.service.notification.Action.NO_ACTION;
+import static de.gematik.demis.nps.service.notification.Action.PSEUDO_COPY;
+import static de.gematik.demis.nps.service.notification.Action.PSEUDO_ORIGINAL;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonByNameDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Bundles;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.DemisConstants;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Metas;
+import de.gematik.demis.nps.base.profile.DemisSystems;
+import de.gematik.demis.nps.base.util.SequencedSets;
+import de.gematik.demis.nps.config.NpsConfigProperties;
+import de.gematik.demis.nps.error.ErrorCode;
+import de.gematik.demis.nps.error.NpsServiceException;
+import de.gematik.demis.nps.service.encryption.EncryptionService;
+import de.gematik.demis.nps.service.notbyname.NotByNameService;
+import de.gematik.demis.nps.service.notification.Notification;
+import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.routing.AddressOriginEnum;
+import de.gematik.demis.nps.service.routing.NotificationReceiver;
+import de.gematik.demis.nps.service.routing.RoutingOutputDto;
+import de.gematik.demis.nps.service.validation.RKIBundleValidator;
+import de.gematik.demis.nps.test.TestData;
+import de.gematik.demis.nps.test.TestUtil;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.Binary;
+import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Composition;
+import org.hl7.fhir.r4.model.Patient;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class ReceiverActionServiceTest {
+
+  private static final NotificationReceiver RKI_RECEIVER =
+      new NotificationReceiver("specific_receiver", "1.", SequencedSets.of(PSEUDO_ORIGINAL), false);
+  private static final NotificationReceiver GA_RECEIVER =
+      new NotificationReceiver(
+          "responsible_health_office", "1.2.3.4", SequencedSets.of(ENCRYPTION), false);
+  private static final NotificationReceiver SORMAS_RECEIVER =
+      new NotificationReceiver(
+          "responsible_health_office_sormas", "2.2.3.4", SequencedSets.of(ENCRYPTION), true);
+
+  private static final RoutingOutputDto P73_ROUTING =
+      new RoutingOutputDto(
+          NotificationType.LABORATORY,
+          NotificationCategory.P_7_3,
+          SequencedSets.of(),
+          List.of(),
+          Map.of(),
+          "no one");
+  private static final RoutingOutputDto ROUTING =
+      new RoutingOutputDto(
+          NotificationType.LABORATORY,
+          NotificationCategory.P_7_1,
+          SequencedSets.of(),
+          List.of(RKI_RECEIVER, GA_RECEIVER, SORMAS_RECEIVER),
+          Map.of(
+              AddressOriginEnum.NOTIFIED_PERSON_PRIMARY,
+              "1.2.3.4",
+              AddressOriginEnum.SUBMITTER,
+              "1.2.3.4"),
+          "1.2.3.4");
+
+  @Mock private NotByNameService notByNameService;
+  @Mock private EncryptionService encryptionService;
+  @Mock private NpsConfigProperties npsConfigProperties;
+
+  private final RKIBundleValidator rkiBundleValidator = new RKIBundleValidator();
+
+  private ReceiverActionService receiverActionService;
+
+  @BeforeEach
+  void setup() {
+    receiverActionService =
+        new ReceiverActionService(
+            rkiBundleValidator, npsConfigProperties, encryptionService, notByNameService, true);
+  }
+
+  private static Notification fromJSON(final String path, final RoutingOutputDto routingOutput) {
+    final Bundle original = TestData.getBundle(path);
+    return Notification.builder()
+        .type(NotificationType.LABORATORY)
+        .originalNotificationAsJson(TestData.readResourceAsString(path))
+        .diseaseCode("xxx")
+        .sender("Me")
+        .bundle(original)
+        .routingOutputDto(routingOutput)
+        .build();
+  }
+
+  @Test
+  void thatDisabled73FeatureFlagCausesExceptions() {
+    // GIVEN a 7.3 bundle
+    final Notification notification =
+        fromJSON("/bundles/7_3/nonnominal-notifiedperson.json", P73_ROUTING);
+    // AND the feature toggle is disabled
+    final ReceiverActionService withDisabledToggle =
+        new ReceiverActionService(
+            new RKIBundleValidator(),
+            npsConfigProperties,
+            encryptionService,
+            notByNameService,
+            false);
+    // WHEN bundle is processed
+    final NpsServiceException npsServiceException =
+        catchThrowableOfType(
+            NpsServiceException.class,
+            () ->
+                withDisabledToggle.transform(
+                    notification,
+                    new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), false)));
+    // THEN
+    assertThat(npsServiceException).isNotNull();
+    assertThat(npsServiceException.getErrorCode())
+        .isEqualTo(ErrorCode.UNSUPPORTED_PROFILE.toString());
+  }
+
+  @Test
+  void thatNotifiedPersonFor73IsReplacedWithNotByName() {
+    // GIVEN a 7.3 bundle
+    final Notification notification =
+        fromJSON("/bundles/7_3/nonnominal-notifiedperson.json", P73_ROUTING);
+    // WHEN bundle is processed
+    final Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(
+            notification,
+            new NotificationReceiver("", "1.", SequencedSets.of(PSEUDO_ORIGINAL), false));
+    // THEN
+    assertThat(transform).containsInstanceOf(Bundle.class);
+    final Optional<Patient> patient = Bundles.subjectFrom((Bundle) transform.orElseThrow());
+    assertThat(patient).isNotEmpty();
+    final Set<String> strings = Metas.profilesFrom(patient.orElseThrow());
+    assertThat(strings).containsExactly(DemisConstants.PROFILE_NOTIFIED_PERSON_NOT_BY_NAME);
+  }
+
+  @Test
+  void thatGrosslyMisconfiguredNotificationFor73WontLeakPersonalDataToRKI() {
+    // GIVEN a 7.3 bundle
+    final Bundle original = TestData.getBundle("/bundles/7_3/nonnominal-notifiedperson.json");
+    final Notification notification =
+        Notification.builder()
+            // A laboratory notification
+            .type(NotificationType.LABORATORY)
+            // AND a 7.3 bundle with NotifiedPerson
+            .originalNotificationAsJson(
+                TestData.readResourceAsString("/bundles/7_3/nonnominal-notifiedperson.json"))
+            .diseaseCode("xxx")
+            .sender("Me")
+            .bundle(original)
+            // AND a matching routing output
+            .routingOutputDto(
+                new RoutingOutputDto(
+                    NotificationType.LABORATORY,
+                    NotificationCategory.UNKNOWN,
+                    SequencedSets.of(),
+                    List.of(),
+                    Map.of(),
+                    "noone"))
+            .build();
+    // WHEN bundle is processed
+    final Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(
+            notification, new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), true));
+    // THEN
+    assertThat(transform).isEmpty();
+  }
+
+  @Test
+  void thatCreatePseudoCopyReplacesNotifiedPerson() {
+    // GIVEN a 7.1 bundle
+    final Notification notification = p71Notification();
+    // AND anonymizedAllowed() = true
+    when(npsConfigProperties.anonymizedAllowed()).thenReturn(true);
+    when(notByNameService.createNotificationNotByName(eq(notification)))
+        .thenReturn(new Bundle()); // just making sure we don't get an NPE
+
+    // WHEN bundle is processed
+    receiverActionService.transform(
+        notification, new NotificationReceiver("", "1.", SequencedSets.of(PSEUDO_COPY), false));
+
+    // THEN
+    verify(notByNameService).createNotificationNotByName(eq(notification));
+  }
+
+  @Test
+  void thatFailedEncryptionForRequiredReceiverThrowsException() {
+    // GIVEN a 7.1 bundle
+    final Notification notification = p71Notification();
+
+    // And a terminal action followed by a regular one
+    final NotificationReceiver receiver =
+        new NotificationReceiver("", "1.2.3.4", SequencedSets.of(ENCRYPTION), false);
+    when(encryptionService.encryptFor(any(), eq("1.2.3.4")))
+        .thenThrow(new NpsServiceException(ErrorCode.ENCRYPTION, ""));
+
+    // WHEN bundle is processed
+    final NpsServiceException npsException =
+        catchThrowableOfType(
+            NpsServiceException.class,
+            () -> {
+              receiverActionService.transform(notification, receiver);
+            });
+
+    // THEN
+    assertThat(npsException).isNotNull();
+  }
+
+  @Test
+  void thatNoActionCopiesBundleFor73ForRegulatoryReasons() {
+    // GIVEN a 7.3 bundle that in theory doesn't have to be transformed, because all Resources are
+    // correct
+    final Notification notification =
+        fromJSON("/bundles/7_3/nonnominal-notbyname.json", P73_ROUTING);
+    // WHEN bundle is processed
+    final Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(
+            notification,
+            new NotificationReceiver("", "1.", SequencedSets.of(PSEUDO_ORIGINAL), false));
+    // THEN
+    assertThat(transform).containsInstanceOf(Bundle.class);
+    assertThat(transform.orElseThrow()).isNotEqualTo(notification.getBundle());
+  }
+
+  @Test
+  void ensureAnonymous73AreProcessed() {
+    // GIVEN a 7.3 bundle that in theory doesn't have to be transformed, because all Resources are
+    // correct
+    final Notification notification = fromJSON("/bundles/7_3/anonymous.json", P73_ROUTING);
+    // WHEN bundle is processed
+    final Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(
+            notification,
+            new NotificationReceiver("", "1.", SequencedSets.of(PSEUDO_ORIGINAL), false));
+    // THEN
+    assertThat(transform).containsInstanceOf(Bundle.class);
+    // AND a copy of the original bundle was created
+    assertThat(transform.orElseThrow()).isNotEqualTo(notification.getBundle());
+  }
+
+  @Test
+  void thatUnprocessedActionsCauseExceptionForRequiredReceiver() {
+    // GIVEN a 7.1 bundle
+    final Notification notification = p71Notification();
+
+    // And a terminal action followed by a regular one
+    final NotificationReceiver receiver =
+        new NotificationReceiver("", "1.2.3.4", SequencedSets.of(ENCRYPTION, PSEUDO_COPY), false);
+    when(encryptionService.encryptFor(any(), eq("1.2.3.4"))).thenReturn(new Binary()); // avoid NPE
+
+    // WHEN bundle is processed
+    final NpsServiceException npsServiceException =
+        catchThrowableOfType(
+            NpsServiceException.class,
+            () -> {
+              receiverActionService.transform(notification, receiver);
+            });
+
+    // THEN
+    assertThat(npsServiceException).isNotNull();
+    assertThat(npsServiceException.getErrorCode())
+        .isEqualTo(ErrorCode.NRS_PROCESSING_ERROR.toString());
+  }
+
+  @Test
+  void thatUnprocessedActionsCauseEmptyResultForOptionalReceiver() {
+    // GIVEN a 7.1 bundle
+    final Notification notification = p71Notification();
+
+    // And a terminal action followed by a regular one
+    final NotificationReceiver receiver =
+        new NotificationReceiver("", "1.2.3.4", SequencedSets.of(ENCRYPTION, PSEUDO_COPY), true);
+    when(encryptionService.encryptFor(any(), eq("1.2.3.4"))).thenReturn(new Binary()); // avoid NPE
+
+    // WHEN bundle is processed
+    final Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(notification, receiver);
+
+    // THEN
+    assertThat(transform).isEmpty();
+  }
+
+  @Test
+  void thatOptionalReceiverTriggersNoExceptionOnMissingCertificate() {
+    // GIVEN a 7.4 bundle
+    final Notification notification = p71Notification();
+
+    when(encryptionService.encryptFor(any(), eq("1.2.3.4"))).thenReturn(new Binary());
+    when(encryptionService.encryptFor(any(), eq("2.2.3.4")))
+        .thenThrow(
+            new NpsServiceException(ErrorCode.HEALTH_OFFICE_CERTIFICATE, "Certificate missing"));
+
+    // WHEN bundle is processed for Health Office
+    Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(notification, GA_RECEIVER);
+
+    // THEN
+    assertThat(transform).isNotEmpty();
+
+    // AND WHEN bundle is processed for SORMAS
+    transform = receiverActionService.transform(notification, SORMAS_RECEIVER);
+    // THEN no binary is generated
+    assertThat(transform).isEmpty();
+  }
+
+  private static Notification p71Notification() {
+    final Patient notifiedPerson = new NotifiedPersonByNameDataBuilder().build();
+    final Composition compositionWithNotifiedPerson =
+        new NotificationLaboratoryDataBuilder().setNotifiedPerson(notifiedPerson).build();
+    final Bundle bundle =
+        new NotificationBundleLaboratoryDataBuilder()
+            .setDefaults()
+            .setNotificationLaboratory(compositionWithNotifiedPerson)
+            .build();
+
+    final String originalJSON = TestUtil.fhirResourceToJson(bundle);
+    return Notification.builder()
+        .type(NotificationType.LABORATORY)
+        .originalNotificationAsJson(originalJSON)
+        .diseaseCode("xxx")
+        .sender("Me")
+        .bundle(bundle)
+        .routingOutputDto(ROUTING)
+        .build();
+  }
+
+  @Test
+  void thatAllProducedResourceGetATagWithRelatedTo() {
+    final String system = DemisSystems.RELATED_NOTIFICATION_CODING_SYSTEM;
+    final Notification notification = p71Notification();
+
+    // prevent NPE
+    when(encryptionService.encryptFor(any(), eq(""))).thenReturn(new Binary());
+    // WHEN we produce a Binary
+    Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(
+            notification, new NotificationReceiver("", "", SequencedSets.of(ENCRYPTION), false));
+    // THEN a relates-to tag is added
+    assertThat(transform).isNotEmpty().containsInstanceOf(Binary.class);
+    final Binary binary = (Binary) transform.orElseThrow();
+    assertThat(binary.getMeta().getTag(system, notification.getBundleIdentifier())).isNotNull();
+
+    when(npsConfigProperties.anonymizedAllowed()).thenReturn(true);
+    when(notByNameService.createNotificationNotByName(eq(notification))).thenReturn(new Bundle());
+    // WHEN we produce a Bundle
+    transform =
+        receiverActionService.transform(
+            notification, new NotificationReceiver("", "", SequencedSets.of(PSEUDO_COPY), false));
+    // THEN a relates-to tag is added
+    assertThat(transform).isNotEmpty().containsInstanceOf(Bundle.class);
+    final Bundle actual = (Bundle) transform.orElseThrow();
+    assertThat(actual.getMeta().getTag(system, notification.getBundleIdentifier())).isNotNull();
+  }
+}

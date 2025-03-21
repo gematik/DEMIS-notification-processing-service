@@ -23,7 +23,7 @@ package de.gematik.demis.nps.service.storage;
  */
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
-import java.util.List;
+import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Binary;
@@ -45,7 +45,7 @@ public class NotificationStorageService {
   /**
    * can be removed when feature flag notifications.7_4 is removed
    *
-   * <p>Use {@link #storeNotifications(List)} instead
+   * <p>Use {@link #storeNotifications(Collection)} instead
    *
    * @param encryptedBinaryNotification
    * @param encryptedSubsidiaryNotification
@@ -67,7 +67,7 @@ public class NotificationStorageService {
     client.sendNotificationToNotificationClearingAPI("Bearer " + apiKey, json);
   }
 
-  public void storeNotifications(List<IBaseResource> notificationsToForward) {
+  public void storeNotifications(Collection<? extends IBaseResource> notificationsToForward) {
     final Bundle transactionBundle = factory.createTransactionBundle(notificationsToForward);
     final String json = fhirParser.encodeToJson(transactionBundle);
     client.sendNotificationToNotificationClearingAPI("Bearer " + apiKey, json);

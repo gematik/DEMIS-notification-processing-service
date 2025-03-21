@@ -22,7 +22,7 @@ package de.gematik.demis.nps.service.storage;
  * #L%
  */
 
-import java.util.List;
+import java.util.Collection;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
@@ -67,7 +67,8 @@ class TransactionBundleFactory {
    * @param notificationsToForward
    * @return transaction bundle containing all notifications that are to be forwarded
    */
-  public Bundle createTransactionBundle(final List<IBaseResource> notificationsToForward) {
+  public Bundle createTransactionBundle(
+      final Collection<? extends IBaseResource> notificationsToForward) {
     final Bundle transactionBundle = new Bundle();
     transactionBundle.setType(Bundle.BundleType.TRANSACTION);
 

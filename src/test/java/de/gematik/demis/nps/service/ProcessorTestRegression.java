@@ -38,6 +38,8 @@ import de.gematik.demis.nps.service.encryption.EncryptionService;
 import de.gematik.demis.nps.service.notbyname.NotByNameService;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
+import de.gematik.demis.nps.service.processing.BundleActionService;
+import de.gematik.demis.nps.service.processing.ReceiverActionService;
 import de.gematik.demis.nps.service.pseudonymization.PseudoService;
 import de.gematik.demis.nps.service.receipt.ReceiptService;
 import de.gematik.demis.nps.service.response.FhirResponseService;
@@ -81,8 +83,10 @@ class ProcessorTestRegression {
   @Mock ReceiptService receiptService;
   @Mock FhirResponseService responseService;
   @Mock ContextEnrichmentService contextEnrichmentService;
+  @Mock ReceiverActionService receiverActionService;
   @Mock Statistics statistics;
   @Mock FhirParser fhirParser;
+  @Mock BundleActionService bundleActionService;
 
   private Processor underTest;
 
@@ -102,8 +106,11 @@ class ProcessorTestRegression {
             responseService,
             statistics,
             contextEnrichmentService,
+            receiverActionService,
             fhirParser,
             new TestUserConfiguration(List.of(), "", false),
+            bundleActionService,
+            false,
             false,
             false);
   }

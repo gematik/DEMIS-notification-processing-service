@@ -25,7 +25,6 @@ package de.gematik.demis.nps.service.encryption;
 import static de.gematik.demis.nps.base.profile.DemisSystems.RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM;
 import static de.gematik.demis.nps.test.TestUtil.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 import de.gematik.demis.nps.base.util.TimeProvider;

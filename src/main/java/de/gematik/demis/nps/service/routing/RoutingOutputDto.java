@@ -22,13 +22,18 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.processing.BundleAction;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedSet;
+import javax.annotation.CheckForNull;
 
 public record RoutingOutputDto(
     NotificationType type,
-    String notificationCategory,
+    NotificationCategory notificationCategory,
+    SequencedSet<BundleAction> bundleActions,
     List<NotificationReceiver> routes,
-    Map<AddressOriginEnum, String> healthOffices,
-    String responsible) {}
+    @CheckForNull Map<AddressOriginEnum, String> healthOffices,
+    @CheckForNull String responsible) {}

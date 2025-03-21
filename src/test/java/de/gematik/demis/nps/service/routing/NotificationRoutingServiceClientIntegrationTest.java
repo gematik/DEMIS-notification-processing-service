@@ -35,6 +35,8 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import de.gematik.demis.nps.service.processing.BundleAction;
+import de.gematik.demis.nps.service.processing.BundleActionType;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -86,6 +88,15 @@ class NotificationRoutingServiceClientIntegrationTest {
             .willReturn(responseDefBuilder));
   }
 
+  private static void setupRemoteServiceV2(final ResponseDefinitionBuilder responseDefBuilder) {
+    stubFor(
+        post("/routing/v2?isTestUser=false&testUserID=test")
+            .withHeader(CONTENT_TYPE, equalTo(APPLICATION_JSON_VALUE))
+            .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
+            .withRequestBody(equalTo(FHIR_JSON))
+            .willReturn(responseDefBuilder));
+  }
+
   @Test
   void success() {
     setupRemoteService(okJson(RESPONSE));
@@ -98,5 +109,47 @@ class NotificationRoutingServiceClientIntegrationTest {
     setupRemoteService(serverError());
     assertThatThrownBy(() -> underTest.determineRouting(FHIR_JSON))
         .isExactlyInstanceOf(ServiceCallException.class);
+  }
+
+  @Test
+  void throwsExceptionForDuplicateBundleActions() {
+    setupRemoteServiceV2(
+        okJson(
+            """
+{
+    "bundleActions": [
+        {
+            "optional": false,
+            "type": "create_pseudonym_record"
+        },
+        {
+            "optional": false,
+            "type": "create_pseudonym_record"
+        }
+    ],
+    "healthOffices": {
+        "NOTIFIED_PERSON_CURRENT": "1.01.0.53.",
+        "NOTIFIED_PERSON_ORDINARY": "1.01.0.53.",
+        "NOTIFIER": "1.01.0.53.",
+        "SUBMITTER": "1.01.0.53."
+    },
+    "notificationCategory": "7.1",
+    "responsible": "1.01.0.53.",
+    "routes": [
+        {
+            "actions": [
+                "pseudo_copy"
+            ],
+            "optional": false,
+            "specificReceiverId": "1.",
+            "type": "specific_receiver"
+        }
+    ],
+    "type": "laboratory"
+}
+"""));
+    final RoutingOutputDto result = underTest.ruleBased(FHIR_JSON, false, "test");
+    assertThat(result.bundleActions())
+        .containsExactly(BundleAction.requiredOf(BundleActionType.CREATE_PSEUDONYM_RECORD));
   }
 }

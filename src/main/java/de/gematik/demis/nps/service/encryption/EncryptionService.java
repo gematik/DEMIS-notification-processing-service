@@ -85,7 +85,6 @@ public class EncryptionService {
 
     final IParser parser = fhirContext.newXmlParser();
     final String xmlPlain = parser.encodeResourceToString(bundle);
-
     return dataEncryption.encryptData(xmlPlain.getBytes(StandardCharsets.UTF_8), certificate);
   }
 }

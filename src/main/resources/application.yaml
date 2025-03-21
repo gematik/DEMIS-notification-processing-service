@@ -67,3 +67,4 @@ feature:
     notification_pre_check: false
     lv_disease: false
     notifications.7_4: false
+    notifications.7_3: false

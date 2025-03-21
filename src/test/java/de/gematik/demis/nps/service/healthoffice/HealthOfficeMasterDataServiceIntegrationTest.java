@@ -37,27 +37,24 @@ class HealthOfficeMasterDataServiceIntegrationTest {
   private static final String EXPECTED =
       """
 {
-  "resourceType" : "Organization",
-  "id" : "1.01.0.53.",
-  "identifier" : [ {
-    "system" : "https://demis.rki.de/fhir/CodeSystem/reportingSite",
-    "value" : "1.01.0.53."
+  "resourceType": "Organization",
+  "id": "1.01.0.53.",
+  "identifier": [ {
+    "system": "https://demis.rki.de/fhir/CodeSystem/reportingSite",
+    "value": "1.01.0.53."
   } ],
-  "name" : "Kreis Herzogtum Lauenburg | Gesundheitsamt",
-  "telecom" : [ {
-    "system" : "phone",
-    "value" : "+49 4541 888-380"
+  "name": "Kreis Herzogtum Lauenburg | Gesundheitsamt",
+  "telecom": [ {
+    "system": "phone",
+    "value": "+49 4541 888-380"
   }, {
-    "system" : "fax",
-    "value" : "+49 4541 888-259"
-  }, {
-    "system" : "email",
-    "value" : "gesundheitsdienste@kreis-rz.de"
+    "system": "email",
+    "value": "gesundheitsdienste@kreis-rz.de"
   } ],
-  "address" : [ {
-    "line" : [ "Barlachstr. 4" ],
-    "city" : "Ratzeburg",
-    "postalCode" : "23909"
+  "address": [ {
+    "line": [ "Barlachstr. 4" ],
+    "city": "Ratzeburg",
+    "postalCode": "23909"
   } ]
 }
 """;

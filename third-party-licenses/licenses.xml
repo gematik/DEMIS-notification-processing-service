@@ -380,7 +380,7 @@
     <dependency>
       <groupId>de.gematik.demis</groupId>
       <artifactId>fhir-parser-library</artifactId>
-      <version>2.3.0</version>
+      <version>2.4.1</version>
       <licenses>
         <license>
           <name>Licensed under the EUPL 1.2</name>
@@ -392,7 +392,7 @@
     <dependency>
       <groupId>de.gematik.demis</groupId>
       <artifactId>notification-builder-library</artifactId>
-      <version>5.1.0</version>
+      <version>5.5.0</version>
       <licenses>
         <license>
           <name>Licensed under the EUPL 1.2</name>
@@ -404,7 +404,7 @@
     <dependency>
       <groupId>de.gematik.demis</groupId>
       <artifactId>service-base</artifactId>
-      <version>2.3.3</version>
+      <version>2.4.1</version>
       <licenses>
         <license>
           <name>Licensed under the EUPL 1.2</name>
@@ -1126,7 +1126,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-pool2</artifactId>
-      <version>2.12.0</version>
+      <version>2.12.1</version>
       <licenses>
         <license>
           <name>Apache-2.0</name>
@@ -1501,7 +1501,7 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk18on</artifactId>
-      <version>1.79</version>
+      <version>1.80</version>
       <licenses>
         <license>
           <name>Bouncy Castle Licence</name>
@@ -1514,7 +1514,7 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk18on</artifactId>
-      <version>1.79</version>
+      <version>1.80</version>
       <licenses>
         <license>
           <name>Bouncy Castle Licence</name>
@@ -1527,7 +1527,7 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcutil-jdk18on</artifactId>
-      <version>1.79</version>
+      <version>1.80</version>
       <licenses>
         <license>
           <name>Bouncy Castle Licence</name>

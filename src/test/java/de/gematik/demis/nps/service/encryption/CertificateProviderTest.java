@@ -44,7 +44,6 @@ import org.mockito.MockitoAnnotations;
 class CertificateProviderTest {
   private static final String CERT_DIR = "src/test/resources/certificates";
   private static final String HEALTH_OFFICE_VALID_CERT = "1.01.0.53.";
-  private static final String HEALTH_OFFICE_INVALID_CERT = "x.x.x";
   private CertificateProvider underTest;
   @Mock private CertificateRepository certificateRepository;
 

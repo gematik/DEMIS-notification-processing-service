@@ -54,25 +54,22 @@ public class PseudoService {
    *
    * <p>Notification Update PseudonymResponse Patient->addExtention PseudonymRecordType+Binary ->
    * extention wird von notByName gelesen
+   *
+   * @return true if the Pseudonym was processed and added to the Notification's bundle. Exceptions
+   *     are handled internally and don't have to be logged again by the caller.
    */
-  public void createAndStorePseudonymAndAddToNotification(final Notification notification) {
-    if (notification.getRoutingOutputDto() != null
-        && "7.4".equals(notification.getRoutingOutputDto().notificationCategory())) {
-      // TODO remove once it's clear who and how we prevent from creating pseudonyms
-      return;
-    }
-
+  public boolean createAndStorePseudonymAndAddToNotification(final Notification notification) {
     try {
       final PseudonymizationResponse pseudonymizationResponse = createPseudonym(notification);
-
       storePseudonym(notification, pseudonymizationResponse);
-
       addPseudonymToFhirResource(notification, pseudonymizationResponse);
+      return true;
     } catch (final RuntimeException e) {
       // We catch all exceptions here, so a failing pseudonymization does not abort the notification
-      // processing. Pseudonymization is considered optional.
+      // processing. Pseudonymization can be considered optional.
       log.error("error in pseudonymization", e);
       statistics.incIgnoredErrorCounter(ErrorCode.NO_PSEUDONYM.getCode());
+      return false;
     }
   }
 

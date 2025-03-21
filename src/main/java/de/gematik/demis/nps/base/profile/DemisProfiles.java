@@ -203,4 +203,10 @@ public final class DemisProfiles {
 
   public static final Profile<Patient> NOTIFIED_PERSON_NOT_BY_NAME_PROFILE =
       profile(PROFILE_BASE_URL + "StructureDefinition/NotifiedPersonNotByName");
+
+  public static final Profile<Bundle> NOTIFICATION_BUNDLE_LABORATORY_NOT_BY_NAME =
+      profile(PROFILE_BASE_URL + "StructureDefinition/NotificationBundleLaboratoryNotByName");
+
+  public static final Profile<Composition> NOTIFICATION_LABORATORY_NOT_BY_NAME =
+      profile(PROFILE_BASE_URL + "StructureDefinition/NotificationLaboratoryNotByName");
 }

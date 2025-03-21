@@ -22,29 +22,37 @@ package de.gematik.demis.nps.service;
  * #L%
  */
 
+import static de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory.P_7_3;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.config.TestUserConfiguration;
-import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
 import de.gematik.demis.nps.service.notbyname.NotByNameService;
-import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
+import de.gematik.demis.nps.service.processing.BundleActionService;
+import de.gematik.demis.nps.service.processing.ReceiverActionService;
 import de.gematik.demis.nps.service.pseudonymization.PseudoService;
 import de.gematik.demis.nps.service.receipt.ReceiptService;
 import de.gematik.demis.nps.service.response.FhirResponseService;
 import de.gematik.demis.nps.service.routing.NRSRoutingInput;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
+import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Binary;
@@ -70,12 +78,15 @@ public class Processor {
   private final FhirResponseService responseService;
   private final Statistics statistics;
   private final ContextEnrichmentService contextEnrichmentService;
+  private final ReceiverActionService receiverActionService;
 
   private final boolean notificationPreCheck;
 
-  private final boolean isNewProcessing;
+  private final boolean isProcessing74Enabled;
   private final FhirParser fhirParser;
   private final TestUserConfiguration testUserConfiguration;
+  private final boolean isProcessing73Enabled;
+  private final BundleActionService bundleActionService;
 
   public Processor(
       NpsConfigProperties configProperties,
@@ -90,11 +101,13 @@ public class Processor {
       FhirResponseService responseService,
       Statistics statistics,
       ContextEnrichmentService contextEnrichmentService,
+      final ReceiverActionService receiverActionService,
       FhirParser fhirParser,
       TestUserConfiguration testUserConfiguration,
+      final BundleActionService bundleActionService,
       @Value("${feature.flag.notification_pre_check}") boolean notificationPreCheck,
-      @Value("${feature.flag.notifications.7_4}") boolean isNewProcessing) {
-
+      @Value("${feature.flag.notifications.7_4}") boolean isProcessing74Enabled,
+      @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled) {
     this.configProperties = configProperties;
     this.notificationValidator = notificationValidator;
     this.notificationFhirService = notificationFhirService;
@@ -107,94 +120,159 @@ public class Processor {
     this.responseService = responseService;
     this.statistics = statistics;
     this.contextEnrichmentService = contextEnrichmentService;
+    this.receiverActionService = receiverActionService;
     this.testUserConfiguration = testUserConfiguration;
     this.notificationPreCheck = notificationPreCheck;
-    this.isNewProcessing = isNewProcessing;
+    this.isProcessing74Enabled = isProcessing74Enabled;
     this.fhirParser = fhirParser;
+    this.isProcessing73Enabled = isProcessing73Enabled;
+    this.bundleActionService = bundleActionService;
   }
 
   public Parameters execute(
-      final String originalFhirNotification,
+      final String fhirNotification,
       final MessageType contentType,
       final String requestId,
       final String sender,
       final boolean testUserFlag,
       final String authorization) {
 
-    if (isNewProcessing) {
-      final Notification notification =
-          Notification.builder()
-              .originalNotificationAsJson(
-                  getNotificationAsJson(originalFhirNotification, contentType))
-              .sender(sender)
-              .testUser(testUserFlag || testUserConfiguration.isTestUser(sender))
-              .build();
-
-      final OperationOutcome validationOutcome =
-          validateNotification(originalFhirNotification, contentType, notification);
-
-      logInfos(notification);
-
-      // cleanup
-      notificationFhirService.cleanAndEnrichNotification(notification, requestId);
-
-      // process
-      addInformationsToNotification(authorization, notification);
-
-      final List<IBaseResource> notificationsToForward = createModifiedNotifications(notification);
-      notificationStorageService.storeNotifications(notificationsToForward);
-
-      final Bundle receiptBundle = receiptService.generateReceipt(notification);
-      final Parameters result = responseService.success(receiptBundle, validationOutcome);
-
-      statistics.incSuccessCounter(notification);
-      return result;
-
-    } else {
-
-      if (notificationPreCheck) {
-        notificationFhirService.preCheckProfile(originalFhirNotification);
-      }
-
-      final OperationOutcome validationOutcome =
-          notificationValidator.validateFhir(originalFhirNotification, contentType);
-
-      final Notification notification =
-          notificationFhirService.read(originalFhirNotification, contentType, sender, testUserFlag);
-      notificationFhirService.cleanAndEnrichNotification(notification, requestId);
-      logInfos(notification);
-
-      notificationValidator.validateLifecycle(notification);
-
-      routingService.determineHealthOfficesAndAddToNotification(notification);
-      pseudoService.createAndStorePseudonymAndAddToNotification(notification);
-
-      contextEnrichmentService.enrichBundleWithContextInformation(notification, authorization);
-
-      forwardNotification(notification);
-
-      final Bundle receiptBundle = receiptService.generateReceipt(notification);
-      final Parameters result = responseService.success(receiptBundle, validationOutcome);
-
-      statistics.incSuccessCounter(notification);
-
-      return result;
+    // once §7.4 or §7.3 Flag is enabled, the new processing will be set as default
+    if (isProcessing74Enabled || isProcessing73Enabled) {
+      return processWithExtendedNotifications(
+          fhirNotification, contentType, requestId, sender, testUserFlag, authorization);
     }
+
+    return processWithCommonNotifications(
+        fhirNotification, contentType, requestId, sender, testUserFlag, authorization);
   }
 
-  private String getNotificationAsJson(String originalFhirNotification, MessageType contentType) {
+  /**
+   * Process the §6.1 and §7.1 Notification using old Routing and Pseudonymization endpoints
+   *
+   * @param originalFhirNotification
+   * @param contentType
+   * @param requestId
+   * @param sender
+   * @param testUserFlag
+   * @param authorization
+   * @return an instance of {@link Parameters}
+   */
+  private Parameters processWithCommonNotifications(
+      String originalFhirNotification,
+      MessageType contentType,
+      String requestId,
+      String sender,
+      boolean testUserFlag,
+      String authorization) {
+    if (notificationPreCheck) {
+      notificationFhirService.preCheckProfile(originalFhirNotification);
+    }
+
+    final OperationOutcome validationOutcome =
+        notificationValidator.validateFhir(originalFhirNotification, contentType);
+
+    final Notification notification =
+        notificationFhirService.read(originalFhirNotification, contentType, sender, testUserFlag);
+    notificationFhirService.cleanAndEnrichNotification(notification, requestId);
+    logInfos(notification);
+
+    notificationValidator.validateLifecycle(notification);
+
+    routingService.determineHealthOfficesAndAddToNotification(notification);
+    pseudoService.createAndStorePseudonymAndAddToNotification(notification);
+
+    contextEnrichmentService.enrichBundleWithContextInformation(notification, authorization);
+
+    forwardNotification(notification);
+
+    final Bundle receiptBundle = receiptService.generateReceipt(notification);
+    final Parameters result = responseService.success(receiptBundle, validationOutcome);
+
+    statistics.incSuccessCounter(notification);
+
+    return result;
+  }
+
+  /**
+   * Process all the known Notification Type (§6.1, §7.1, §7.3, §7.4) using new Routing rules
+   *
+   * @param originalFhirNotification
+   * @param contentType
+   * @param requestId
+   * @param sender
+   * @param testUserFlag
+   * @param authorization
+   * @return an instance of {@link Parameters}
+   */
+  private Parameters processWithExtendedNotifications(
+      String originalFhirNotification,
+      MessageType contentType,
+      String requestId,
+      String sender,
+      boolean testUserFlag,
+      String authorization) {
+    final Notification notification =
+        Notification.builder()
+            .originalNotificationAsJson(encodeToJson(originalFhirNotification, contentType))
+            .sender(sender)
+            .testUser(testUserFlag || testUserConfiguration.isTestUser(sender))
+            .build();
+
+    final OperationOutcome validationOutcome =
+        validateNotification(originalFhirNotification, contentType, notification);
+
+    logInfos(notification);
+
+    // cleanup
+    notificationFhirService.cleanAndEnrichNotification(notification, requestId);
+
+    // process
+    routingService.setResponsibleHealthOffice(notification);
+    routingService.setHealthOfficeTags(notification);
+    contextEnrichmentService.enrichBundleWithContextInformation(notification, authorization);
+
+    final RoutingOutputDto routingData = Objects.requireNonNull(notification.getRoutingOutputDto());
+    bundleActionService.process(notification, routingData.bundleActions());
+
+    final Map<String, Optional<? extends IBaseResource>> processedNotifications =
+        createModifiedNotifications(notification, routingData);
+    final Map<String, IBaseResource> notificationsToForward =
+        removeReceiverWithoutResource(processedNotifications, notification);
+    notificationStorageService.storeNotifications(notificationsToForward.values());
+
+    final Bundle receiptBundle = receiptService.generateReceipt(notification);
+    final Parameters result = responseService.success(receiptBundle, validationOutcome);
+
+    statistics.incSuccessCounter(notification);
+    return result;
+  }
+
+  private static Map<String, IBaseResource> removeReceiverWithoutResource(
+      final Map<String, Optional<? extends IBaseResource>> processedNotifications,
+      final Notification notification) {
+    final Map<String, IBaseResource> notificationsToForward = new HashMap<>();
+    for (Map.Entry<String, Optional<? extends IBaseResource>> entry :
+        processedNotifications.entrySet()) {
+      final Optional<? extends IBaseResource> bundleCandidate = entry.getValue();
+      if (bundleCandidate.isEmpty()) {
+        log.warn(
+            "No bundle produced for receiver '{}' of notification '{}'",
+            entry.getKey(),
+            notification.getBundleIdentifier());
+      } else {
+        notificationsToForward.put(entry.getKey(), bundleCandidate.get());
+      }
+    }
+    return Collections.unmodifiableMap(notificationsToForward);
+  }
+
+  private String encodeToJson(String originalFhirNotification, MessageType contentType) {
     if (contentType.equals(MessageType.JSON)) {
       return originalFhirNotification;
     } else {
       return fhirParser.encodeToJson(fhirParser.parseFromXml(originalFhirNotification));
     }
-  }
-
-  private void addInformationsToNotification(String authorization, Notification notification) {
-    routingService.setResponsibleHealthOffice(notification);
-    routingService.setHealthOfficeTags(notification);
-    pseudoService.createAndStorePseudonymAndAddToNotification(notification);
-    contextEnrichmentService.enrichBundleWithContextInformation(notification, authorization);
   }
 
   private OperationOutcome validateNotification(
@@ -207,8 +285,15 @@ public class Processor {
     final OperationOutcome validationOutcome =
         notificationValidator.validateFhir(originalFhirNotification, contentType);
 
-    final NRSRoutingInput request = NRSRoutingInput.from(notification, testUserConfiguration);
-    notification.setRoutingOutputDto(routingService.getRoutingInformation(request));
+    final NRSRoutingInput routingInput = NRSRoutingInput.from(notification, testUserConfiguration);
+    final RoutingOutputDto routingInformation = routingService.getRoutingInformation(routingInput);
+    notification.setRoutingOutputDto(routingInformation);
+    if (!isProcessing73Enabled
+        && notification.getRoutingOutputDto() != null
+        && Objects.equals(notification.getRoutingOutputDto().notificationCategory(), P_7_3)) {
+      throw new UnsupportedOperationException(
+          "7.3 notifications can't be processed due to disabled feature flag");
+    }
 
     notification.setBundle(
         fhirParser.parseBundleOrParameter(originalFhirNotification, contentType));
@@ -222,7 +307,7 @@ public class Processor {
 
   private void logInfos(final Notification notification) {
     log.info(
-        "bundleId={}, type={}, diseaseCode={}, sender={}, testUser={}",
+        "Notification: bundleId={}, type={}, diseaseCode={}, sender={}, testUser={}",
         notification.getBundleIdentifier(),
         notification.getType(),
         notification.getDiseaseCode(),
@@ -230,72 +315,12 @@ public class Processor {
         notification.isTestUser());
   }
 
-  private List<IBaseResource> createModifiedNotifications(final Notification notification) {
-    final List<IBaseResource> notificationsToForward = new ArrayList<>();
-    for (final NotificationReceiver receiver : notification.getRoutingOutputDto().routes()) {
-      loopThroughActions(notification, receiver, notificationsToForward);
-    }
-    String identifier = notification.getBundle().getIdentifier().getValue();
-    String system = DemisSystems.RELATED_NOTIFICATION_CODING_SYSTEM;
-    String display = "Relates to message with identifier: " + identifier;
-    for (IBaseResource notificationBundle : notificationsToForward) {
-      // TODO remove with feature.flag.notifications.7_4
-      if (notificationBundle.getMeta().getTag(system, identifier) == null) {
-        // TODO keep when feature.flag.notifications.7_4 is removed
-        notificationBundle
-            .getMeta()
-            .addTag()
-            .setCode(identifier)
-            .setDisplay(display)
-            .setSystem(system);
-      }
-    }
-    return notificationsToForward;
-  }
-
-  private void loopThroughActions(
-      Notification notification,
-      NotificationReceiver receiver,
-      List<IBaseResource> notificationsToForward) {
-    for (final Action action : receiver.actions()) {
-      switch (action) {
-        case ENCRYPTION ->
-            enrcyptNotificationForReceiver(notification, receiver, notificationsToForward);
-        case PSEUDO_COPY -> createPseudoNotifications(notification, notificationsToForward);
-
-        case NO_ACTION -> notificationsToForward.add(notification.getBundle());
-
-        default -> throw new UnsupportedOperationException();
-      }
-    }
-  }
-
-  private void createPseudoNotifications(
-      Notification notification, List<IBaseResource> notificationsToForward) {
-    if (!configProperties.anonymizedAllowed()) {
-      return;
-    }
-
-    final Bundle anonymizedNotification =
-        notByNameService.createNotificationNotByName(notification);
-    notificationsToForward.add(anonymizedNotification);
-  }
-
-  private void enrcyptNotificationForReceiver(
-      Notification notification,
-      NotificationReceiver receiver,
-      List<IBaseResource> notificationsToForward) {
-    try {
-      final Binary encryptedBinaryNotification =
-          encryptionService.encryptFor(notification.getBundle(), receiver.specificReceiverId());
-      notificationsToForward.add(encryptedBinaryNotification);
-    } catch (NpsServiceException e) {
-      log.warn(
-          "Error while encrypting notification for receiver {}", receiver.specificReceiverId());
-      if (!receiver.optional()) {
-        throw e;
-      }
-    }
+  private Map<String, Optional<? extends IBaseResource>> createModifiedNotifications(
+      @Nonnull final Notification notification, final @Nonnull RoutingOutputDto routingData) {
+    final ImmutableMap<String, NotificationReceiver> receiverById =
+        Maps.uniqueIndex(routingData.routes(), NotificationReceiver::specificReceiverId);
+    return Maps.transformValues(
+        receiverById, (receiver) -> receiverActionService.transform(notification, receiver));
   }
 
   @Deprecated

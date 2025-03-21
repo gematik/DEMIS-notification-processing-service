@@ -22,21 +22,22 @@ package de.gematik.demis.nps.service;
  * #L%
  */
 
-import static de.gematik.demis.nps.error.ErrorCode.HEALTH_OFFICE_CERTIFICATE;
 import static de.gematik.demis.nps.service.notification.NotificationType.DISEASE;
+import static de.gematik.demis.nps.service.processing.BundleActionType.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.config.TestUserConfiguration;
-import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
 import de.gematik.demis.nps.service.notbyname.NotByNameService;
@@ -44,6 +45,9 @@ import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
 import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.processing.BundleAction;
+import de.gematik.demis.nps.service.processing.BundleActionService;
+import de.gematik.demis.nps.service.processing.ReceiverActionService;
 import de.gematik.demis.nps.service.pseudonymization.PseudoService;
 import de.gematik.demis.nps.service.receipt.ReceiptService;
 import de.gematik.demis.nps.service.response.FhirResponseService;
@@ -53,10 +57,11 @@ import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
+import de.gematik.demis.nps.test.TestData;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Identifier;
@@ -78,7 +83,6 @@ class ProcessorTest {
   private static final String TOKEN = "SomeToken";
 
   @Mock NpsConfigProperties configProperties;
-  @Mock FeatureFlagsConfigProperties featureFlagsConfigProperties;
   @Mock NotificationValidator notificationValidator;
   @Mock NotificationFhirService notificationFhirService;
   @Mock RoutingService routingService;
@@ -89,6 +93,7 @@ class ProcessorTest {
   @Mock ReceiptService receiptService;
   @Mock FhirResponseService responseService;
   @Mock ContextEnrichmentService contextEnrichmentService;
+  @Mock ReceiverActionService receiverActionService;
   @Mock Statistics statistics;
   @Mock FhirParser fhirParser;
 
@@ -105,13 +110,24 @@ class ProcessorTest {
     final String HEALTH_OFFICE_2 = "3.321.123.4.";
     NotificationReceiver receiver1 =
         new NotificationReceiver(
-            "responsible_health_office", HEALTH_OFFICE_1, Set.of(Action.ENCRYPTION), false);
+            "responsible_health_office",
+            HEALTH_OFFICE_1,
+            SequencedSets.of(Action.ENCRYPTION),
+            false);
     NotificationReceiver receiver2 =
         new NotificationReceiver(
-            "responsible_health_office_sormas", HEALTH_OFFICE_2, Set.of(Action.ENCRYPTION), false);
+            "responsible_health_office_sormas",
+            HEALTH_OFFICE_2,
+            SequencedSets.of(Action.ENCRYPTION),
+            false);
     RoutingOutputDto routingOutputDto =
         new RoutingOutputDto(
-            DISEASE, "6.1", List.of(receiver1, receiver2), new LinkedHashMap<>(), HEALTH_OFFICE_1);
+            DISEASE,
+            NotificationCategory.P_6_1,
+            SequencedSets.of(BundleAction.optionalOf(CREATE_PSEUDONYM_RECORD)),
+            List.of(receiver1, receiver2),
+            new LinkedHashMap<>(),
+            HEALTH_OFFICE_1);
     notification.setRoutingOutputDto(routingOutputDto);
 
     when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
@@ -125,8 +141,13 @@ class ProcessorTest {
     // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
     final Binary ho1_encrypted = new Binary();
     final Binary ho2_encrypted = new Binary();
-    when(encryptionService.encryptFor(any(), eq(HEALTH_OFFICE_1))).thenReturn(ho1_encrypted);
-    when(encryptionService.encryptFor(any(), eq(HEALTH_OFFICE_2))).thenReturn(ho2_encrypted);
+    // Can't use when().doReturn() due to wildcard capture
+    doReturn(Optional.of(ho1_encrypted))
+        .when(receiverActionService)
+        .transform(eq(notification), eq(receiver1));
+    doReturn(Optional.of(ho2_encrypted))
+        .when(receiverActionService)
+        .transform(eq(notification), eq(receiver2));
 
     // AND a receipt is created with the desired outcome
     Bundle receiptBundle = new Bundle();
@@ -140,103 +161,35 @@ class ProcessorTest {
     verify(notificationValidator).validateLifecycle(notification);
     verify(pseudoService).createAndStorePseudonymAndAddToNotification(notification);
     verify(contextEnrichmentService).enrichBundleWithContextInformation(notification, TOKEN);
-    verify(notificationStorageService).storeNotifications(List.of(ho1_encrypted, ho2_encrypted));
-    verify(encryptionService).encryptFor(any(), eq(HEALTH_OFFICE_2));
+    verify(notificationStorageService)
+        .storeNotifications(
+            argThat(
+                list ->
+                    list.size() == 2
+                        && list.contains(ho1_encrypted)
+                        && list.contains(ho2_encrypted)));
   }
 
-  @Test
-  void handleOptionalReceiversGracefully() {
-    final Processor service = createProcessor();
-    // GIVEN a parsed bundle
-    final Bundle BUNDLE = new Bundle();
-    BUNDLE.setIdentifier(new Identifier().setValue("notification-id"));
-    // AND a notification that will be created
-    Notification notification = createNotification(BUNDLE);
-    // AND routing information retrieved from the NRS
-    final String HEALTH_OFFICE_1 = "1.123.312.3.";
-    final String HEALTH_OFFICE_2 = "3.321.123.4.";
-    NotificationReceiver receiver1 =
-        new NotificationReceiver(
-            "responsible_health_office", HEALTH_OFFICE_1, Set.of(Action.ENCRYPTION), false);
-    NotificationReceiver receiver2 =
-        new NotificationReceiver(
-            "responsible_health_office_sormas", HEALTH_OFFICE_2, Set.of(Action.ENCRYPTION), true);
-    RoutingOutputDto routingOutputDto =
-        new RoutingOutputDto(
-            DISEASE, "6.1", List.of(receiver1, receiver2), new LinkedHashMap<>(), HEALTH_OFFICE_1);
-    notification.setRoutingOutputDto(routingOutputDto);
-
-    when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
-
-    // AND we mock irrelvant services
-    OperationOutcome validationOutcome = new OperationOutcome();
-    when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(BUNDLE);
-    when(notificationFhirService.getDiseaseCode(BUNDLE, DISEASE)).thenReturn("xxx");
-
-    // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
-    final Binary ho1_encrypted = new Binary();
-    when(encryptionService.encryptFor(any(), eq(HEALTH_OFFICE_1))).thenReturn(ho1_encrypted);
-    when(encryptionService.encryptFor(any(), eq(HEALTH_OFFICE_2)))
-        .thenThrow(
-            new NpsServiceException(
-                HEALTH_OFFICE_CERTIFICATE,
-                "no certificate found for health office " + HEALTH_OFFICE_2));
-
-    // AND a receipt is created with the desired outcome
-    Bundle receiptBundle = new Bundle();
-    when(receiptService.generateReceipt(any())).thenReturn(receiptBundle);
-    when(responseService.success(receiptBundle, validationOutcome)).thenReturn(new Parameters());
-
-    // WHEN we process the input
-    service.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, TOKEN);
-
-    // THEN
-    verify(notificationValidator).validateLifecycle(notification);
-    verify(pseudoService).createAndStorePseudonymAndAddToNotification(notification);
-    verify(contextEnrichmentService).enrichBundleWithContextInformation(notification, TOKEN);
-    verify(notificationStorageService).storeNotifications(List.of(ho1_encrypted));
-  }
-
-  @Test
-  void expectExceptionForNotOptionalReceiverMissing() {
-    final Processor service = createProcessor();
-    // GIVEN a parsed bundle
-    final Bundle BUNDLE = new Bundle();
-    BUNDLE.setIdentifier(new Identifier().setValue("notification-id"));
-    // AND a notification that will be created
-    Notification notification = createNotification(BUNDLE);
-    // AND routing information retrieved from the NRS
-    final String HEALTH_OFFICE_1 = "1.123.312.3.";
-    NotificationReceiver receiver1 =
-        new NotificationReceiver(
-            "responsible_health_office", HEALTH_OFFICE_1, Set.of(Action.ENCRYPTION), false);
-    RoutingOutputDto routingOutputDto =
-        new RoutingOutputDto(
-            DISEASE, "6.1", List.of(receiver1), new LinkedHashMap<>(), HEALTH_OFFICE_1);
-    notification.setRoutingOutputDto(routingOutputDto);
-
-    when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
-
-    // AND we mock irrelvant services
-    OperationOutcome validationOutcome = new OperationOutcome();
-    when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(BUNDLE);
-    when(notificationFhirService.getDiseaseCode(BUNDLE, DISEASE)).thenReturn("xxx");
-
-    // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
-    when(encryptionService.encryptFor(any(), eq(HEALTH_OFFICE_1)))
-        .thenThrow(
-            new NpsServiceException(
-                HEALTH_OFFICE_CERTIFICATE,
-                "no certificate found for health office " + HEALTH_OFFICE_1));
-
-    // WHEN we process the input
-    assertThatThrownBy(
-            () ->
-                service.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, TOKEN))
-        .isInstanceOf(NpsServiceException.class)
-        .hasMessage("no certificate found for health office " + HEALTH_OFFICE_1);
+  private static Notification forBundleJSON(final String path) {
+    final Bundle original = TestData.getBundle(path);
+    return Notification.builder()
+        // A laboratory notification
+        .type(NotificationType.LABORATORY)
+        // AND a 7.3 bundle with NotifiedPerson
+        .originalNotificationAsJson(TestData.readResourceAsString(path))
+        .diseaseCode("xxx")
+        .sender("Me")
+        .bundle(original)
+        // AND a matching routing output
+        .routingOutputDto(
+            new RoutingOutputDto(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+                List.of(),
+                Map.of(),
+                "noone"))
+        .build();
   }
 
   private static Notification createNotification(
@@ -269,9 +222,12 @@ class ProcessorTest {
         responseService,
         statistics,
         contextEnrichmentService,
+        receiverActionService,
         fhirParser,
         new TestUserConfiguration(List.of("test-user"), "test-1.2.3", true),
+        new BundleActionService(pseudoService),
         false,
+        true,
         true);
   }
 
@@ -280,7 +236,14 @@ class ProcessorTest {
     // GIVEN a Notification for a test user
 
     when(routingService.getRoutingInformation(any()))
-        .thenReturn(new RoutingOutputDto(NotificationType.LABORATORY, "", List.of(), Map.of(), ""));
+        .thenReturn(
+            new RoutingOutputDto(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+                List.of(),
+                Map.of(),
+                ""));
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
@@ -303,7 +266,14 @@ class ProcessorTest {
     // GIVEN a Notification for a test user
 
     when(routingService.getRoutingInformation(any()))
-        .thenReturn(new RoutingOutputDto(NotificationType.LABORATORY, "", List.of(), Map.of(), ""));
+        .thenReturn(
+            new RoutingOutputDto(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+                List.of(),
+                Map.of(),
+                ""));
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
@@ -326,7 +296,14 @@ class ProcessorTest {
     // GIVEN a Notification for a test user
 
     when(routingService.getRoutingInformation(any()))
-        .thenReturn(new RoutingOutputDto(NotificationType.LABORATORY, "", List.of(), Map.of(), ""));
+        .thenReturn(
+            new RoutingOutputDto(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+                List.of(),
+                Map.of(),
+                ""));
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
@@ -349,7 +326,14 @@ class ProcessorTest {
     // GIVEN a Notification for a test user
 
     when(routingService.getRoutingInformation(any()))
-        .thenReturn(new RoutingOutputDto(NotificationType.LABORATORY, "", List.of(), Map.of(), ""));
+        .thenReturn(
+            new RoutingOutputDto(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+                List.of(),
+                Map.of(),
+                ""));
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
@@ -365,10 +349,5 @@ class ProcessorTest {
     final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
     assertThat(actualRoutingInput.isTestUser()).isFalse();
     assertThat(actualRoutingInput.testUserId()).isEqualTo("");
-  }
-
-  @Test
-  void testUserIsOnlyReceiverWhenSenderIsTestUser() {
-    // HTTP Header testuser: false BUT x-sender = testuser
   }
 }

@@ -55,6 +55,7 @@ public class NotByNameService {
   public Bundle createNotificationNotByName(final Notification notification) {
     final Bundle bundle = notification.getBundle();
 
+    // DEMIS-2803 here we could use the NBL
     final Bundle copiedBundle = copyBundle(bundle);
 
     // Create an own NotificationBundleId (MeldevorgangsId) for the not by name bundle
@@ -83,6 +84,7 @@ public class NotByNameService {
           .setCode(DemisSystems.TEST_USER_CODE);
     }
 
+    // DEMIS-2803 here we could use the NBL
     obfuscateNotifiedPerson(notification, copiedBundle);
     changeTitleOfComposition((Composition) copiedBundle.getEntryFirstRep().getResource());
 

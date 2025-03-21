@@ -44,6 +44,7 @@ deploymentLabels: {}
 customEnvVars:
   NPS_FLAG_RELAXED_VALIDATION: "true"
   FEATURE_FLAG_NOTIFICATIONS_7_4: "false"
+  FEATURE_FLAG_NOTIFICATIONS_7_3: "false"
   REDIS_HOST: "redis-cus"
   REDIS_PORT: "6379"
   REDIS_USER: "reader"

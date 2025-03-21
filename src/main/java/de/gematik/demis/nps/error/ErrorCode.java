@@ -38,6 +38,7 @@ public enum ErrorCode {
   ENCRYPTION(HttpStatus.INTERNAL_SERVER_ERROR),
   STORING(HttpStatus.INTERNAL_SERVER_ERROR),
   NRS_PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
+  NRS_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
 
   // errors that do not abort the process
   NO_PSEUDONYM(null),

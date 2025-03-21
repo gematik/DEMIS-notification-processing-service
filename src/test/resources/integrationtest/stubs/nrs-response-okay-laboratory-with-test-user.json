@@ -1,6 +1,10 @@
 {
   "type": "laboratory",
   "notificationCategory": "7.1",
+  "bundleActions": [{
+    "type": "create_pseudonym_record",
+    "optional": true
+  }],
   "routes": [
     {
       "type": "test-user",

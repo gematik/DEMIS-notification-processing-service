@@ -44,13 +44,19 @@ class HealthOfficeOrganizationCreator {
 
     result.addAddress().addLine(data.street()).setPostalCode(data.zipCode()).setCity(data.city());
 
-    result.addTelecom(
-        new ContactPoint().setSystem(ContactPoint.ContactPointSystem.PHONE).setValue(data.tel()));
-    result.addTelecom(
-        new ContactPoint().setSystem(ContactPoint.ContactPointSystem.FAX).setValue(data.fax()));
-    result.addTelecom(
-        new ContactPoint().setSystem(ContactPoint.ContactPointSystem.EMAIL).setValue(data.email()));
+    addContactPoint(result, data.tel(), ContactPoint.ContactPointSystem.PHONE);
+    addContactPoint(result, data.fax(), ContactPoint.ContactPointSystem.FAX);
+    addContactPoint(result, data.email(), ContactPoint.ContactPointSystem.EMAIL);
 
     return result;
+  }
+
+  private static void addContactPoint(
+      final Organization organization,
+      final String value,
+      final ContactPoint.ContactPointSystem system) {
+    if (value != null && !value.isBlank()) {
+      organization.addTelecom(new ContactPoint().setSystem(system).setValue(value));
+    }
   }
 }

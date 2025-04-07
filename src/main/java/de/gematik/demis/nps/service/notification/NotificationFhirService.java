@@ -24,13 +24,14 @@ package de.gematik.demis.nps.service.notification;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.DemisConstants;
 import de.gematik.demis.nps.base.fhir.BundleQueries;
 import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.codemapping.CodeMappingService;
-import jakarta.annotation.PostConstruct;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -47,27 +48,22 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class NotificationFhirService {
 
-  private static final String PROFILE_URL_DISEASE = NotificationType.DISEASE.getProfile().getUrl();
-  private static final String PROFILE_URL_LABORATORY =
-      NotificationType.LABORATORY.getProfile().getUrl();
+  private static final Set<String> ALLOWED_PRECHECK_PROFILES =
+      Set.of(
+          NotificationType.DISEASE.getProfile().getUrl(),
+          NotificationType.LABORATORY.getProfile().getUrl(),
+          DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_NEGATIVE,
+          DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_ANONYMOUS,
+          DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_NON_NOMINAL);
 
   private final FhirParser fhirParser;
   private final NotificationCleaning cleaner;
   private final NotificationEnrichment enricher;
   private final TestUserConfiguration testUserConfiguration;
   private final CodeMappingService codeMappingService;
-  private Pattern pattern;
-
-  @PostConstruct
-  void init() {
-    pattern =
-        Pattern.compile(
-            "(?s)meta.*profile.*("
-                + Pattern.quote(PROFILE_URL_LABORATORY)
-                + "|"
-                + Pattern.quote(PROFILE_URL_DISEASE)
-                + ")(?!\\w|/)");
-  }
+  private static final Pattern pattern =
+      Pattern.compile(
+          "(?s)meta.*profile.*(" + String.join("|", ALLOWED_PRECHECK_PROFILES) + ")(?!\\w|/)");
 
   public void preCheckProfile(final String fhirNotification) {
     Matcher matcher = pattern.matcher(fhirNotification);

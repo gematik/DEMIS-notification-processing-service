@@ -73,7 +73,6 @@ class NotificationFhirServiceTest {
             enricherMock,
             testUserConfigurationMock,
             codeMappingServiceMock);
-    underTest.init();
   }
 
   @Nested
@@ -126,7 +125,10 @@ class NotificationFhirServiceTest {
         strings = {
           LABORATORY_BUNDLE_RESOURCE,
           DISEASE_BUNDLE_RESOURCE,
-          LABORATORY_BUNDLE_ESCAPED_RESOURCE
+          LABORATORY_BUNDLE_ESCAPED_RESOURCE,
+          "/bundles/7_3/anonymous.json",
+          "/bundles/7_3/nonnominal-notifiedperson.json",
+          "/integrationtest/laboratory/input-notification-7_4.json"
         })
     void profileOkayJson(final String resourceName) {
       final String fhirNotification = fhirResourceToJson(getBundle(resourceName));

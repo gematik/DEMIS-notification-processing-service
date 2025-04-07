@@ -1,8 +1,8 @@
-package de.gematik.demis.nps.config;
+package de.gematik.demis.nps;
 
 /*-
  * #%L
- * notification-processing-service
+ * FHIR UI Data Model Translation Service
  * %%
  * Copyright (C) 2025 gematik GmbH
  * %%
@@ -22,27 +22,10 @@ package de.gematik.demis.nps.config;
  * #L%
  */
 
-import ca.uhn.fhir.context.FhirContext;
-import de.gematik.demis.fhirparserlibrary.FhirParser;
-import de.gematik.demis.service.base.apidoc.EnableDefaultApiSpecConfig;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.context.annotation.RequestScope;
+import de.gematik.demis.AbstractOpenApiSpecDownloaderTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@Configuration
-@Slf4j
-@EnableDefaultApiSpecConfig
-public class FhirConfiguration {
-  @Bean
-  public FhirContext fhirContext() {
-    log.debug("creating r4 context");
-    return FhirContext.forR4Cached();
-  }
-
-  @Bean
-  @RequestScope
-  public FhirParser fhirParser(FhirContext fhirContext) {
-    return new FhirParser(fhirContext);
-  }
+@ActiveProfiles(profiles = "test")
+class OpenApiSpecDownloaderTest extends AbstractOpenApiSpecDownloaderTest {
+  // executes test from OpenApiSpecDownloaderTest
 }

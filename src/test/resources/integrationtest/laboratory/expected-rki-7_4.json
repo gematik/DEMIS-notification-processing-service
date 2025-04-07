@@ -3,7 +3,7 @@
   "meta": {
     "lastUpdated": "2024-01-02T14:19:29.114+01:00",
     "profile": [
-      "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
+      "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratoryNegative"
     ],
     "tag": [
       {
@@ -31,7 +31,7 @@
         "id": "6ed88a19-70e9-3292-8272-b45740eb82b6",
         "meta": {
           "profile": [
-            "https://demis.rki.de/fhir/StructureDefinition/NotificationLaboratory"
+            "https://demis.rki.de/fhir/StructureDefinition/NotificationLaboratoryNegative"
           ]
         },
         "extension": [
@@ -102,7 +102,7 @@
         "id": "aabb3705-f9f3-37e9-b2bb-6f3da1f55bd3",
         "meta": {
           "profile": [
-            "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonNotByName"
+            "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonAnonymous"
           ]
         }
       }

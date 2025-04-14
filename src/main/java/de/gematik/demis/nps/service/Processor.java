@@ -19,13 +19,19 @@ package de.gematik.demis.nps.service;
  * In case of changes by gematik find details in the "Readme" file.
  *
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  * #L%
  */
 
 import static de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory.P_7_3;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.config.NpsConfigProperties;
@@ -46,9 +52,7 @@ import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -235,36 +239,15 @@ public class Processor {
     final RoutingOutputDto routingData = Objects.requireNonNull(notification.getRoutingOutputDto());
     bundleActionService.process(notification, routingData.bundleActions());
 
-    final Map<String, Optional<? extends IBaseResource>> processedNotifications =
+    final List<? extends IBaseResource> processedNotifications =
         createModifiedNotifications(notification, routingData);
-    final Map<String, IBaseResource> notificationsToForward =
-        removeReceiverWithoutResource(processedNotifications, notification);
-    notificationStorageService.storeNotifications(notificationsToForward.values());
+    notificationStorageService.storeNotifications(processedNotifications);
 
     final Bundle receiptBundle = receiptService.generateReceipt(notification);
     final Parameters result = responseService.success(receiptBundle, validationOutcome);
 
     statistics.incSuccessCounter(notification);
     return result;
-  }
-
-  private static Map<String, IBaseResource> removeReceiverWithoutResource(
-      final Map<String, Optional<? extends IBaseResource>> processedNotifications,
-      final Notification notification) {
-    final Map<String, IBaseResource> notificationsToForward = new HashMap<>();
-    for (Map.Entry<String, Optional<? extends IBaseResource>> entry :
-        processedNotifications.entrySet()) {
-      final Optional<? extends IBaseResource> bundleCandidate = entry.getValue();
-      if (bundleCandidate.isEmpty()) {
-        log.warn(
-            "No bundle produced for receiver '{}' of notification '{}'",
-            entry.getKey(),
-            notification.getBundleIdentifier());
-      } else {
-        notificationsToForward.put(entry.getKey(), bundleCandidate.get());
-      }
-    }
-    return Collections.unmodifiableMap(notificationsToForward);
   }
 
   private String encodeToJson(String originalFhirNotification, MessageType contentType) {
@@ -315,12 +298,29 @@ public class Processor {
         notification.isTestUser());
   }
 
-  private Map<String, Optional<? extends IBaseResource>> createModifiedNotifications(
+  private List<? extends IBaseResource> createModifiedNotifications(
       @Nonnull final Notification notification, final @Nonnull RoutingOutputDto routingData) {
-    final ImmutableMap<String, NotificationReceiver> receiverById =
-        Maps.uniqueIndex(routingData.routes(), NotificationReceiver::specificReceiverId);
-    return Maps.transformValues(
-        receiverById, (receiver) -> receiverActionService.transform(notification, receiver));
+    final ImmutableListMultimap<String, NotificationReceiver> receiverById =
+        Multimaps.index(routingData.routes(), NotificationReceiver::specificReceiverId);
+
+    Multimap<String, Optional<? extends IBaseResource>> resourceByReceiver =
+        Multimaps.transformValues(
+            receiverById, (receiver) -> receiverActionService.transform(notification, receiver));
+    resourceByReceiver = Multimaps.filterValues(resourceByReceiver, Optional::isPresent);
+
+    // A receiver that should receive 3 bundles but only receives 2, will not show up here. But a
+    // receiver that receives
+    // no bundle they are supposed to, will.
+    final Sets.SetView<String> receiversWithoutBundle =
+        Sets.difference(receiverById.keySet(), resourceByReceiver.keySet());
+    for (final String receiverId : receiversWithoutBundle) {
+      log.warn(
+          "No bundle produced for receiver '{}' of notification '{}'",
+          receiverId,
+          notification.getBundleIdentifier());
+    }
+
+    return resourceByReceiver.values().stream().flatMap(Optional::stream).toList();
   }
 
   @Deprecated

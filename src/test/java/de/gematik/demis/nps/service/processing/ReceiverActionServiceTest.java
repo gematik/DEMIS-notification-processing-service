@@ -19,6 +19,10 @@ package de.gematik.demis.nps.service.processing;
  * In case of changes by gematik find details in the "Readme" file.
  *
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  * #L%
  */
 
@@ -30,7 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonByNameDataBuilder;
@@ -158,6 +164,32 @@ class ReceiverActionServiceTest {
   }
 
   @Test
+  void thatNotifiedPersonFor73IsReplacedWithNotByNameUrnUuid() {
+    // GIVEN a 7.3 bundle
+    final Notification notification =
+        fromJSON("/bundles/7_3/nonnominal-notifiedperson-urn-uuid.json", P73_ROUTING);
+    // WHEN bundle is processed
+    final Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(
+            notification,
+            new NotificationReceiver("", "1.", SequencedSets.of(PSEUDO_ORIGINAL), false));
+    // THEN
+    assertThat(transform).containsInstanceOf(Bundle.class);
+    final Bundle transformationResult = (Bundle) transform.orElseThrow();
+    final Optional<Patient> patient = Bundles.subjectFrom(transformationResult);
+    assertThat(patient).isNotEmpty();
+    final Set<String> strings = Metas.profilesFrom(patient.orElseThrow());
+    assertThat(strings).containsExactly(DemisConstants.PROFILE_NOTIFIED_PERSON_NOT_BY_NAME);
+
+    // DEMIS-3168: ensure that we can process urn:uuid: ids
+    assertThat(transformationResult.getEntry())
+        .allSatisfy(
+            (e) -> {
+              assertThat(e.getFullUrl()).startsWith("urn:uuid:");
+            });
+  }
+
+  @Test
   void thatNotifiedPersonFor73IsReplacedWithNotByName() {
     // GIVEN a 7.3 bundle
     final Notification notification =
@@ -205,6 +237,43 @@ class ReceiverActionServiceTest {
             notification, new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), true));
     // THEN
     assertThat(transform).isEmpty();
+  }
+
+  @Test
+  void thatTestNotificationsAreNotValidatedForRKI() {
+    // GIVEN a 7.3 bundle
+    final Bundle original = TestData.getBundle("/bundles/7_3/nonnominal-notifiedperson.json");
+    final Notification notification =
+        Notification.builder()
+            // A laboratory notification
+            .type(NotificationType.LABORATORY)
+            // AND a test user
+            .testUser(true)
+            // AND a 7.3 bundle with NotifiedPerson
+            .originalNotificationAsJson(
+                TestData.readResourceAsString("/bundles/7_3/nonnominal-notifiedperson.json"))
+            .diseaseCode("xxx")
+            .sender("Me")
+            .bundle(original)
+            // AND a matching routing output
+            .routingOutputDto(
+                new RoutingOutputDto(
+                    NotificationType.LABORATORY,
+                    NotificationCategory.UNKNOWN,
+                    SequencedSets.of(),
+                    List.of(),
+                    Map.of(),
+                    "noone"))
+            .build();
+    // WHEN bundle is processed
+    final RKIBundleValidator rkiBundleValidatorMock = mock(RKIBundleValidator.class);
+    final ReceiverActionService service =
+        new ReceiverActionService(
+            rkiBundleValidatorMock, npsConfigProperties, encryptionService, notByNameService, true);
+    service.transform(
+        notification, new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), true));
+    // THEN
+    verifyNoInteractions(rkiBundleValidatorMock);
   }
 
   @Test
@@ -345,9 +414,12 @@ class ReceiverActionServiceTest {
   }
 
   private static Notification p71Notification() {
-    final Patient notifiedPerson = new NotifiedPersonByNameDataBuilder().build();
+    final Patient notifiedPerson = new NotifiedPersonByNameDataBuilder().setId("1").build();
     final Composition compositionWithNotifiedPerson =
-        new NotificationLaboratoryDataBuilder().setNotifiedPerson(notifiedPerson).build();
+        new NotificationLaboratoryDataBuilder()
+            .setDefault()
+            .setNotifiedPerson(notifiedPerson)
+            .build();
     final Bundle bundle =
         new NotificationBundleLaboratoryDataBuilder()
             .setDefaults()

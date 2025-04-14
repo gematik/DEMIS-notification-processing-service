@@ -19,6 +19,10 @@ package de.gematik.demis.nps.service.validation;
  * In case of changes by gematik find details in the "Readme" file.
  *
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  * #L%
  */
 
@@ -37,15 +41,20 @@ import org.junit.jupiter.api.Test;
 
 class RKIBundleValidatorTest {
 
-  public static final Patient NOTIFIED_PERSON = new NotifiedPersonByNameDataBuilder().build();
+  public static final Patient NOTIFIED_PERSON =
+      new NotifiedPersonByNameDataBuilder().setId("np1").build();
   public static final Composition COMPOSITION_WITH_NOTIFIED_PERSON =
-      new NotificationLaboratoryDataBuilder().setNotifiedPerson(NOTIFIED_PERSON).build();
+      new NotificationLaboratoryDataBuilder()
+          .setDefault()
+          .setNotifiedPerson(NOTIFIED_PERSON)
+          .build();
   private static final String RKI = "1.";
 
   private final RKIBundleValidator validator = new RKIBundleValidator();
 
   private static Bundle notifiedPersonBundle() {
     return new NotificationBundleLaboratoryDataBuilder()
+        .setDefaults()
         .setNotificationLaboratory(COMPOSITION_WITH_NOTIFIED_PERSON)
         // DEMIS-2803 you can remove this line below
         .setNotifiedPerson(NOTIFIED_PERSON)
@@ -54,6 +63,7 @@ class RKIBundleValidatorTest {
 
   private static Bundle nonNominalBundleWithNotifiedPerson() {
     return new NonNominalBundleBuilder()
+        .setDefaults()
         .setNotificationLaboratory(COMPOSITION_WITH_NOTIFIED_PERSON)
         // DEMIS-2803 you can remove this line below
         .setNotifiedPerson(NOTIFIED_PERSON)
@@ -62,10 +72,14 @@ class RKIBundleValidatorTest {
 
   private static Bundle anonymousBundle() {
     final AnonymousBundleBuilder bundle = new AnonymousBundleBuilder();
-    final Patient anonymousPerson = new NotifiedPersonAnonymousDataBuilder().build();
+    bundle.setDefaults();
+    final Patient anonymousPerson = new NotifiedPersonAnonymousDataBuilder().setId("ap1").build();
     bundle
         .setNotificationLaboratory(
-            new NotificationLaboratoryDataBuilder().setNotifiedPerson(anonymousPerson).build())
+            new NotificationLaboratoryDataBuilder()
+                .setDefault()
+                .setNotifiedPerson(anonymousPerson)
+                .build())
         // DEMIS-2803 you can remove this line below
         .setNotifiedPerson(anonymousPerson);
     return bundle.build();

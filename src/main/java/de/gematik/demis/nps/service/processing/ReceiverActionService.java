@@ -19,6 +19,10 @@ package de.gematik.demis.nps.service.processing;
  * In case of changes by gematik find details in the "Readme" file.
  *
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  * #L%
  */
 
@@ -207,7 +211,9 @@ public class ReceiverActionService {
     intermediateResult =
         assertAllActionsHaveBeenProcessed(
             intermediateResult, bundleIdentifier, receiver, remainingActions);
-    intermediateResult = validateProducedBundle(receiver, intermediateResult);
+    if (!notification.isTestUser()) {
+      intermediateResult = validateProducedBundle(receiver, intermediateResult);
+    }
 
     final String relatedIdentifier = notification.getBundle().getIdentifier().getValue();
     final Optional<? extends IBaseResource> result =

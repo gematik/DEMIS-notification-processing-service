@@ -19,6 +19,10 @@ package de.gematik.demis.nps.service;
  * In case of changes by gematik find details in the "Readme" file.
  *
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  * #L%
  */
 
@@ -58,10 +62,12 @@ import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
 import de.gematik.demis.nps.test.TestData;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Identifier;
@@ -70,6 +76,7 @@ import org.hl7.fhir.r4.model.Parameters;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -349,5 +356,42 @@ class ProcessorTest {
     final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
     assertThat(actualRoutingInput.isTestUser()).isFalse();
     assertThat(actualRoutingInput.testUserId()).isEqualTo("");
+  }
+
+  /** Help with checked issues on Collections: https://stackoverflow.com/a/5655702 */
+  @Captor private ArgumentCaptor<Collection<? extends IBaseResource>> storageParameter;
+
+  @Test
+  void thatMultipleNotificationsForSameRecipientCanBeProcessed() {
+    // GIVEN a Notification with two routes for one Recipient
+    when(routingService.getRoutingInformation(any()))
+        .thenReturn(
+            new RoutingOutputDto(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+                List.of(
+                    new NotificationReceiver(
+                        "any", "1.", SequencedSets.of(Action.NO_ACTION), false),
+                    new NotificationReceiver(
+                        "any", "1.", SequencedSets.of(Action.NO_ACTION), false)),
+                Map.of(),
+                ""));
+    final Bundle result = new Bundle();
+    result.setIdentifier(new Identifier().setValue("bundle-id"));
+
+    // WHEN we try to parse the bundle return a placeholder Bundle
+    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
+    // AND when the receiverActionService processes anything return a new placeholder Bundle
+    doReturn(Optional.of(new Bundle())).when(receiverActionService).transform(any(), any());
+
+    final Processor processor = createProcessor();
+    // AND we process a notification
+    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "1.", true, TOKEN);
+
+    // THEN ensure that we store the two placeholder Bundles
+    verify(notificationStorageService).storeNotifications(storageParameter.capture());
+
+    assertThat(storageParameter.getValue()).hasSize(2);
   }
 }

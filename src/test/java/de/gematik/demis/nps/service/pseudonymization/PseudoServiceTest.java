@@ -19,6 +19,10 @@ package de.gematik.demis.nps.service.pseudonymization;
  * In case of changes by gematik find details in the "Readme" file.
  *
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  * #L%
  */
 
@@ -89,13 +93,20 @@ class PseudoServiceTest {
 
   private static Bundle createBundle(
       final Patient notifiedPerson, final String bundleId, final String healthOffice) {
+    final Specimen specimen = new Specimen();
+    specimen.setId("s1");
+    final DiagnosticReport diagnosticReport = new DiagnosticReport();
+    diagnosticReport.setId("dr1");
     final var bundle =
         new NotificationBundleLaboratoryDataBuilder()
             .setNotificationLaboratory(
-                new NotificationLaboratoryDataBuilder().setNotifiedPerson(notifiedPerson).build())
+                new NotificationLaboratoryDataBuilder()
+                    .setDefault()
+                    .setNotifiedPerson(notifiedPerson)
+                    .build())
             .setNotifiedPerson(notifiedPerson)
-            .setSpecimen(List.of(new Specimen()))
-            .setLaboratoryReport(new DiagnosticReport())
+            .setSpecimen(List.of(specimen))
+            .setLaboratoryReport(diagnosticReport)
             .setIdentifier(new Identifier().setValue(bundleId))
             .build();
     bundle
@@ -111,6 +122,7 @@ class PseudoServiceTest {
     final LocalDate date = LocalDate.parse(birthDay, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     final Patient notifiedPerson =
         new NotifiedPersonDataBuilder()
+            .setDefaults()
             .setHumanName(
                 new HumanNameDataBuilder()
                     .setFamilyName(familyName)

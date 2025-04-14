@@ -19,6 +19,10 @@ package de.gematik.demis.nps.service.pseudonymization;
  * In case of changes by gematik find details in the "Readme" file.
  *
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  * #L%
  */
 
@@ -50,27 +54,31 @@ class PseudonymizationRequestTest {
     return Stream.of(
         Arguments.of(
             // Only birthday is set
-            new NotifiedPersonDataBuilder().setBirthdate("01.01.1994").build()),
+            new NotifiedPersonDataBuilder().setDefaults().setBirthdate("01.01.1994").build()),
         // Human name but nothing relevant is set
         Arguments.of(
             new NotifiedPersonDataBuilder()
+                .setDefaults()
                 .setHumanName(new HumanNameDataBuilder().setText("Some irrelevant text").build())
                 .build()),
         // Only firstname is set
         Arguments.of(
             new NotifiedPersonDataBuilder()
+                .setDefaults()
                 .setHumanName(new HumanNameDataBuilder().addGivenName("FirstName").build())
                 .build()),
         // Only lastname is set
         Arguments.of(
             new NotifiedPersonDataBuilder()
+                .setDefaults()
                 .setHumanName(new HumanNameDataBuilder().setFamilyName("FamilyName").build())
                 .build()),
         // Nothing is set
-        Arguments.of(new NotifiedPersonDataBuilder().build()),
+        Arguments.of(new NotifiedPersonDataBuilder().setDefaults().build()),
         // Only lastname & birthday
         Arguments.of(
             new NotifiedPersonDataBuilder()
+                .setDefaults()
                 .setBirthdate("01.01.1994")
                 .setHumanName(new HumanNameDataBuilder().setFamilyName("FamilyName").build())
                 .build()));
@@ -79,13 +87,20 @@ class PseudonymizationRequestTest {
   @ParameterizedTest
   @MethodSource("generatePatientsForPotentialNPEs")
   void thatMissingOptionalElementsDontCauseNPEs(final Patient patient) {
+    final Specimen specimen = new Specimen();
+    specimen.setId("s1");
+    final DiagnosticReport diagnosticReport = new DiagnosticReport();
+    diagnosticReport.setId("d1");
     final Bundle bundle =
         new NotificationBundleLaboratoryDataBuilder()
             .setNotificationLaboratory(
-                new NotificationLaboratoryDataBuilder().setNotifiedPerson(patient).build())
+                new NotificationLaboratoryDataBuilder()
+                    .setDefault()
+                    .setNotifiedPerson(patient)
+                    .build())
             .setNotifiedPerson(patient)
-            .setSpecimen(List.of(new Specimen()))
-            .setLaboratoryReport(new DiagnosticReport())
+            .setSpecimen(List.of(specimen))
+            .setLaboratoryReport(diagnosticReport)
             .setIdentifier(new Identifier().setValue(DEFAULT_BUNDLE_ID))
             .build();
 

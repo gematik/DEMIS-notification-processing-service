@@ -2,6 +2,19 @@
 
 # Release Notification Processing Service
 
+## Release 2.0.1
+- disable bundle validation for test notifications and rki recipient
+- allow multiple notifications for one recipient
+- Updated ospo-resources for adding additional notes and disclaimer
+
+## Release 2.0.0
+- Add service API documentation
+- Update §7.4 bundles 
+
+## Release 1.5.0
+- Enabling of §7.3 notifications
+- updated further health department contact data
+
 ## Release 1.4.0
 ### changed
 - First official GitHub-Release

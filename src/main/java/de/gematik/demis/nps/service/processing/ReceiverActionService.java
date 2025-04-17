@@ -183,7 +183,11 @@ public class ReceiverActionService {
                   .map(ReceiverActionService::castToBundleOrNull)
                   .orElseThrow(() -> new IllegalStateException("Can only encrypt bundles"));
           intermediateResult =
-              processEncryption(asBundle, receiver.specificReceiverId(), receiver.optional());
+              processEncryption(
+                  asBundle,
+                  receiver.specificReceiverId(),
+                  receiver.optional(),
+                  notification.isTestUser());
         }
         break;
       }
@@ -276,12 +280,17 @@ public class ReceiverActionService {
    * @throws NpsServiceException When encryption fails and the receiver is mandatory.
    */
   private Optional<Binary> processEncryption(
-      final Bundle bundle, final String receiverId, final boolean optional) {
-    final BundleValidationResult validationResult =
-        rkiBundleValidator.isValidBundle(bundle, receiverId);
-    if (!validationResult.isValid()) {
-      logBundleValidationWarn(receiverId, validationResult.reason());
-      return Optional.empty();
+      final Bundle bundle,
+      final String receiverId,
+      final boolean optional,
+      final boolean isTestNotification) {
+    if (!isTestNotification) {
+      final BundleValidationResult validationResult =
+          rkiBundleValidator.isValidBundle(bundle, receiverId);
+      if (!validationResult.isValid()) {
+        logBundleValidationWarn(receiverId, validationResult.reason());
+        return Optional.empty();
+      }
     }
 
     try {

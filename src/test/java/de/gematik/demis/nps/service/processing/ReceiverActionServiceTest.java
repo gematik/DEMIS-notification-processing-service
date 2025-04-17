@@ -210,27 +210,7 @@ class ReceiverActionServiceTest {
   @Test
   void thatGrosslyMisconfiguredNotificationFor73WontLeakPersonalDataToRKI() {
     // GIVEN a 7.3 bundle
-    final Bundle original = TestData.getBundle("/bundles/7_3/nonnominal-notifiedperson.json");
-    final Notification notification =
-        Notification.builder()
-            // A laboratory notification
-            .type(NotificationType.LABORATORY)
-            // AND a 7.3 bundle with NotifiedPerson
-            .originalNotificationAsJson(
-                TestData.readResourceAsString("/bundles/7_3/nonnominal-notifiedperson.json"))
-            .diseaseCode("xxx")
-            .sender("Me")
-            .bundle(original)
-            // AND a matching routing output
-            .routingOutputDto(
-                new RoutingOutputDto(
-                    NotificationType.LABORATORY,
-                    NotificationCategory.UNKNOWN,
-                    SequencedSets.of(),
-                    List.of(),
-                    Map.of(),
-                    "noone"))
-            .build();
+    final Notification notification = nonnominalNotifiedPersonNotification(false);
     // WHEN bundle is processed
     final Optional<? extends IBaseResource> transform =
         receiverActionService.transform(
@@ -241,30 +221,8 @@ class ReceiverActionServiceTest {
 
   @Test
   void thatTestNotificationsAreNotValidatedForRKI() {
-    // GIVEN a 7.3 bundle
-    final Bundle original = TestData.getBundle("/bundles/7_3/nonnominal-notifiedperson.json");
-    final Notification notification =
-        Notification.builder()
-            // A laboratory notification
-            .type(NotificationType.LABORATORY)
-            // AND a test user
-            .testUser(true)
-            // AND a 7.3 bundle with NotifiedPerson
-            .originalNotificationAsJson(
-                TestData.readResourceAsString("/bundles/7_3/nonnominal-notifiedperson.json"))
-            .diseaseCode("xxx")
-            .sender("Me")
-            .bundle(original)
-            // AND a matching routing output
-            .routingOutputDto(
-                new RoutingOutputDto(
-                    NotificationType.LABORATORY,
-                    NotificationCategory.UNKNOWN,
-                    SequencedSets.of(),
-                    List.of(),
-                    Map.of(),
-                    "noone"))
-            .build();
+    // GIVEN any bundle with a notified person
+    final Notification notification = nonnominalNotifiedPersonNotification(true);
     // WHEN bundle is processed
     final RKIBundleValidator rkiBundleValidatorMock = mock(RKIBundleValidator.class);
     final ReceiverActionService service =
@@ -274,6 +232,58 @@ class ReceiverActionServiceTest {
         notification, new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), true));
     // THEN
     verifyNoInteractions(rkiBundleValidatorMock);
+  }
+
+  @Test
+  void thatEncryptedTestNotificationsAreNotValidatedForRKI() {
+    /*
+    At the time of writing this we perform bundle validation to verify the RKI never receives a notified person.
+    1. After processing all actions, verify the final result doesn't contain a notified person.
+    2. Before encrypting a bundle we, verify we don't accidentally encrypt a notified person for the RKI.
+
+    After encrypting, we can't validate the resulting binary(it's encrypted!). So we always have to check before.
+    However, for test notifications this is not desired. We want the RKI to be able to receive these test bundles.
+     */
+
+    // GIVEN any bundle with a notified person
+    // AND we want to encrypt that bundle
+    final Notification notification = nonnominalNotifiedPersonNotification(true);
+    // AND we can encrypt anything and return a placeholder
+    when(encryptionService.encryptFor(any(), eq("1."))).thenReturn(new Binary());
+
+    // WHEN bundle is processed
+    final RKIBundleValidator rkiBundleValidatorMock = mock(RKIBundleValidator.class);
+    final ReceiverActionService service =
+        new ReceiverActionService(
+            rkiBundleValidatorMock, npsConfigProperties, encryptionService, notByNameService, true);
+    service.transform(
+        notification, new NotificationReceiver("", "1.", SequencedSets.of(ENCRYPTION), true));
+    // THEN
+    verifyNoInteractions(rkiBundleValidatorMock);
+  }
+
+  private static Notification nonnominalNotifiedPersonNotification(
+      final boolean isTestNotification) {
+    final Bundle original = TestData.getBundle("/bundles/7_3/nonnominal-notifiedperson.json");
+    return Notification.builder()
+        .type(NotificationType.LABORATORY)
+        .testUser(isTestNotification)
+        // AND a 7.3 bundle with NotifiedPerson
+        .originalNotificationAsJson(
+            TestData.readResourceAsString("/bundles/7_3/nonnominal-notifiedperson.json"))
+        .diseaseCode("xxx")
+        .sender("Me")
+        .bundle(original)
+        // AND a matching routing output
+        .routingOutputDto(
+            new RoutingOutputDto(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(),
+                List.of(),
+                Map.of(),
+                "noone"))
+        .build();
   }
 
   @Test

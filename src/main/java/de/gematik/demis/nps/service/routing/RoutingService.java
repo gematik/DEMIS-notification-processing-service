@@ -106,7 +106,7 @@ public class RoutingService {
   private String getResponsibleHealthOffice(
       final Notification notification, final String originalResponsibleHealthOffice) {
     if (notification.isTestUser()) {
-      return testUserConfiguration.getReceiver(notification.getSender());
+      return notification.getTestUserRecipient();
     } else {
       return originalResponsibleHealthOffice;
     }

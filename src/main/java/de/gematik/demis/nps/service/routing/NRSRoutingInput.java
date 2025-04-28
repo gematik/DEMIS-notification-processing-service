@@ -26,19 +26,17 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.service.notification.Notification;
 
 /** Describes required input data for the NRS to return routing information. */
 public record NRSRoutingInput(
     String originalNotificationAsJSON, boolean isTestUser, String testUserId) {
   /** Create a new instance based on a notification and test user properties. */
-  public static NRSRoutingInput from(
-      final Notification notification, final TestUserConfiguration testUserConfiguration) {
+  public static NRSRoutingInput from(final Notification notification) {
     final boolean isTestUser = notification.isTestUser();
     String testUserId = "";
     if (isTestUser) {
-      testUserId = testUserConfiguration.getReceiver(notification.getSender());
+      testUserId = notification.getTestUserRecipient();
     }
 
     return new NRSRoutingInput(

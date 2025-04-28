@@ -2,6 +2,12 @@
 
 # Release Notification Processing Service
 
+## Release 2.1.0
+- lift test user configuration up to controller
+- prepare new test user configuration mechanism based on HTTP headers
+- setting new ressources in helm chart
+- setting new timeouts and retries in helm chart
+
 ## Release 2.0.1
 - disable bundle validation for test notifications and rki recipient
 - allow multiple notifications for one recipient

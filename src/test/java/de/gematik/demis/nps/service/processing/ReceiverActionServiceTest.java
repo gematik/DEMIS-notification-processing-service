@@ -268,6 +268,7 @@ class ReceiverActionServiceTest {
     return Notification.builder()
         .type(NotificationType.LABORATORY)
         .testUser(isTestNotification)
+        .testUserRecipient("1.")
         // AND a 7.3 bundle with NotifiedPerson
         .originalNotificationAsJson(
             TestData.readResourceAsString("/bundles/7_3/nonnominal-notifiedperson.json"))

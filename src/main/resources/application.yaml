@@ -68,3 +68,4 @@ feature:
     lv_disease: false
     notifications.7_4: false
     notifications.7_3: false
+    test_routing_v2: false

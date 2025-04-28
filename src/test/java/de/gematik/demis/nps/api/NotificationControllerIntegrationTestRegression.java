@@ -41,6 +41,7 @@ import ca.uhn.fhir.parser.IParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.TimeProvider;
 import de.gematik.demis.nps.base.util.UuidGenerator;
+import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.Processor;
@@ -67,7 +68,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(NotificationController.class)
 @Import({FhirConverter.class, UuidGenerator.class, TimeProvider.class})
-class NotificationControllerIntegrationTest {
+class NotificationControllerIntegrationTestRegression {
 
   private static final String ENDPOINT = "/fhir/$process-notification";
   private static final String FHIR_NOTIFICATION = "does not matter";
@@ -77,6 +78,7 @@ class NotificationControllerIntegrationTest {
   @MockBean Processor processor;
   @MockBean FhirContext fhirContext;
   @MockBean FhirResponseService responseService;
+  @MockBean TestUserConfiguration testUserConfiguration;
   @MockBean Statistics statistics;
 
   @Autowired private MockMvc mockMvc;
@@ -121,7 +123,7 @@ class NotificationControllerIntegrationTest {
     final MessageType messageType = getMessageType(contentType);
 
     final Parameters parameters = new Parameters();
-    when(processor.execute(FHIR_NOTIFICATION, messageType, null, null, false, TOKEN))
+    when(processor.execute(FHIR_NOTIFICATION, messageType, null, null, false, "", TOKEN))
         .thenReturn(parameters);
 
     final String outputType = accept.equals("*/*") ? contentType : accept;
@@ -165,9 +167,19 @@ class NotificationControllerIntegrationTest {
     final String sender = "me";
     final boolean isTestUser = true;
 
+    when(testUserConfiguration.isTestUser(sender)).thenReturn(true);
+    when(testUserConfiguration.getReceiver(sender)).thenReturn(sender);
+
     final Parameters parameters = new Parameters();
+    // Assume the test notification is supposed to be forwarded to the sender
     when(processor.execute(
-            FHIR_NOTIFICATION, getMessageType(contentType), requestId, sender, isTestUser, TOKEN))
+            FHIR_NOTIFICATION,
+            getMessageType(contentType),
+            requestId,
+            sender,
+            isTestUser,
+            "me",
+            TOKEN))
         .thenReturn(parameters);
     setupFhirSerializer(parameters, getMessageType(accept));
 
@@ -203,12 +215,16 @@ class NotificationControllerIntegrationTest {
 
     final OperationOutcome exceptionOutcome = new OperationOutcome();
     when(processor.execute(
-            FHIR_NOTIFICATION, getMessageType(contentType), null, null, false, TOKEN))
+            FHIR_NOTIFICATION, getMessageType(contentType), null, null, false, "", TOKEN))
         .thenThrow(new NpsServiceException(ErrorCode.FHIR_VALIDATION_ERROR, exceptionOutcome));
 
     final OperationOutcome responseOutcome = new OperationOutcome();
     when(responseService.error(any(ErrorDTO.class), eq(exceptionOutcome)))
         .thenReturn(responseOutcome);
+
+    // Assume this test doesn't want to send a test notification
+    when(testUserConfiguration.isTestUser(any())).thenReturn(false);
+    when(testUserConfiguration.getReceiver(any())).thenReturn("");
 
     setupFhirSerializer(responseOutcome, getMessageType(accept));
 

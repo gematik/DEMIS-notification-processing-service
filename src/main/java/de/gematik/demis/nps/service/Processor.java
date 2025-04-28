@@ -35,7 +35,6 @@ import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.config.NpsConfigProperties;
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
 import de.gematik.demis.nps.service.notbyname.NotByNameService;
@@ -88,7 +87,6 @@ public class Processor {
 
   private final boolean isProcessing74Enabled;
   private final FhirParser fhirParser;
-  private final TestUserConfiguration testUserConfiguration;
   private final boolean isProcessing73Enabled;
   private final BundleActionService bundleActionService;
 
@@ -107,7 +105,6 @@ public class Processor {
       ContextEnrichmentService contextEnrichmentService,
       final ReceiverActionService receiverActionService,
       FhirParser fhirParser,
-      TestUserConfiguration testUserConfiguration,
       final BundleActionService bundleActionService,
       @Value("${feature.flag.notification_pre_check}") boolean notificationPreCheck,
       @Value("${feature.flag.notifications.7_4}") boolean isProcessing74Enabled,
@@ -125,7 +122,6 @@ public class Processor {
     this.statistics = statistics;
     this.contextEnrichmentService = contextEnrichmentService;
     this.receiverActionService = receiverActionService;
-    this.testUserConfiguration = testUserConfiguration;
     this.notificationPreCheck = notificationPreCheck;
     this.isProcessing74Enabled = isProcessing74Enabled;
     this.fhirParser = fhirParser;
@@ -139,16 +135,29 @@ public class Processor {
       final String requestId,
       final String sender,
       final boolean testUserFlag,
+      @Nonnull final String testUserRecipient,
       final String authorization) {
 
     // once §7.4 or §7.3 Flag is enabled, the new processing will be set as default
     if (isProcessing74Enabled || isProcessing73Enabled) {
       return processWithExtendedNotifications(
-          fhirNotification, contentType, requestId, sender, testUserFlag, authorization);
+          fhirNotification,
+          contentType,
+          requestId,
+          sender,
+          testUserFlag,
+          testUserRecipient,
+          authorization);
     }
 
     return processWithCommonNotifications(
-        fhirNotification, contentType, requestId, sender, testUserFlag, authorization);
+        fhirNotification,
+        contentType,
+        requestId,
+        sender,
+        testUserFlag,
+        testUserRecipient,
+        authorization);
   }
 
   /**
@@ -168,6 +177,7 @@ public class Processor {
       String requestId,
       String sender,
       boolean testUserFlag,
+      @Nonnull final String testUserRecipient,
       String authorization) {
     if (notificationPreCheck) {
       notificationFhirService.preCheckProfile(originalFhirNotification);
@@ -177,7 +187,8 @@ public class Processor {
         notificationValidator.validateFhir(originalFhirNotification, contentType);
 
     final Notification notification =
-        notificationFhirService.read(originalFhirNotification, contentType, sender, testUserFlag);
+        notificationFhirService.read(
+            originalFhirNotification, contentType, sender, testUserFlag, testUserRecipient);
     notificationFhirService.cleanAndEnrichNotification(notification, requestId);
     logInfos(notification);
 
@@ -215,12 +226,14 @@ public class Processor {
       String requestId,
       String sender,
       boolean testUserFlag,
+      @Nonnull String testUserRecipient,
       String authorization) {
     final Notification notification =
         Notification.builder()
             .originalNotificationAsJson(encodeToJson(originalFhirNotification, contentType))
             .sender(sender)
-            .testUser(testUserFlag || testUserConfiguration.isTestUser(sender))
+            .testUser(testUserFlag)
+            .testUserRecipient(testUserRecipient)
             .build();
 
     final OperationOutcome validationOutcome =
@@ -268,7 +281,7 @@ public class Processor {
     final OperationOutcome validationOutcome =
         notificationValidator.validateFhir(originalFhirNotification, contentType);
 
-    final NRSRoutingInput routingInput = NRSRoutingInput.from(notification, testUserConfiguration);
+    final NRSRoutingInput routingInput = NRSRoutingInput.from(notification);
     final RoutingOutputDto routingInformation = routingService.getRoutingInformation(routingInput);
     notification.setRoutingOutputDto(routingInformation);
     if (!isProcessing73Enabled

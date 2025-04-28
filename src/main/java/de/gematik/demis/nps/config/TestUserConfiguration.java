@@ -27,6 +27,9 @@ package de.gematik.demis.nps.config;
  */
 
 import java.util.List;
+import java.util.Objects;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 
 /**
  * Wrap configuration properties for handling test notifications in production(sic!) and other
@@ -39,8 +42,8 @@ import java.util.List;
  * @param senderIsDestination Whether to forward to test users or to the fallback setting
  */
 public record TestUserConfiguration(
-    List<String> ids, String healthOffice, boolean senderIsDestination) {
-  public boolean isTestUser(final String sender) {
+    @Nonnull List<String> ids, @Nonnull String healthOffice, boolean senderIsDestination) {
+  public boolean isTestUser(@CheckForNull final String sender) {
     return (ids().contains(sender));
   }
 
@@ -51,8 +54,9 @@ public record TestUserConfiguration(
    *     simply return sender. Otherwise, return the configured {@link
    *     TestUserConfiguration#healthOffice}.
    */
-  public String getReceiver(final String sender) {
-    if (isTestUser(sender) && isForwardToTestUserEnabled()) {
+  @Nonnull
+  public String getReceiver(@CheckForNull final String sender) {
+    if (isTestUser(sender) && isForwardToTestUserEnabled() && Objects.nonNull(sender)) {
       return sender;
     }
 

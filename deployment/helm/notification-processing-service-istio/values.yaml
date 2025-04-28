@@ -18,7 +18,8 @@ istio:
         uri: /
       timeout: null
       retries:
-        enable: false
+        enable: true
+        attempts: 0
         retryOn: null
   subsets:
     main:

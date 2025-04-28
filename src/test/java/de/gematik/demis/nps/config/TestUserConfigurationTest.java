@@ -58,4 +58,28 @@ class NpsConfigPropertiesTest {
     assertThat(testUserConfiguration.ids()).isEqualTo(List.of("test-int"));
     assertThat(testUserConfiguration.senderIsDestination()).isEqualTo(true);
   }
+
+  @Test
+  void thatUnknownUserIdLeadsToFallback() {
+    TestUserConfiguration testUserConfiguration =
+        new TestUserConfiguration(List.of("known"), "fallback", true);
+    assertThat(testUserConfiguration.getReceiver("unknown")).isEqualTo("fallback");
+
+    testUserConfiguration = new TestUserConfiguration(List.of("known"), "fallback", false);
+    assertThat(testUserConfiguration.getReceiver("unknown")).isEqualTo("fallback");
+  }
+
+  @Test
+  void thatKnownUserIdLeadsToFallbackIfFlagIsDisabled() {
+    TestUserConfiguration testUserConfiguration =
+        new TestUserConfiguration(List.of("known"), "fallback", false);
+    assertThat(testUserConfiguration.getReceiver("known")).isEqualTo("fallback");
+  }
+
+  @Test
+  void thatKnownUserIdLeadsToIdenticalReceiverIfFlagIsEnabled() {
+    TestUserConfiguration testUserConfiguration =
+        new TestUserConfiguration(List.of("known"), "fallback", true);
+    assertThat(testUserConfiguration.getReceiver("known")).isEqualTo("known");
+  }
 }

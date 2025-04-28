@@ -109,6 +109,7 @@ class NotByNameServiceIntegrationTest {
             .bundle(TestData.laboratoryBundle())
             .type(NotificationType.LABORATORY)
             .testUser(true)
+            .testUserRecipient("testuser")
             .build();
     final Bundle result = underTest.createNotificationNotByName(notification);
 

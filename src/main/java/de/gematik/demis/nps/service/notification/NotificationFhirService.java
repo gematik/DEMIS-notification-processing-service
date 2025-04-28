@@ -30,7 +30,6 @@ import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.DemisConstants;
 import de.gematik.demis.nps.base.fhir.BundleQueries;
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.codemapping.CodeMappingService;
@@ -38,6 +37,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Bundle;
@@ -63,7 +63,6 @@ public class NotificationFhirService {
   private final FhirParser fhirParser;
   private final NotificationCleaning cleaner;
   private final NotificationEnrichment enricher;
-  private final TestUserConfiguration testUserConfiguration;
   private final CodeMappingService codeMappingService;
   private static final Pattern pattern =
       Pattern.compile(
@@ -81,14 +80,16 @@ public class NotificationFhirService {
       final String fhirNotification,
       final MessageType contentType,
       final String sender,
-      final boolean testUserFlag) {
+      final boolean testUserFlag,
+      @Nonnull final String testUserRecipient) {
     final Bundle bundle = fhirParser.parseBundleOrParameter(fhirNotification, contentType);
     final NotificationType notificationType = detectNotificationType(bundle);
     return Notification.builder()
         .bundle(bundle)
         .type(notificationType)
         .sender(sender)
-        .testUser(isTestUser(testUserFlag, sender))
+        .testUser(testUserFlag)
+        .testUserRecipient(testUserRecipient)
         .diseaseCode(getDiseaseCode(bundle, notificationType))
         .build();
   }
@@ -99,10 +100,6 @@ public class NotificationFhirService {
 
     // Add timestamp, identifier and sender
     enricher.enrichNotification(notification, requestId);
-  }
-
-  private boolean isTestUser(final boolean testUserFlag, final String sender) {
-    return testUserFlag || testUserConfiguration.isTestUser(sender);
   }
 
   private NotificationType detectNotificationType(final Bundle bundle) {

@@ -45,6 +45,7 @@ customEnvVars:
   NPS_FLAG_RELAXED_VALIDATION: "true"
   FEATURE_FLAG_NOTIFICATIONS_7_4: "false"
   FEATURE_FLAG_NOTIFICATIONS_7_3: "false"
+  FEATURE_FLAG_TEST_ROUTING_V2: "false"
   REDIS_HOST: "redis-cus"
   REDIS_PORT: "6379"
   REDIS_USER: "reader"
@@ -125,10 +126,10 @@ service:
 # Resources
 resources:
   limits:
-    memory: "1Gi"
+    memory: "650Mi"
   requests:
-    cpu: "350m"
-    memory: "512Mi"
+    cpu: "300m"
+    memory: "650Mi"
 
 autoscaling:
   enabled: false

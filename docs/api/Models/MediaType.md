@@ -7,9 +7,9 @@
 | **subtype** | **String** |  | [optional] [default to null] |
 | **parameters** | **Map** |  | [optional] [default to null] |
 | **qualityValue** | **Double** |  | [optional] [default to null] |
-| **subtypeSuffix** | **String** |  | [optional] [default to null] |
 | **wildcardType** | **Boolean** |  | [optional] [default to null] |
 | **wildcardSubtype** | **Boolean** |  | [optional] [default to null] |
+| **subtypeSuffix** | **String** |  | [optional] [default to null] |
 | **charset** | **String** |  | [optional] [default to null] |
 | **concrete** | **Boolean** |  | [optional] [default to null] |
 

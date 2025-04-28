@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.config.NpsConfigProperties;
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
@@ -50,7 +49,6 @@ import de.gematik.demis.nps.service.response.FhirResponseService;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.hl7.fhir.r4.model.Binary;
@@ -112,7 +110,6 @@ class ProcessorTestRegression {
             contextEnrichmentService,
             receiverActionService,
             fhirParser,
-            new TestUserConfiguration(List.of(), "", false),
             bundleActionService,
             false,
             false,
@@ -138,7 +135,7 @@ class ProcessorTestRegression {
     final var parameters = setupResponseService(receiptBundle, operationOutcome);
 
     final Parameters actual =
-        underTest.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, TOKEN);
+        underTest.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, "", TOKEN);
 
     Assertions.assertEquals(parameters, actual);
 
@@ -193,7 +190,7 @@ class ProcessorTestRegression {
   private Notification setupNotificationFhirService(final String diseaseCode) {
     final var bundle = new Bundle().setIdentifier(new Identifier().setValue("1234-5678-9"));
     final var notification = Notification.builder().diseaseCode(diseaseCode).bundle(bundle).build();
-    when(notificationFhirService.read(FHIR_NOTIFICATION, CONTENT_TYPE, SENDER, false))
+    when(notificationFhirService.read(FHIR_NOTIFICATION, CONTENT_TYPE, SENDER, false, ""))
         .thenReturn(notification);
     return notification;
   }
@@ -215,7 +212,7 @@ class ProcessorTestRegression {
         catchThrowableOfType(
             () ->
                 underTest.execute(
-                    FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, TOKEN),
+                    FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, "", TOKEN),
             NpsServiceException.class);
 
     assertThat(exception)

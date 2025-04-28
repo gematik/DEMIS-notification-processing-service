@@ -28,53 +28,22 @@ package de.gematik.demis.nps.service.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.service.notification.Notification;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class NRSRoutingInputTest {
 
-  private static final TestUserConfiguration WITH_FORWARDING =
-      new TestUserConfiguration(List.of("test-user"), "fallback-test", true);
-  private static final TestUserConfiguration WITHOUT_FORWARDING =
-      new TestUserConfiguration(List.of("test-user"), "fallback-test", false);
-
   @Test
-  void thatTestUserIsConfiguredWhenRequested() {
-    // GIVEN a notification with test user request
+  void thatTestUserRecipientIsAlwaysTakenFromNotification() {
     final Notification notification =
-        Notification.builder().testUser(true).sender("test-user").build();
+        Notification.builder()
+            .testUser(true)
+            .testUserRecipient("fallback-test")
+            .sender("test-user")
+            .build();
 
     // WHEN we calculate the routing information
-    final NRSRoutingInput from = NRSRoutingInput.from(notification, WITH_FORWARDING);
-
-    // THEN the test user is honored
-    assertThat(from.isTestUser()).isTrue();
-    assertThat(from.testUserId()).isEqualTo("test-user");
-  }
-
-  @Test
-  void thatTestUserIsConfiguredWhenRequestedFromNonTestUser() {
-    // GIVEN a notification with test user request
-    final Notification notification =
-        Notification.builder().testUser(true).sender("not-a-test-user").build();
-
-    // WHEN we calculate the routing information
-    final NRSRoutingInput from = NRSRoutingInput.from(notification, WITH_FORWARDING);
-
-    // THEN the test user is honored
-    assertThat(from.isTestUser()).isTrue();
-    assertThat(from.testUserId()).isEqualTo("fallback-test");
-  }
-
-  @Test
-  void thatTestUserIsOverwritten() {
-    final Notification notification =
-        Notification.builder().testUser(true).sender("test-user").build();
-
-    // WHEN we calculate the routing information
-    final NRSRoutingInput from = NRSRoutingInput.from(notification, WITHOUT_FORWARDING);
+    final NRSRoutingInput from = NRSRoutingInput.from(notification);
 
     // THEN the test user is discarded and the fallback used
     assertThat(from.isTestUser()).isTrue();
@@ -82,25 +51,16 @@ class NRSRoutingInputTest {
   }
 
   @Test
-  void thatTestUserIsBlankWhenNotTesting() {
+  void thatTestUserIsEmptyStringWhenNotTesting() {
     final Notification notification =
-        Notification.builder().testUser(false).sender("some-sender").build();
+        Notification.builder()
+            .testUser(false)
+            .testUserRecipient("must-not-be-forwarded")
+            .sender("some-sender")
+            .build();
 
     // WHEN we calculate the routing information
-    final NRSRoutingInput from = NRSRoutingInput.from(notification, WITHOUT_FORWARDING);
-
-    // THEN the test user information is disabled and blank
-    assertThat(from.isTestUser()).isFalse();
-    assertThat(from.testUserId()).isEqualTo("");
-  }
-
-  @Test
-  void thatTestUserIsBlankWhenNotTestingAndTestUser() {
-    final Notification notification =
-        Notification.builder().testUser(false).sender("test-user").build();
-
-    // WHEN we calculate the routing information
-    final NRSRoutingInput from = NRSRoutingInput.from(notification, WITHOUT_FORWARDING);
+    final NRSRoutingInput from = NRSRoutingInput.from(notification);
 
     // THEN the test user information is disabled and blank
     assertThat(from.isTestUser()).isFalse();

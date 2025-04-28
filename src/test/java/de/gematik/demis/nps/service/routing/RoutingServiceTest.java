@@ -32,7 +32,6 @@ import static de.gematik.demis.nps.service.routing.AddressOriginEnum.NOTIFIED_PE
 import static de.gematik.demis.nps.service.routing.AddressOriginEnum.NOTIFIED_PERSON_PRIMARY;
 import static de.gematik.demis.nps.service.routing.AddressOriginEnum.NOTIFIER;
 import static de.gematik.demis.nps.service.routing.AddressOriginEnum.SUBMITTER;
-import static org.mockito.ArgumentMatchers.eq;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.nps.config.TestUserConfiguration;
@@ -134,13 +133,16 @@ class RoutingServiceTest {
   }
 
   @Test
-  void testuserHealthOfficeProperty() {
+  void thatTestUserRecipientCanBeDifferentFromSender() {
     final var testHealthOffice = "My GA";
     final var bundle = new Bundle();
     final var notification =
-        Notification.builder().bundle(bundle).testUser(true).sender("irrelevant").build();
-
-    Mockito.when(testUserConfiguration.getReceiver("irrelevant")).thenReturn(testHealthOffice);
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(true)
+            .testUserRecipient(testHealthOffice)
+            .sender("bund_id_user")
+            .build();
 
     mockNrsCall(bundle, createRoutingOutput(NOTIFIED_PERSON_PRIMARY));
 
@@ -154,35 +156,16 @@ class RoutingServiceTest {
   }
 
   @Test
-  void testuserViaGroupHealthOfficeProperty() {
+  void thatTestuserRecipientCanBeIdenticalToSender() {
     final var testHealthOffice = "My GA";
     final var bundle = new Bundle();
     final var notification =
-        Notification.builder().bundle(bundle).testUser(true).sender("bund_id_user").build();
-
-    Mockito.when(testUserConfiguration.getReceiver(eq("bund_id_user")))
-        .thenReturn(testHealthOffice);
-
-    mockNrsCall(bundle, createRoutingOutput(NOTIFIED_PERSON_PRIMARY));
-
-    underTest.determineHealthOfficesAndAddToNotification(notification);
-
-    verifyUpdateService(
-        bundle,
-        testHealthOffice,
-        HEALTH_DEPARTMENT_FOR_PRIMARY_ADDRESS_CODING_SYSTEM,
-        HEALTH_OFFICE_FOR_ADDRESS);
-  }
-
-  @Test
-  void testuserSelfResponsible() {
-    final var testHealthOffice = "My GA";
-    final var bundle = new Bundle();
-    final var notification =
-        Notification.builder().bundle(bundle).testUser(true).sender(testHealthOffice).build();
-
-    Mockito.when(testUserConfiguration.getReceiver(eq(testHealthOffice)))
-        .thenReturn(testHealthOffice);
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(true)
+            .testUserRecipient(testHealthOffice)
+            .sender(testHealthOffice)
+            .build();
 
     mockNrsCall(bundle, createRoutingOutput(NOTIFIED_PERSON_PRIMARY));
 

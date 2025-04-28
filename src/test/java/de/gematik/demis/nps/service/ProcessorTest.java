@@ -41,7 +41,6 @@ import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.config.NpsConfigProperties;
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
 import de.gematik.demis.nps.service.notbyname.NotByNameService;
@@ -61,7 +60,6 @@ import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
-import de.gematik.demis.nps.test.TestData;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -162,7 +160,10 @@ class ProcessorTest {
     when(responseService.success(receiptBundle, validationOutcome)).thenReturn(new Parameters());
 
     // WHEN we process the input
-    service.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, TOKEN);
+    // an error with stubbing here indicates, that execute creates a different Notification from the
+    // createNotification method
+    // in this test
+    service.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, "", TOKEN);
 
     // THEN
     verify(notificationValidator).validateLifecycle(notification);
@@ -177,42 +178,16 @@ class ProcessorTest {
                         && list.contains(ho2_encrypted)));
   }
 
-  private static Notification forBundleJSON(final String path) {
-    final Bundle original = TestData.getBundle(path);
-    return Notification.builder()
-        // A laboratory notification
-        .type(NotificationType.LABORATORY)
-        // AND a 7.3 bundle with NotifiedPerson
-        .originalNotificationAsJson(TestData.readResourceAsString(path))
-        .diseaseCode("xxx")
-        .sender("Me")
-        .bundle(original)
-        // AND a matching routing output
-        .routingOutputDto(
-            new RoutingOutputDto(
-                NotificationType.LABORATORY,
-                NotificationCategory.UNKNOWN,
-                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
-                List.of(),
-                Map.of(),
-                "noone"))
-        .build();
-  }
-
-  private static Notification createNotification(
-      final Bundle bundle, final boolean isTestUser, final String sender) {
+  private static Notification createNotification(final Bundle bundle) {
     return Notification.builder()
         .bundle(bundle)
         .type(DISEASE)
-        .sender(sender)
-        .testUser(isTestUser)
+        .sender(SENDER)
+        .testUser(false)
+        .testUserRecipient("")
         .diseaseCode("xxx")
         .originalNotificationAsJson(FHIR_NOTIFICATION)
         .build();
-  }
-
-  private static Notification createNotification(final Bundle bundle) {
-    return createNotification(bundle, false, SENDER);
   }
 
   private Processor createProcessor() {
@@ -231,7 +206,6 @@ class ProcessorTest {
         contextEnrichmentService,
         receiverActionService,
         fhirParser,
-        new TestUserConfiguration(List.of("test-user"), "test-1.2.3", true),
         new BundleActionService(pseudoService),
         false,
         true,
@@ -239,7 +213,7 @@ class ProcessorTest {
   }
 
   @Test
-  void thatTestUserIsOnlyReceiverWhenTestUserSetToTrue() {
+  void thatTestUserConfigurationIsCorrectlyAppliedToNRSRequest() {
     // GIVEN a Notification for a test user
 
     when(routingService.getRoutingInformation(any()))
@@ -257,7 +231,8 @@ class ProcessorTest {
 
     final Processor processor = createProcessor();
     // WHEN we process a notification
-    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "test-user", true, TOKEN);
+    processor.execute(
+        FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "test-user", true, "test-user-other", TOKEN);
 
     final ArgumentCaptor<NRSRoutingInput> routingServiceRequest =
         ArgumentCaptor.forClass(NRSRoutingInput.class);
@@ -265,97 +240,7 @@ class ProcessorTest {
 
     final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
     assertThat(actualRoutingInput.isTestUser()).isTrue();
-    assertThat(actualRoutingInput.testUserId()).isEqualTo("test-user");
-  }
-
-  @Test
-  void thatTestUserIsOnlyReceiverWhenTestUserSetToTrueAndSenderEqualsReceiver() {
-    // GIVEN a Notification for a test user
-
-    when(routingService.getRoutingInformation(any()))
-        .thenReturn(
-            new RoutingOutputDto(
-                NotificationType.LABORATORY,
-                NotificationCategory.UNKNOWN,
-                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
-                List.of(),
-                Map.of(),
-                ""));
-    final Bundle result = new Bundle();
-    result.setIdentifier(new Identifier().setValue("bundle-id"));
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
-
-    final Processor processor = createProcessor();
-    // WHEN we process a notification
-    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "non-test-user", true, TOKEN);
-
-    final ArgumentCaptor<NRSRoutingInput> routingServiceRequest =
-        ArgumentCaptor.forClass(NRSRoutingInput.class);
-    verify(routingService).getRoutingInformation(routingServiceRequest.capture());
-
-    final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
-    assertThat(actualRoutingInput.isTestUser()).isTrue();
-    assertThat(actualRoutingInput.testUserId()).isEqualTo("test-1.2.3");
-  }
-
-  @Test
-  void thatTestUserIsOnlyReceiverWhenTestUserSetToTrue3() {
-    // GIVEN a Notification for a test user
-
-    when(routingService.getRoutingInformation(any()))
-        .thenReturn(
-            new RoutingOutputDto(
-                NotificationType.LABORATORY,
-                NotificationCategory.UNKNOWN,
-                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
-                List.of(),
-                Map.of(),
-                ""));
-    final Bundle result = new Bundle();
-    result.setIdentifier(new Identifier().setValue("bundle-id"));
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
-
-    final Processor processor = createProcessor();
-    // WHEN we process a notification
-    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "test-user", false, TOKEN);
-
-    final ArgumentCaptor<NRSRoutingInput> routingServiceRequest =
-        ArgumentCaptor.forClass(NRSRoutingInput.class);
-    verify(routingService).getRoutingInformation(routingServiceRequest.capture());
-
-    final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
-    assertThat(actualRoutingInput.isTestUser()).isTrue();
-    assertThat(actualRoutingInput.testUserId()).isEqualTo("test-user");
-  }
-
-  @Test
-  void thatTestUserIsOnlyReceiverWhenTestUserSetToTrueAndSenderIsAllowedReceiver() {
-    // GIVEN a Notification for a test user
-
-    when(routingService.getRoutingInformation(any()))
-        .thenReturn(
-            new RoutingOutputDto(
-                NotificationType.LABORATORY,
-                NotificationCategory.UNKNOWN,
-                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
-                List.of(),
-                Map.of(),
-                ""));
-    final Bundle result = new Bundle();
-    result.setIdentifier(new Identifier().setValue("bundle-id"));
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
-
-    final Processor processor = createProcessor();
-    // WHEN we process a notification
-    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "non-test-user", false, TOKEN);
-
-    final ArgumentCaptor<NRSRoutingInput> routingServiceRequest =
-        ArgumentCaptor.forClass(NRSRoutingInput.class);
-    verify(routingService).getRoutingInformation(routingServiceRequest.capture());
-
-    final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
-    assertThat(actualRoutingInput.isTestUser()).isFalse();
-    assertThat(actualRoutingInput.testUserId()).isEqualTo("");
+    assertThat(actualRoutingInput.testUserId()).isEqualTo("test-user-other");
   }
 
   /** Help with checked issues on Collections: https://stackoverflow.com/a/5655702 */
@@ -387,7 +272,8 @@ class ProcessorTest {
 
     final Processor processor = createProcessor();
     // AND we process a notification
-    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "1.", true, TOKEN);
+    // TODO come back here and check, this is essentially the RKI test case
+    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "1.", true, "1.", TOKEN);
 
     // THEN ensure that we store the two placeholder Bundles
     verify(notificationStorageService).storeNotifications(storageParameter.capture());

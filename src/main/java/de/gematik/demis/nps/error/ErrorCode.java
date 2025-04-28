@@ -46,7 +46,8 @@ public enum ErrorCode {
 
   // errors that do not abort the process
   NO_PSEUDONYM(null),
-  NO_PDF(null);
+  NO_PDF(null),
+  INVALID_TEST_CONFIGURATION(HttpStatus.INTERNAL_SERVER_ERROR);
 
   private final HttpStatus httpStatus;
 

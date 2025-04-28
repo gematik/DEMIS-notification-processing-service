@@ -37,11 +37,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.codemapping.CodeMappingService;
 import java.util.Collections;
@@ -55,7 +54,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,18 +63,13 @@ class NotificationFhirServiceTest {
   @Mock private FhirParser fhirParserMock;
   @Mock private NotificationCleaning cleanerMock;
   @Mock private NotificationEnrichment enricherMock;
-  @Mock private TestUserConfiguration testUserConfigurationMock;
   @Mock private CodeMappingService codeMappingServiceMock;
 
   @BeforeEach
   void beforeAll() {
     underTest =
         new NotificationFhirService(
-            fhirParserMock,
-            cleanerMock,
-            enricherMock,
-            testUserConfigurationMock,
-            codeMappingServiceMock);
+            fhirParserMock, cleanerMock, enricherMock, codeMappingServiceMock);
   }
 
   @Nested
@@ -155,33 +148,27 @@ class NotificationFhirServiceTest {
       final String fhirString = "valid fhir string";
       final String sender = "me";
       final var bundle = laboratoryBundle();
-      Mockito.when(fhirParserMock.parseBundleOrParameter(fhirString, messageType))
-          .thenReturn(bundle);
-      final Notification notification = underTest.read(fhirString, messageType, sender, false);
+      when(fhirParserMock.parseBundleOrParameter(fhirString, messageType)).thenReturn(bundle);
+      final Notification notification = underTest.read(fhirString, messageType, sender, false, "");
       assertThat(notification)
           .isNotNull()
           .returns(bundle, Notification::getBundle)
           .returns(NotificationType.LABORATORY, Notification::getType)
           .returns(sender, Notification::getSender)
-          .returns(false, Notification::isTestUser);
+          .returns(false, Notification::isTestUser)
+          .returns("", Notification::getTestUserRecipient);
     }
 
     @Test
     void testUserHeaderFlag() {
-      Mockito.when(fhirParserMock.parseBundleOrParameter(any(String.class), any(MessageType.class)))
+      when(fhirParserMock.parseBundleOrParameter(any(String.class), any(MessageType.class)))
           .thenReturn(laboratoryBundle());
-      final Notification notification = underTest.read("fhir", MessageType.JSON, "user-name", true);
+      final Notification notification =
+          underTest.read("fhir", MessageType.JSON, "user-name", true, "test-recipient");
       assertThat(notification).isNotNull().returns(true, Notification::isTestUser);
-    }
-
-    @Test
-    void testUserConfiguredName() {
-      Mockito.when(fhirParserMock.parseBundleOrParameter(any(String.class), any(MessageType.class)))
-          .thenReturn(laboratoryBundle());
-      final String sender = "testusername";
-      Mockito.when(testUserConfigurationMock.isTestUser(eq(sender))).thenReturn(true);
-      final Notification notification = underTest.read("fhir", MessageType.JSON, sender, false);
-      assertThat(notification).isNotNull().returns(true, Notification::isTestUser);
+      assertThat(notification)
+          .isNotNull()
+          .returns("test-recipient", Notification::getTestUserRecipient);
     }
   }
 }

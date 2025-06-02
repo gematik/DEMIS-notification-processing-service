@@ -69,8 +69,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     properties = {
@@ -85,11 +85,11 @@ class NotificationValidatorIntegrationTest {
 
   private static final String REQUEST_BODY = "my body";
   private static final String RESPONSE_BODY =
-      """
+"""
         {"outcome":"does not matter"}
 """;
 
-  @MockBean FhirContext fhirContext;
+  @MockitoBean FhirContext fhirContext;
   @Autowired NotificationValidator underTest;
 
   private static void setupVS(
@@ -126,9 +126,9 @@ class NotificationValidatorIntegrationTest {
         };
     setupVS(contentType, okJson(RESPONSE_BODY));
     final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
-    final OperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+    final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
-    assertThat(result).isEqualTo(outcome);
+    assertThat(result.operationOutcome()).isEqualTo(outcome);
   }
 
   @ParameterizedTest

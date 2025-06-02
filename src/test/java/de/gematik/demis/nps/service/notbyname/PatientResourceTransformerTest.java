@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 class PatientResourceTransformerTest {
 
   private static final String EXPECTED =
-      """
+"""
 {
   "resourceType" : "Patient",
   "id" : "246c2610-3a90-42b1-b28d-5821fd7ed15d",

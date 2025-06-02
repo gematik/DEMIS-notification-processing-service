@@ -50,6 +50,7 @@ import de.gematik.demis.nps.service.routing.NotificationReceiver;
 import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
+import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
 import java.util.List;
 import java.util.Objects;
@@ -183,12 +184,17 @@ public class Processor {
       notificationFhirService.preCheckProfile(originalFhirNotification);
     }
 
-    final OperationOutcome validationOutcome =
+    final InternalOperationOutcome validationOutcome =
         notificationValidator.validateFhir(originalFhirNotification, contentType);
 
     final Notification notification =
         notificationFhirService.read(
-            originalFhirNotification, contentType, sender, testUserFlag, testUserRecipient);
+            originalFhirNotification,
+            contentType,
+            sender,
+            testUserFlag,
+            testUserRecipient,
+            validationOutcome);
     notificationFhirService.cleanAndEnrichNotification(notification, requestId);
     logInfos(notification);
 
@@ -202,7 +208,8 @@ public class Processor {
     forwardNotification(notification);
 
     final Bundle receiptBundle = receiptService.generateReceipt(notification);
-    final Parameters result = responseService.success(receiptBundle, validationOutcome);
+    final Parameters result =
+        responseService.success(receiptBundle, validationOutcome.operationOutcome());
 
     statistics.incSuccessCounter(notification);
 
@@ -278,8 +285,13 @@ public class Processor {
       notificationFhirService.preCheckProfile(originalFhirNotification);
     }
 
-    final OperationOutcome validationOutcome =
+    final InternalOperationOutcome validationOutcome =
         notificationValidator.validateFhir(originalFhirNotification, contentType);
+
+    if (validationOutcome.reparsedStringAsJsonWhenRelaxedValidationWasUsed() != null) {
+      notification.setReparsedNotification(
+          validationOutcome.reparsedStringAsJsonWhenRelaxedValidationWasUsed());
+    }
 
     final NRSRoutingInput routingInput = NRSRoutingInput.from(notification);
     final RoutingOutputDto routingInformation = routingService.getRoutingInformation(routingInput);
@@ -298,7 +310,7 @@ public class Processor {
         notificationFhirService.getDiseaseCode(notification.getBundle(), notification.getType()));
 
     notificationValidator.validateLifecycle(notification);
-    return validationOutcome;
+    return validationOutcome.operationOutcome();
   }
 
   private void logInfos(final Notification notification) {

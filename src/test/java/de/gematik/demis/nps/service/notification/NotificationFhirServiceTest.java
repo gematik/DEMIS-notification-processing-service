@@ -43,9 +43,11 @@ import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.codemapping.CodeMappingService;
+import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import java.util.Collections;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CanonicalType;
+import org.hl7.fhir.r4.model.OperationOutcome;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -123,8 +125,8 @@ class NotificationFhirServiceTest {
           LABORATORY_BUNDLE_RESOURCE,
           DISEASE_BUNDLE_RESOURCE,
           LABORATORY_BUNDLE_ESCAPED_RESOURCE,
-          "/bundles/7_3/anonymous.json",
-          "/bundles/7_3/nonnominal-notifiedperson.json",
+          "/bundles/7_3/laboratory-anonymous.json",
+          "/bundles/7_3/laboratory-nonnominal-notifiedperson.json",
           "/integrationtest/laboratory/input-notification-7_4.json"
         })
     void profileOkayJson(final String resourceName) {
@@ -148,8 +150,11 @@ class NotificationFhirServiceTest {
       final String fhirString = "valid fhir string";
       final String sender = "me";
       final var bundle = laboratoryBundle();
+      final var validationOutcome =
+          new InternalOperationOutcome(new OperationOutcome(), "someBundleString");
       when(fhirParserMock.parseBundleOrParameter(fhirString, messageType)).thenReturn(bundle);
-      final Notification notification = underTest.read(fhirString, messageType, sender, false, "");
+      final Notification notification =
+          underTest.read(fhirString, messageType, sender, false, "", validationOutcome);
       assertThat(notification)
           .isNotNull()
           .returns(bundle, Notification::getBundle)
@@ -161,10 +166,13 @@ class NotificationFhirServiceTest {
 
     @Test
     void testUserHeaderFlag() {
+      final var validationOutcome =
+          new InternalOperationOutcome(new OperationOutcome(), "someBundleString");
       when(fhirParserMock.parseBundleOrParameter(any(String.class), any(MessageType.class)))
           .thenReturn(laboratoryBundle());
       final Notification notification =
-          underTest.read("fhir", MessageType.JSON, "user-name", true, "test-recipient");
+          underTest.read(
+              "fhir", MessageType.JSON, "user-name", true, "test-recipient", validationOutcome);
       assertThat(notification).isNotNull().returns(true, Notification::isTestUser);
       assertThat(notification)
           .isNotNull()

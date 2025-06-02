@@ -35,6 +35,6 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: application/json, application/json+fhir, application/fhir+json, application/xml, application/xml+fhir, application/fhir+xml, text/xml
-- **Accept**: application/json, application/json+fhir, application/fhir+json, application/xml, application/xml+fhir, application/fhir+xml, text/xml
+- **Content-Type**: application/fhir+json, application/fhir+xml, application/json, application/json+fhir, application/xml, application/xml+fhir, text/xml
+- **Accept**: application/fhir+json, application/fhir+xml, application/json, application/json+fhir, application/xml, application/xml+fhir, text/xml
 

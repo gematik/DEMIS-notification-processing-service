@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.routing;
+package de.gematik.demis.nps.service.validation;
 
 /*-
  * #%L
@@ -26,24 +26,21 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
-import de.gematik.demis.nps.service.notification.Notification;
+import org.hl7.fhir.r4.model.OperationOutcome;
 
-/** Describes required input data for the NRS to return routing information. */
-public record NRSRoutingInput(
-    String originalNotificationAsJSON, boolean isTestUser, String testUserId) {
-  /** Create a new instance based on a notification and test user properties. */
-  public static NRSRoutingInput from(final Notification notification) {
-    final boolean isTestUser = notification.isTestUser();
-    String testUserId = "";
-    if (isTestUser) {
-      testUserId = notification.getTestUserRecipient();
-    }
+/**
+ * this helper class is used to return the OperationOutcome from the Validation Service to the
+ * Processor (-Service)
+ *
+ * @param operationOutcome Operation Outcome from Validation Service, either standard validation or
+ *     relaxed validation
+ * @param reparsedStringAsJsonWhenRelaxedValidationWasUsed when relaxed validation was used the
+ *     string contains the reparsed notification in json
+ */
+public record InternalOperationOutcome(
+    OperationOutcome operationOutcome, String reparsedStringAsJsonWhenRelaxedValidationWasUsed) {
 
-    if (notification.wasReparsed()) {
-      return new NRSRoutingInput(notification.getReparsedNotification(), isTestUser, testUserId);
-    } else {
-      return new NRSRoutingInput(
-          notification.getOriginalNotificationAsJson(), isTestUser, testUserId);
-    }
+  public InternalOperationOutcome(OperationOutcome operationOutcome) {
+    this(operationOutcome, null);
   }
 }

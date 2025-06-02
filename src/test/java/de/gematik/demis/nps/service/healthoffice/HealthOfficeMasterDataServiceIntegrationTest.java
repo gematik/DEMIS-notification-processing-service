@@ -39,7 +39,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class HealthOfficeMasterDataServiceIntegrationTest {
 
   private static final String EXPECTED =
-      """
+"""
 {
   "resourceType": "Organization",
   "id": "1.01.0.53.",

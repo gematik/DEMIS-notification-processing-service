@@ -35,6 +35,7 @@ This project includes:
   Bouncy Castle Provider under Bouncy Castle Licence
   Byte Buddy (without dependencies) under Apache License, Version 2.0
   Byte Buddy agent under Apache License, Version 2.0
+  Caffeine cache under Apache License, Version 2.0
   Checker Qual under The MIT License
   ClassMate under Apache License, Version 2.0
   context-propagation under The Apache Software License, Version 2.0
@@ -50,6 +51,7 @@ This project includes:
   Hamcrest under BSD License 3
   HAPI FHIR - Core Library under Apache Software License 2.0
   HAPI FHIR - ServiceLoaders - Caching API under Apache Software License 2.0
+  HAPI FHIR - ServiceLoaders - Caching Caffeine under Apache Software License 2.0
   HAPI FHIR Structures - FHIR R4 under Apache Software License 2.0
   HdrHistogram under Public Domain, per Creative Commons CC0 or BSD-2-Clause
   Hibernate Validator Engine under Apache License 2.0
@@ -194,6 +196,7 @@ This project includes:
   tomcat-embed-core under Apache License, Version 2.0
   tomcat-embed-el under Apache License, Version 2.0
   tomcat-embed-websocket under Apache License, Version 2.0
+  Ucum-java under BSD 3 Clause
   webjars-locator-lite under MIT
   WireMock under The Apache Software License, Version 2.0
 

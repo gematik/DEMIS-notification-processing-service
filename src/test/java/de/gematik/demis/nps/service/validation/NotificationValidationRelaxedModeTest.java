@@ -28,7 +28,9 @@ package de.gematik.demis.nps.service.validation;
 
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
 import de.gematik.demis.fhirparserlibrary.MessageType;
@@ -46,14 +48,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.DynamicPropertySource;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationValidationRelaxedModeTest {
 
   private static final String ORIGINAL_NOTIFICATION =
-      """
+"""
 <Bundle xmlns="http://hl7.org/fhir">
     <id value="098f6bcd-4621-3373-8ade-4e832627b4f6" />
     <id value="9aaaaaaa-4621-3373-8ade-bbbbbbbbbbbb" />
@@ -61,7 +63,7 @@ class NotificationValidationRelaxedModeTest {
 """;
 
   private static final String CORRECTED_NOTIFICATION =
-      """
+"""
 {"resourceType":"Bundle","id":"098f6bcd-4621-3373-8ade-4e832627b4f6"}""";
 
   private static final FhirContext fhirContext = FhirContext.forR4Cached();
@@ -73,12 +75,12 @@ class NotificationValidationRelaxedModeTest {
   private NotificationValidator underTest;
 
   private static Response mockResponse(final int status, final String content) throws IOException {
-    final Response response = Mockito.mock(Response.class);
-    Mockito.when(response.status()).thenReturn(status);
+    final Response response = mock(Response.class);
+    when(response.status()).thenReturn(status);
     if (content != null) {
-      final Response.Body body = Mockito.mock(Response.Body.class);
-      Mockito.when(body.asReader(StandardCharsets.UTF_8)).thenReturn(new StringReader(content));
-      Mockito.when(response.body()).thenReturn(body);
+      final Response.Body body = mock(Response.Body.class);
+      when(body.asReader(StandardCharsets.UTF_8)).thenReturn(new StringReader(content));
+      when(response.body()).thenReturn(body);
     }
     return response;
   }
@@ -96,23 +98,24 @@ class NotificationValidationRelaxedModeTest {
     underTest =
         new NotificationValidator(
             validationServiceClient, lifecycleValidationServiceClient, fhirContext, config);
-    Mockito.when(config.relaxedValidation()).thenReturn(true);
+    when(config.relaxedValidation()).thenReturn(true);
   }
 
   @Test
   void parsedFhirNotificationIsValid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    Mockito.when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(200, null);
-    Mockito.when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
         .thenReturn(secondTryResponse);
 
-    final OperationOutcome result = underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML);
+    final InternalOperationOutcome result =
+        underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML);
     assertThat(result).isNotNull();
-    assertThat(result.getIssue())
+    assertThat(result.operationOutcome().getIssue())
         .extracting(OperationOutcomeIssueComponent::getSeverity)
         .containsExactly(IssueSeverity.INFORMATION, IssueSeverity.WARNING, IssueSeverity.WARNING);
   }
@@ -121,53 +124,74 @@ class NotificationValidationRelaxedModeTest {
   void parsedFhirNotificationIsStillInvalid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    Mockito.when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(422, null);
-    Mockito.when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
         .thenReturn(secondTryResponse);
 
-    final var exception =
-        catchThrowableOfType(
-            () -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML),
-            NpsServiceException.class);
-
-    assertThat(exception)
-        .isNotNull()
-        .returns(ErrorCode.FHIR_VALIDATION_FATAL.name(), NpsServiceException::getErrorCode);
-    assertThat(exception.getOperationOutcome()).isNotNull();
-    assertThat(exception.getOperationOutcome().getIssue())
-        .extracting(OperationOutcomeIssueComponent::getSeverity)
-        .containsExactly(IssueSeverity.INFORMATION, IssueSeverity.ERROR, IssueSeverity.FATAL);
+    assertThatThrownBy(() -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML))
+        .isInstanceOf(NpsServiceException.class)
+        .satisfies(
+            ex -> {
+              NpsServiceException exception = (NpsServiceException) ex;
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCode.FHIR_VALIDATION_FATAL.name());
+              assertThat(exception.getOperationOutcome()).isNotNull();
+              assertThat(exception.getOperationOutcome().getIssue())
+                  .extracting(OperationOutcomeIssueComponent::getSeverity)
+                  .containsExactly(
+                      IssueSeverity.INFORMATION, IssueSeverity.ERROR, IssueSeverity.FATAL);
+            });
   }
 
   @Test
   void fhirNotificationNotParseable() throws Exception {
     final String notParseableNotification =
         """
-<Bundle xmlns="http://hl7.org/fhir">
-    <id value="098f6bcd-4621-3373-8ade-4e832627b4f6" />
-    <syntax error
-</Bundle>
-""";
+                        <Bundle xmlns="http://hl7.org/fhir">
+                            <id value="098f6bcd-4621-3373-8ade-4e832627b4f6" />
+                            <syntax error
+                        </Bundle>
+                        """;
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    Mockito.when(validationServiceClient.validateXmlBundle(notParseableNotification))
+    when(validationServiceClient.validateXmlBundle(notParseableNotification))
         .thenReturn(firstResponse);
-    // Note: No second try (that's the difference to parsedFhirNotificationIsStillInvalid)
 
-    final var exception =
-        catchThrowableOfType(
-            () -> underTest.validateFhir(notParseableNotification, MessageType.XML),
-            NpsServiceException.class);
+    assertThatThrownBy(() -> underTest.validateFhir(notParseableNotification, MessageType.XML))
+        .isInstanceOf(NpsServiceException.class)
+        .satisfies(
+            ex -> {
+              NpsServiceException exception = (NpsServiceException) ex;
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCode.FHIR_VALIDATION_FATAL.name());
+              assertThat(exception.getOperationOutcome()).isNotNull();
+              assertThat(exception.getOperationOutcome().getIssue())
+                  .extracting(OperationOutcomeIssueComponent::getSeverity)
+                  .containsExactly(
+                      IssueSeverity.INFORMATION, IssueSeverity.ERROR, IssueSeverity.FATAL);
+            });
+  }
 
-    assertThat(exception)
-        .isNotNull()
-        .returns(ErrorCode.FHIR_VALIDATION_FATAL.name(), NpsServiceException::getErrorCode);
-    assertThat(exception.getOperationOutcome()).isNotNull();
-    assertThat(exception.getOperationOutcome().getIssue())
-        .extracting(OperationOutcomeIssueComponent::getSeverity)
-        .containsExactly(IssueSeverity.INFORMATION, IssueSeverity.ERROR, IssueSeverity.FATAL);
+  @Test
+  @DynamicPropertySource
+  void returnReparsedStringForRelaxedValidation() throws IOException {
+
+    final var outcome = createOperationOutcomeOfValidationService();
+    final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
+    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+        .thenReturn(firstResponse);
+
+    final var secondTryResponse = mockResponse(200, null);
+    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+        .thenReturn(secondTryResponse);
+
+    final InternalOperationOutcome result =
+        underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML);
+    assertThat(result).isNotNull();
+    assertThat(result.reparsedStringAsJsonWhenRelaxedValidationWasUsed())
+        .isEqualTo(CORRECTED_NOTIFICATION);
   }
 }

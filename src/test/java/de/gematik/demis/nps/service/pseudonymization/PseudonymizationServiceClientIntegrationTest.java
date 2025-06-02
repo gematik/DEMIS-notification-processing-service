@@ -52,7 +52,7 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 class PseudonymizationServiceClientIntegrationTest {
 
   private static final String EXPECTED_REQUEST_BODY =
-      """
+"""
 {
     "notificationBundleId": "2a40dccb-18da-5a9f-a11e-4ef3e0fd2096",
     "type": "demisPseudonymizationRequest",
@@ -64,7 +64,7 @@ class PseudonymizationServiceClientIntegrationTest {
 """;
 
   private static final String RESPONSE_BODY =
-      """
+"""
 {
     "type": "demisPseudonym",
     "outdatedPseudonym": {

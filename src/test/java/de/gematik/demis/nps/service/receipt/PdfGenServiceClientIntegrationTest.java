@@ -53,7 +53,7 @@ class PdfGenServiceClientIntegrationTest {
   private static final String ENDPOINT_DISEASE = "/diseaseNotification";
 
   private static final String REQUEST_BODY =
-      """
+"""
 {"bundle": "does not matter"}
 """;
 

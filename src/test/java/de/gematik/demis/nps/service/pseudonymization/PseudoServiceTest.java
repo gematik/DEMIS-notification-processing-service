@@ -58,9 +58,10 @@ import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Specimen;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -146,19 +147,18 @@ class PseudoServiceTest {
     return listAppender;
   }
 
-  @BeforeEach
-  void setup() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void createAndStorePseudonymAndAddToNotification(boolean isPseudoStorageDisabled) {
     underTest =
         new PseudoService(
             pseudonymizationServiceClient,
             storageServiceClient,
             notificationUpdateService,
             new ObjectMapper(),
-            statistics);
-  }
+            statistics,
+            isPseudoStorageDisabled);
 
-  @Test
-  void createAndStorePseudonymAndAddToNotification() {
     final String familyName = "Mustermann";
     final String firstName = "Max";
     final String bundleId = "abc-def";
@@ -182,11 +182,12 @@ class PseudoServiceTest {
 
     underTest.createAndStorePseudonymAndAddToNotification(notification);
 
-    final var expectedStorageRequest =
-        new PseudonymStorageRequest(activePseudonym, bundleId, healthOffice);
-    Mockito.verify(storageServiceClient).store(expectedStorageRequest);
-
-    verifyNotificationUpdate(bundle, notifiedPerson, pseudoResponse);
+    if (!isPseudoStorageDisabled) {
+      final var expectedStorageRequest =
+          new PseudonymStorageRequest(activePseudonym, bundleId, healthOffice);
+      Mockito.verify(storageServiceClient).store(expectedStorageRequest);
+      verifyNotificationUpdate(bundle, notifiedPerson, pseudoResponse);
+    }
   }
 
   private void verifyNotificationUpdate(
@@ -206,6 +207,14 @@ class PseudoServiceTest {
 
   @Test
   void pseudoServiceError() {
+    underTest =
+        new PseudoService(
+            pseudonymizationServiceClient,
+            storageServiceClient,
+            notificationUpdateService,
+            new ObjectMapper(),
+            statistics,
+            true);
     final var notifiedPerson = createPatient("23.05.1980", "Mustermann", "Max");
     final var bundle = createBundle(notifiedPerson, "123", "xxx");
     final var notification =

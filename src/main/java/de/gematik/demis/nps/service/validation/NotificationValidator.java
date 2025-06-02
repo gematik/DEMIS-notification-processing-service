@@ -84,7 +84,7 @@ public class NotificationValidator {
     return status >= 200 && status < 300;
   }
 
-  public OperationOutcome validateFhir(
+  public InternalOperationOutcome validateFhir(
       final String fhirNotification, final MessageType contentType) {
     final String body;
     final int status;
@@ -102,24 +102,28 @@ public class NotificationValidator {
 
     if (isStatusSuccessful(status)) {
       log.debug("Fhir Bundle successfully validated.");
-      return operationOutcome;
-    } else if (config.relaxedValidation()
-        && (isValidInRelaxedMode(fhirNotification, contentType))) {
-      log.info(
-          "Fhir notification only valid with relaxed validation. Original validation output: {}",
-          fhirResourceToJson(operationOutcome));
-      reduceIssuesSeverityToWarn(operationOutcome);
-      return operationOutcome;
-    } else {
-      final boolean hasFatalIssue =
-          operationOutcome.getIssue().stream()
-              .anyMatch(issue -> issue.getSeverity() == IssueSeverity.FATAL);
-      final ErrorCode errorCode = hasFatalIssue ? FHIR_VALIDATION_FATAL : FHIR_VALIDATION_ERROR;
-      throw new NpsServiceException(errorCode, operationOutcome);
+      return new InternalOperationOutcome(operationOutcome);
+    } else if (config.relaxedValidation()) {
+      RelaxedValidationResult validInRelaxedMode =
+          isValidInRelaxedMode(fhirNotification, contentType);
+      if (validInRelaxedMode.isValid) {
+        log.info(
+            "Fhir notification only valid with relaxed validation. Original validation output: {}",
+            fhirResourceToJson(operationOutcome));
+        reduceIssuesSeverityToWarn(operationOutcome);
+        return new InternalOperationOutcome(operationOutcome, validInRelaxedMode.reparsedString);
+      }
     }
+    final boolean hasFatalIssue =
+        operationOutcome.getIssue().stream()
+            .anyMatch(issue -> issue.getSeverity() == IssueSeverity.FATAL);
+    final ErrorCode errorCode = hasFatalIssue ? FHIR_VALIDATION_FATAL : FHIR_VALIDATION_ERROR;
+    throw new NpsServiceException(errorCode, operationOutcome);
   }
 
-  private boolean isValidInRelaxedMode(
+  private record RelaxedValidationResult(boolean isValid, String reparsedString) {}
+
+  private RelaxedValidationResult isValidInRelaxedMode(
       final String fhirNotification, final MessageType contentType) {
     final String parsedNotificationAsJson;
     try {
@@ -130,12 +134,13 @@ public class NotificationValidator {
       parsedNotificationAsJson = fhirResourceToJson(resource);
     } catch (final RuntimeException e) {
       log.debug("Notification is not parseable", e);
-      return false;
+      return new RelaxedValidationResult(false, null);
     }
 
     try (final Response response =
         callValidationService(parsedNotificationAsJson, MessageType.JSON)) {
-      return isStatusSuccessful(response.status());
+      return new RelaxedValidationResult(
+          isStatusSuccessful(response.status()), parsedNotificationAsJson);
     }
   }
 

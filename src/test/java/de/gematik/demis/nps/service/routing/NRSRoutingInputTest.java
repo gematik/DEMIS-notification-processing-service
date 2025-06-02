@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import de.gematik.demis.nps.service.notification.Notification;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class NRSRoutingInputTest {
 
@@ -65,5 +67,28 @@ class NRSRoutingInputTest {
     // THEN the test user information is disabled and blank
     assertThat(from.isTestUser()).isFalse();
     assertThat(from.testUserId()).isEqualTo("");
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    // original,   reparsed,   expected
+    "original,   reparsed,   reparsed",
+    "original,   ,           original",
+    "original,   '',         original",
+    ",           ,           "
+  })
+  void testOriginalNotificationAsJSON(String original, String reparsed, String expected) {
+    Notification notification =
+        Notification.builder()
+            .originalNotificationAsJson(original)
+            .reparsedNotification(reparsed)
+            .testUser(false)
+            .testUserRecipient("irrelevant")
+            .sender("sender")
+            .build();
+
+    NRSRoutingInput input = NRSRoutingInput.from(notification);
+
+    assertThat(input.originalNotificationAsJSON()).isEqualTo(expected);
   }
 }

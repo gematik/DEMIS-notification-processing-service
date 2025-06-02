@@ -27,7 +27,8 @@ package de.gematik.demis.nps.service.notification;
  */
 
 import com.google.common.base.Strings;
-import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Bundles;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Compositions;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Patients;
 import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import java.util.Objects;
@@ -65,6 +66,7 @@ public class Notification {
       @Nonnull final String testUserRecipient,
       final String diseaseCode,
       final String originalNotificationAsJson,
+      final String reparsedNotification,
       @CheckForNull final RoutingOutputDto routingOutputDto) {
     this.bundle = bundle;
     this.type = type;
@@ -73,6 +75,7 @@ public class Notification {
     this.testUserRecipient = testUserRecipient;
     this.diseaseCode = diseaseCode;
     this.originalNotificationAsJson = originalNotificationAsJson;
+    this.reparsedNotification = reparsedNotification;
     this.routingOutputDto = routingOutputDto;
   }
 
@@ -86,8 +89,13 @@ public class Notification {
 
   @Setter private String diseaseCode;
   private final String originalNotificationAsJson;
+  @Setter private String reparsedNotification;
   // Check for null can be removed once 7.4 OR 7.3 is available
   @Setter @CheckForNull private RoutingOutputDto routingOutputDto;
+
+  public boolean wasReparsed() {
+    return reparsedNotification != null && !reparsedNotification.isBlank();
+  }
 
   public String getBundleIdentifier() {
     return Optional.ofNullable(bundle.getIdentifier())
@@ -97,13 +105,11 @@ public class Notification {
   }
 
   public Optional<String> getCompositionIdentifier() {
-    return Bundles.compositionFrom(bundle)
-        .map(Composition::getIdentifier)
-        .map(Identifier::getValue);
+    return Compositions.from(bundle).map(Composition::getIdentifier).map(Identifier::getValue);
   }
 
   public Patient getNotifiedPerson() {
-    final Optional<Patient> patient = Bundles.subjectFrom(bundle);
+    final Optional<Patient> patient = Patients.subjectFrom(bundle);
     return patient.orElseThrow(
         () ->
             new IllegalStateException(
@@ -119,7 +125,7 @@ public class Notification {
   }
 
   public Composition getComposition() {
-    return Bundles.compositionFrom(bundle)
+    return Compositions.from(bundle)
         .orElseThrow(() -> new IllegalStateException("Validated notification has no Composition"));
   }
 
@@ -133,6 +139,7 @@ public class Notification {
     @CheckForNull private NotificationType type;
     @CheckForNull private String diseaseCode;
     @CheckForNull private RoutingOutputDto routingOutputDto;
+    private String reparsedNotification;
 
     public NotificationBuilder routingOutputDto(@Nonnull final RoutingOutputDto routingOutputDto) {
       this.routingOutputDto = routingOutputDto;
@@ -175,6 +182,11 @@ public class Notification {
       return this;
     }
 
+    public NotificationBuilder reparsedNotification(@Nonnull final String reparsedNotification) {
+      this.reparsedNotification = reparsedNotification;
+      return this;
+    }
+
     @Nonnull
     public Notification build() {
       if (isTestUser && (testUserRecipient == null || testUserRecipient.isBlank())) {
@@ -188,7 +200,15 @@ public class Notification {
       }
 
       return new Notification(
-          bundle, type, sender, isTestUser, testUserRecipient, diseaseCode, json, routingOutputDto);
+          bundle,
+          type,
+          sender,
+          isTestUser,
+          testUserRecipient,
+          diseaseCode,
+          json,
+          reparsedNotification,
+          routingOutputDto);
     }
   }
 }

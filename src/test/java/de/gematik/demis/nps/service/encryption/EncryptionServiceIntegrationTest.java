@@ -66,7 +66,7 @@ class EncryptionServiceIntegrationTest {
   private static final String ENCRYPTED_CONTENT = "ENCRYPTED";
 
   private static final String EXPECTED_BINARY =
-      """
+"""
 {
   "resourceType" : "Binary",
   "meta" : {

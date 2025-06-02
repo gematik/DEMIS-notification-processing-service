@@ -33,14 +33,13 @@ import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Base64BinaryType;
 import org.hl7.fhir.r4.model.Extension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PseudoService {
 
@@ -49,6 +48,22 @@ public class PseudoService {
   private final NotificationUpdateService notificationUpdateService;
   private final ObjectMapper objectMapper;
   private final Statistics statistics;
+  private final boolean isPseudoStorageDisabled;
+
+  public PseudoService(
+      PseudonymizationServiceClient pseudonymizationServiceClient,
+      PseudoStorageServiceClient storageServiceClient,
+      NotificationUpdateService notificationUpdateService,
+      ObjectMapper objectMapper,
+      Statistics statistics,
+      @Value("${feature.flag.pseudo_storage_disabled}") boolean isPseudoStorageDisabled) {
+    this.pseudonymizationServiceClient = pseudonymizationServiceClient;
+    this.storageServiceClient = storageServiceClient;
+    this.notificationUpdateService = notificationUpdateService;
+    this.objectMapper = objectMapper;
+    this.statistics = statistics;
+    this.isPseudoStorageDisabled = isPseudoStorageDisabled;
+  }
 
   /**
    * Pseudo Call BundleId (aufpassen welche), Patient (Name), DiseaseCode -> Achtung Profile
@@ -65,7 +80,9 @@ public class PseudoService {
   public boolean createAndStorePseudonymAndAddToNotification(final Notification notification) {
     try {
       final PseudonymizationResponse pseudonymizationResponse = createPseudonym(notification);
-      storePseudonym(notification, pseudonymizationResponse);
+      if (!isPseudoStorageDisabled) {
+        storePseudonym(notification, pseudonymizationResponse);
+      }
       addPseudonymToFhirResource(notification, pseudonymizationResponse);
       return true;
     } catch (final RuntimeException e) {
@@ -83,6 +100,13 @@ public class PseudoService {
     return pseudonymizationServiceClient.generatePseudonym(pseudonymizationRequest);
   }
 
+  /**
+   * Deprecated: This method will be removed once the feature flag is permanently enabled in PROD.
+   *
+   * @param notification the notification to be used of the Storage request
+   * @param pseudonymizationResponse the pseudonymization response containing the pseudonym
+   */
+  @Deprecated(forRemoval = true, since = "2.2.0")
   void storePseudonym(
       final Notification notification, final PseudonymizationResponse pseudonymizationResponse) {
     final String responsibleHealthOfficeId =
@@ -110,7 +134,6 @@ public class PseudoService {
   }
 
   private byte[] jsonAsBytes(final Object o) {
-    // TODO check gleichheit zu NES
     try {
       return objectMapper.writeValueAsBytes(o);
     } catch (final JsonProcessingException e) {

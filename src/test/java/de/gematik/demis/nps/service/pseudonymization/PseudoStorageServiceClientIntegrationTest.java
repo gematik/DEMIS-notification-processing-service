@@ -56,7 +56,7 @@ class PseudoStorageServiceClientIntegrationTest {
   private static final String ENDPOINT = "/demis/storage";
 
   private static final String EXPECTED_REQUEST_BODY =
-      """
+"""
 {
     "type": "demisStorageRequest",
     "pseudonym": {
@@ -75,7 +75,7 @@ class PseudoStorageServiceClientIntegrationTest {
 """;
 
   private static final String RESPONSE_BODY =
-      """
+"""
 """;
 
   private static final PseudonymStorageRequest REQUEST =

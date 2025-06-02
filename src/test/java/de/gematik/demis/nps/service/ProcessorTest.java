@@ -59,6 +59,7 @@ import de.gematik.demis.nps.service.routing.NotificationReceiver;
 import de.gematik.demis.nps.service.routing.RoutingOutputDto;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
+import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -73,6 +74,8 @@ import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Parameters;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -102,8 +105,9 @@ class ProcessorTest {
   @Mock Statistics statistics;
   @Mock FhirParser fhirParser;
 
-  @Test
-  void ensureProcessOrchestratesTheFlowAsExpected() {
+  @ParameterizedTest
+  @EnumSource(MessageType.class)
+  void ensureProcessOrchestratesTheFlowAsExpected(MessageType contentType) {
     final Processor service = createProcessor();
     // GIVEN a parsed bundle
     final Bundle BUNDLE = new Bundle();
@@ -134,14 +138,21 @@ class ProcessorTest {
             new LinkedHashMap<>(),
             HEALTH_OFFICE_1);
     notification.setRoutingOutputDto(routingOutputDto);
+    notification.setReparsedNotification("someBundleString");
 
     when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
 
     // AND we mock irrelvant services
-    OperationOutcome validationOutcome = new OperationOutcome();
+    OperationOutcome operationOutcome = new OperationOutcome();
+    InternalOperationOutcome validationOutcome =
+        new InternalOperationOutcome(operationOutcome, "someBundleString");
     when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(BUNDLE);
+    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, contentType)).thenReturn(BUNDLE);
     when(notificationFhirService.getDiseaseCode(BUNDLE, DISEASE)).thenReturn("xxx");
+
+    if (contentType == MessageType.XML) {
+      when(fhirParser.encodeToJson(any())).thenReturn(FHIR_NOTIFICATION);
+    }
 
     // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
     final Binary ho1_encrypted = new Binary();
@@ -149,21 +160,21 @@ class ProcessorTest {
     // Can't use when().doReturn() due to wildcard capture
     doReturn(Optional.of(ho1_encrypted))
         .when(receiverActionService)
-        .transform(eq(notification), eq(receiver1));
+        .transform(any(Notification.class), eq(receiver1));
     doReturn(Optional.of(ho2_encrypted))
         .when(receiverActionService)
-        .transform(eq(notification), eq(receiver2));
+        .transform(any(Notification.class), eq(receiver2));
 
     // AND a receipt is created with the desired outcome
     Bundle receiptBundle = new Bundle();
     when(receiptService.generateReceipt(any())).thenReturn(receiptBundle);
-    when(responseService.success(receiptBundle, validationOutcome)).thenReturn(new Parameters());
+    when(responseService.success(receiptBundle, operationOutcome)).thenReturn(new Parameters());
 
     // WHEN we process the input
     // an error with stubbing here indicates, that execute creates a different Notification from the
     // createNotification method
     // in this test
-    service.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, "", TOKEN);
+    service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN);
 
     // THEN
     verify(notificationValidator).validateLifecycle(notification);
@@ -228,6 +239,8 @@ class ProcessorTest {
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
+    when(notificationValidator.validateFhir(any(), any()))
+        .thenReturn(new InternalOperationOutcome(new OperationOutcome(), "someBundleString"));
 
     final Processor processor = createProcessor();
     // WHEN we process a notification
@@ -264,6 +277,8 @@ class ProcessorTest {
                 ""));
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
+    when(notificationValidator.validateFhir(any(), any()))
+        .thenReturn(new InternalOperationOutcome(new OperationOutcome(), "someBundleString"));
 
     // WHEN we try to parse the bundle return a placeholder Bundle
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
@@ -279,5 +294,92 @@ class ProcessorTest {
     verify(notificationStorageService).storeNotifications(storageParameter.capture());
 
     assertThat(storageParameter.getValue()).hasSize(2);
+  }
+
+  @Test
+  void checkAdditionalParsingIsUsed() {
+    MessageType contentType = MessageType.JSON;
+    final Processor service = createProcessor();
+    // GIVEN a parsed bundle
+    final Bundle BUNDLE = new Bundle();
+    BUNDLE.setIdentifier(new Identifier().setValue("notification-id"));
+    // AND a notification that will be created
+    Notification notification = createNotification(BUNDLE);
+    // AND routing information retrieved from the NRS
+    final String HEALTH_OFFICE_1 = "1.123.312.3.";
+    final String HEALTH_OFFICE_2 = "3.321.123.4.";
+    NotificationReceiver receiver1 =
+        new NotificationReceiver(
+            "responsible_health_office",
+            HEALTH_OFFICE_1,
+            SequencedSets.of(Action.ENCRYPTION),
+            false);
+    NotificationReceiver receiver2 =
+        new NotificationReceiver(
+            "responsible_health_office_sormas",
+            HEALTH_OFFICE_2,
+            SequencedSets.of(Action.ENCRYPTION),
+            false);
+    RoutingOutputDto routingOutputDto =
+        new RoutingOutputDto(
+            DISEASE,
+            NotificationCategory.P_6_1,
+            SequencedSets.of(BundleAction.optionalOf(CREATE_PSEUDONYM_RECORD)),
+            List.of(receiver1, receiver2),
+            new LinkedHashMap<>(),
+            HEALTH_OFFICE_1);
+    notification.setRoutingOutputDto(routingOutputDto);
+    notification.setReparsedNotification("someBundleString");
+
+    when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
+
+    // AND we mock irrelvant services
+    OperationOutcome operationOutcome = new OperationOutcome();
+    InternalOperationOutcome validationOutcome =
+        new InternalOperationOutcome(operationOutcome, "someBundleString");
+    when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
+    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, contentType)).thenReturn(BUNDLE);
+    when(notificationFhirService.getDiseaseCode(BUNDLE, DISEASE)).thenReturn("xxx");
+
+    // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
+    final Binary ho1_encrypted = new Binary();
+    final Binary ho2_encrypted = new Binary();
+    // Can't use when().doReturn() due to wildcard capture
+    doReturn(Optional.of(ho1_encrypted))
+        .when(receiverActionService)
+        .transform(any(Notification.class), eq(receiver1));
+    doReturn(Optional.of(ho2_encrypted))
+        .when(receiverActionService)
+        .transform(any(Notification.class), eq(receiver2));
+
+    // AND a receipt is created with the desired outcome
+    Bundle receiptBundle = new Bundle();
+    when(receiptService.generateReceipt(any())).thenReturn(receiptBundle);
+    when(responseService.success(receiptBundle, operationOutcome)).thenReturn(new Parameters());
+
+    // WHEN we process the input
+    // an error with stubbing here indicates, that execute creates a different Notification from the
+    // createNotification method
+    // in this test
+    service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN);
+
+    // THEN
+    verify(notificationValidator).validateLifecycle(notification);
+    verify(pseudoService).createAndStorePseudonymAndAddToNotification(notification);
+    verify(contextEnrichmentService).enrichBundleWithContextInformation(notification, TOKEN);
+    verify(notificationStorageService)
+        .storeNotifications(
+            argThat(
+                list ->
+                    list.size() == 2
+                        && list.contains(ho1_encrypted)
+                        && list.contains(ho2_encrypted)));
+
+    final ArgumentCaptor<NRSRoutingInput> routingServiceRequest =
+        ArgumentCaptor.forClass(NRSRoutingInput.class);
+    verify(routingService).getRoutingInformation(routingServiceRequest.capture());
+
+    final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
+    assertThat(actualRoutingInput.originalNotificationAsJSON()).isEqualTo("someBundleString");
   }
 }

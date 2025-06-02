@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test;
 class FhirResponseServiceTest {
 
   private static final String EXPECTED_ERROR_RESPONSE =
-      """
+"""
 {
   "resourceType" : "OperationOutcome",
   "meta" : {
@@ -68,7 +68,7 @@ class FhirResponseServiceTest {
 """;
 
   private static final String EXPECTED_SUCCESS_RESPONSE =
-      """
+"""
 {
   "resourceType" : "Parameters",
   "meta" : {

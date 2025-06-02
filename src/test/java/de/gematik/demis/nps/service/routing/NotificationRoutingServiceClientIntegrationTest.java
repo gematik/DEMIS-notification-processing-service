@@ -54,7 +54,7 @@ class NotificationRoutingServiceClientIntegrationTest {
 
   private static final String FHIR_JSON = "does not matter";
   private static final String RESPONSE =
-      """
+"""
           {"healthOffices":
               {
                "NOTIFIED_PERSON_PRIMARY":"1.4",
@@ -119,7 +119,7 @@ class NotificationRoutingServiceClientIntegrationTest {
   void throwsExceptionForDuplicateBundleActions() {
     setupRemoteServiceV2(
         okJson(
-            """
+"""
 {
     "bundleActions": [
         {

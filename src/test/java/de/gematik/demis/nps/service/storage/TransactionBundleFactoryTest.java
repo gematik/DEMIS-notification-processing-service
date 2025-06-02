@@ -45,7 +45,7 @@ import org.mockito.Mockito;
 class TransactionBundleFactoryTest {
 
   private static final String EXPECTED =
-      """
+"""
 {
     "resourceType": "Bundle",
     "type": "transaction",

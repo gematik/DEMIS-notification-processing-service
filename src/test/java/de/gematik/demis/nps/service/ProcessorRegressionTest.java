@@ -27,7 +27,7 @@ package de.gematik.demis.nps.service;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +48,7 @@ import de.gematik.demis.nps.service.receipt.ReceiptService;
 import de.gematik.demis.nps.service.response.FhirResponseService;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
+import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
 import java.util.Optional;
 import java.util.Set;
@@ -66,7 +67,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ProcessorTestRegression {
+class ProcessorRegressionTest {
 
   private static final String FHIR_NOTIFICATION = "Just for testing. Content does not matter";
   private static final MessageType CONTENT_TYPE = MessageType.JSON;
@@ -125,7 +126,7 @@ class ProcessorTestRegression {
     when(configProperties.sormasCodes()).thenReturn(Set.of(sormasCode));
 
     final var operationOutcome = setupValidation();
-    final var notification = setupNotificationFhirService(diseaseCode);
+    final var notification = setupNotificationFhirService(diseaseCode, operationOutcome);
     final var encryptedBinaryNotification = setupEncryptResponsibleHealthOffice(notification);
     final var encryptedSubsidiaryNotification =
         sormasCode.equals(diseaseCode) ? setupEncryptSormas(notification) : null;
@@ -175,9 +176,10 @@ class ProcessorTestRegression {
   }
 
   private Parameters setupResponseService(
-      final Bundle receiptBundle, final OperationOutcome operationOutcome) {
+      final Bundle receiptBundle, final InternalOperationOutcome operationOutcome) {
     final var parameters = new Parameters();
-    when(responseService.success(receiptBundle, operationOutcome)).thenReturn(parameters);
+    when(responseService.success(receiptBundle, operationOutcome.operationOutcome()))
+        .thenReturn(parameters);
     return parameters;
   }
 
@@ -187,19 +189,23 @@ class ProcessorTestRegression {
     return receiptBundle;
   }
 
-  private Notification setupNotificationFhirService(final String diseaseCode) {
+  private Notification setupNotificationFhirService(
+      final String diseaseCode, final InternalOperationOutcome validationOutcome) {
     final var bundle = new Bundle().setIdentifier(new Identifier().setValue("1234-5678-9"));
     final var notification = Notification.builder().diseaseCode(diseaseCode).bundle(bundle).build();
-    when(notificationFhirService.read(FHIR_NOTIFICATION, CONTENT_TYPE, SENDER, false, ""))
+    when(notificationFhirService.read(
+            FHIR_NOTIFICATION, CONTENT_TYPE, SENDER, false, "", validationOutcome))
         .thenReturn(notification);
     return notification;
   }
 
-  private OperationOutcome setupValidation() {
+  private InternalOperationOutcome setupValidation() {
     final var operationOutcome = new OperationOutcome();
+    final var npsOperationOutcome =
+        new InternalOperationOutcome(operationOutcome, "someBundleString");
     when(notificationValidator.validateFhir(FHIR_NOTIFICATION, CONTENT_TYPE))
-        .thenReturn(operationOutcome);
-    return operationOutcome;
+        .thenReturn(npsOperationOutcome);
+    return npsOperationOutcome;
   }
 
   @Test
@@ -208,16 +214,18 @@ class ProcessorTestRegression {
     when(notificationValidator.validateFhir(FHIR_NOTIFICATION, CONTENT_TYPE))
         .thenThrow(new NpsServiceException(ErrorCode.FHIR_VALIDATION_ERROR, operationOutcome));
 
-    final NpsServiceException exception =
-        catchThrowableOfType(
+    assertThatThrownBy(
             () ->
                 underTest.execute(
-                    FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, "", TOKEN),
-            NpsServiceException.class);
-
-    assertThat(exception)
-        .isNotNull()
-        .returns(ErrorCode.FHIR_VALIDATION_ERROR.getCode(), NpsServiceException::getErrorCode)
-        .returns(operationOutcome, NpsServiceException::getOperationOutcome);
+                    FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, SENDER, false, "", TOKEN))
+        .isInstanceOf(NpsServiceException.class)
+        .satisfies(
+            ex -> {
+              NpsServiceException exception = (NpsServiceException) ex;
+              assertThat(exception)
+                  .returns(
+                      ErrorCode.FHIR_VALIDATION_ERROR.getCode(), NpsServiceException::getErrorCode)
+                  .returns(operationOutcome, NpsServiceException::getOperationOutcome);
+            });
   }
 }

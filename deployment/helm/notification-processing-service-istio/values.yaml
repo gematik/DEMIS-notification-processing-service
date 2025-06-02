@@ -16,11 +16,9 @@ istio:
             prefix: /hospitalization/
       rewrite:
         uri: /
-      timeout: null
       retries:
         enable: true
         attempts: 0
-        retryOn: null
   subsets:
     main:
       version: 1.0.0

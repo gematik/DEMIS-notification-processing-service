@@ -61,7 +61,7 @@ class NotificationValidatorIntegrationREGRESSIONTest {
 
   private static final String REQUEST_BODY = "my body";
   private static final String RESPONSE_BODY =
-      """
+"""
         {"outcome":"does not matter"}
 """;
 

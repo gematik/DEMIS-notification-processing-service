@@ -3,7 +3,7 @@ spring:
     import: classpath:/base-config-application.yaml
   data:
     redis:
-      host: ${REDIS_HOST:redis-cus}
+      host: ${REDIS_HOST:redis-cus.demis.svc.cluster.local}
       password: ${REDIS_PW:}
       username: ${REDIS_USER:default}
       port: ${REDIS_PORT:6379}
@@ -24,15 +24,15 @@ info:
 
 nps:
   client:
-    validation: "http://validation-service:8080"
-    lifecycle-vs: "http://lifecycle-validation-service:8080"
-    routing: "http://notification-routing-service:8080"
-    pdfgen: "http://pdfgen-service:8080"
-    pseudonymization: "http://pseudonymization-service:8080"
-    pseudo-storage: "http://pseudonymization-storage-service:8080"
-    ncapi: "http://notification-clearing-api:8080"
+    validation: "http://validation-service.demis.svc.cluster.local"
+    lifecycle-vs: "http://lifecycle-validation-service.demis.svc.cluster.local"
+    routing: "http://notification-routing-service.demis.svc.cluster.local"
+    pdfgen: "http://pdfgen-service.demis.svc.cluster.local"
+    pseudonymization: "http://pseudonymization-service.demis.svc.cluster.local"
+    pseudo-storage: "http://pseudonymization-storage-service.demis.svc.cluster.local"
+    ncapi: "http://notification-clearing-api.demis.svc.cluster.local"
     futs: "http://futs.demis.svc.cluster.local"
-    context-enrichment-service: "http://context-enrichment-service:8080"
+    context-enrichment-service: "http://context-enrichment-service.demis.svc.cluster.local"
   apikey:
     ncapi: ${NPS_APIKEY_NCS:}
 
@@ -69,3 +69,4 @@ feature:
     notifications.7_4: false
     notifications.7_3: false
     test_routing_v2: false
+    pseudo_storage_disabled: false

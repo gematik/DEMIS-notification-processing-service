@@ -61,11 +61,11 @@ class NcapiClientIntegrationTest {
   private static final String API_KEY = "Bearer abc-def";
 
   private static final String REQUEST_BODY =
-      """
+"""
 {"bundle": "does not matter"}
 """;
   private static final String RESPONSE_BODY =
-      """
+"""
 {"bundle": "response"}
 """;
 

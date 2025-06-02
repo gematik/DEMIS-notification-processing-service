@@ -33,6 +33,7 @@ import de.gematik.demis.nps.base.fhir.BundleQueries;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.codemapping.CodeMappingService;
+import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -81,7 +82,8 @@ public class NotificationFhirService {
       final MessageType contentType,
       final String sender,
       final boolean testUserFlag,
-      @Nonnull final String testUserRecipient) {
+      @Nonnull final String testUserRecipient,
+      InternalOperationOutcome validationOutcome) {
     final Bundle bundle = fhirParser.parseBundleOrParameter(fhirNotification, contentType);
     final NotificationType notificationType = detectNotificationType(bundle);
     return Notification.builder()
@@ -91,6 +93,7 @@ public class NotificationFhirService {
         .testUser(testUserFlag)
         .testUserRecipient(testUserRecipient)
         .diseaseCode(getDiseaseCode(bundle, notificationType))
+        .reparsedNotification(validationOutcome.reparsedStringAsJsonWhenRelaxedValidationWasUsed())
         .build();
   }
 

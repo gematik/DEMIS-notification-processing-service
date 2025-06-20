@@ -86,11 +86,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.UseMainMethod;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.BasicJsonTester;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(
@@ -113,11 +113,11 @@ class NpsIntegrationTest {
 
   @Autowired MockMvc mockMvc;
   @Autowired MeterRegistry meterRegistry;
-  @MockBean CertificateRepository certificateRepository;
+  @MockitoBean CertificateRepository certificateRepository;
 
-  @MockBean UuidGenerator uuidGenerator;
+  @MockitoBean UuidGenerator uuidGenerator;
 
-  @MockBean(answer = Answers.CALLS_REAL_METHODS)
+  @MockitoBean(answers = Answers.CALLS_REAL_METHODS)
   TimeProvider timeProvider;
 
   private CounterVerifier counterVerifier;

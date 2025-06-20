@@ -2,6 +2,10 @@
 
 # Release Notification Processing Service
 
+## Release 2.3.0
+- Renamed feature flag for relaxed validation to `feature.flag.relaxed.validation` and disabled by default
+- Updated dependencies
+
 ## Release 2.2.0
 - Introduced Feature Flag to disable the communication with the Pseudonymization Storage Service (PSS)
 - uses lenient parser when relaxed validation was used to send data to NRS

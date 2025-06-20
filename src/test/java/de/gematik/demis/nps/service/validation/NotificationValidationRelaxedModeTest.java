@@ -34,13 +34,14 @@ import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.nps.config.NpsConfigProperties;
+import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import feign.Response;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.OperationOutcome.OperationOutcomeIssueComponent;
@@ -68,7 +69,7 @@ class NotificationValidationRelaxedModeTest {
 
   private static final FhirContext fhirContext = FhirContext.forR4Cached();
 
-  @Mock NpsConfigProperties config;
+  FeatureFlagsConfigProperties featureFlags;
   @Mock ValidationServiceClient validationServiceClient;
   @Mock LifecycleValidationServiceClient lifecycleValidationServiceClient;
 
@@ -95,10 +96,12 @@ class NotificationValidationRelaxedModeTest {
 
   @BeforeEach
   void setup() {
+    featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed.validation", true));
     underTest =
         new NotificationValidator(
-            validationServiceClient, lifecycleValidationServiceClient, fhirContext, config);
-    when(config.relaxedValidation()).thenReturn(true);
+            validationServiceClient, lifecycleValidationServiceClient, fhirContext, featureFlags);
+    // simulate the @PostConstruct method
+    underTest.init();
   }
 
   @Test

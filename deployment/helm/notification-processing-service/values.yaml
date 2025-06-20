@@ -42,7 +42,7 @@ deploymentLabels: {}
 
 # Environment Variables to be defined
 customEnvVars:
-  NPS_FLAG_RELAXED_VALIDATION: "true"
+  FEATURE_FLAG_RELAXED_VALIDATION: "false"
   FEATURE_FLAG_NOTIFICATIONS_7_4: "false"
   FEATURE_FLAG_NOTIFICATIONS_7_3: "false"
   FEATURE_FLAG_TEST_ROUTING_V2: "false"

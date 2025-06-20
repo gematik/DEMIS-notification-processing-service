@@ -15,20 +15,31 @@ See the Licence for the specific language governing permissions and limitations 
 This project includes:
   AOP alliance under Public Domain
   Apache Commons Codec under Apache-2.0
+  Apache Commons Collections under Apache License, Version 2.0
+  Apache Commons Compress under Apache-2.0
+  Apache Commons CSV under Apache-2.0
   Apache Commons FileUpload under Apache-2.0
   Apache Commons IO under Apache-2.0
   Apache Commons Lang under Apache-2.0
+  Apache Commons Net under Apache License, Version 2.0
   Apache Commons Pool under Apache-2.0
   Apache Commons Text under Apache License, Version 2.0
   Apache HttpClient under Apache License, Version 2.0
   Apache HttpComponents Core HTTP/1.1 under Apache License, Version 2.0
   Apache HttpComponents Core HTTP/2 under Apache License, Version 2.0
   Apache HttpCore under Apache License, Version 2.0
+  Apache Jena - ARQ under The Apache Software License, Version 2.0
+  Apache Jena - Base under The Apache Software License, Version 2.0
+  Apache Jena - Core under The Apache Software License, Version 2.0
+  Apache Jena - IRI under The Apache Software License, Version 2.0
+  Apache Jena - IRI3986 under The Apache Software License, Version 2.0
+  Apache Jena - ShEx under The Apache Software License, Version 2.0
   Apache Log4j API under Apache-2.0
+  Apache Thrift under The Apache Software License, Version 2.0
   asm under BSD-3-Clause
   ASM based accessors helper used by json-smart under The Apache Software License, Version 2.0
   AspectJ Weaver under Eclipse Public License - v 2.0
-  AssertJ Core under Apache License, Version 2.0
+  AssertJ Core under Apache-2.0
   Awaitility under Apache 2.0
   Bouncy Castle ASN.1 Extension and Utility APIs under Bouncy Castle Licence
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs under Bouncy Castle Licence
@@ -39,16 +50,20 @@ This project includes:
   Checker Qual under The MIT License
   ClassMate under Apache License, Version 2.0
   context-propagation under The Apache Software License, Version 2.0
+  dexx under MIT License
   error-prone annotations under Apache 2.0
   Feign Core under The Apache Software License, Version 2.0
+  Feign Forms Core under The Apache Software License, Version 2.0
+  Feign Forms Extension for Spring under The Apache Software License, Version 2.0
   Feign Micrometer under The Apache Software License, Version 2.0
   Feign SLF4J under The Apache Software License, Version 2.0
   fhir-parser-library under Licensed under the EUPL 1.2
   FindBugs-jsr305 under The Apache Software License, Version 2.0
+  Gson under Apache-2.0
   Guava InternalFutureFailureAccess and InternalFutures under The Apache Software License, Version 2.0
   Guava ListenableFuture only under The Apache Software License, Version 2.0
   Guava: Google Core Libraries for Java under Apache License, Version 2.0
-  Hamcrest under BSD License 3
+  Hamcrest under BSD-3-Clause
   HAPI FHIR - Core Library under Apache Software License 2.0
   HAPI FHIR - ServiceLoaders - Caching API under Apache Software License 2.0
   HAPI FHIR - ServiceLoaders - Caching Caffeine under Apache Software License 2.0
@@ -73,6 +88,7 @@ This project includes:
   JCL 1.2 implemented over SLF4J under Apache-2.0
   JSON library from Android SDK under Apache License 2.0
   JSON Small and Fast Parser under The Apache Software License, Version 2.0
+  JSON-P Default Provider under Eclipse Public License 2.0 or GNU General Public License, version 2 with the GNU Classpath Exception
   json-path under The Apache Software License, Version 2.0
   JSONassert under The Apache Software License, Version 2.0
   JSpecify annotations under The Apache License, Version 2.0
@@ -122,8 +138,6 @@ This project includes:
   notification-builder-library under Licensed under the EUPL 1.2
   notification-processing-service under Licensed under the EUPL 1.2
   Objenesis under Apache License, Version 2.0
-  Open Feign Forms Core under The Apache Software License, Version 2.0
-  Open Feign Forms Extension for Spring under The Apache Software License, Version 2.0
   OpenTelemetry Instrumentation for Java under The Apache License, Version 2.0
   OpenTelemetry Java under The Apache License, Version 2.0
   OpenTelemetry Semantic Conventions Java under The Apache License, Version 2.0
@@ -132,6 +146,7 @@ This project includes:
   org.hl7.fhir.r4 under Apache Software License 2.0
   org.hl7.fhir.utilities under Apache Software License 2.0
   org.opentest4j:opentest4j under The Apache License, Version 2.0
+  org.roaringbitmap:RoaringBitmap under Apache 2
   org.xmlunit:xmlunit-core under The Apache Software License, Version 2.0
   Plexus Common Utilities under Apache License, Version 2.0
   Plexus Interpolation API under Apache License, Version 2.0
@@ -139,10 +154,13 @@ This project includes:
   Prometheus Metrics Config under The Apache Software License, Version 2.0
   Prometheus Metrics Core under The Apache Software License, Version 2.0
   Prometheus Metrics Exposition Formats under The Apache Software License, Version 2.0
+  Prometheus Metrics Exposition Formats no protobuf under The Apache Software License, Version 2.0
   Prometheus Metrics Exposition Text Formats under The Apache Software License, Version 2.0
   Prometheus Metrics Model under The Apache Software License, Version 2.0
   Prometheus Metrics Tracer Common under The Apache Software License, Version 2.0
+  Protocol Buffers [Core] under BSD-3-Clause
   reactive-streams under MIT-0
+  redis-authx-core under MIT
   service-base under Licensed under the EUPL 1.2
   SLF4J API Module under MIT
   SnakeYAML under Apache License, Version 2.0
@@ -193,6 +211,7 @@ This project includes:
   swagger-annotations-jakarta under Apache License 2.0
   swagger-core-jakarta under Apache License 2.0
   swagger-models-jakarta under Apache License 2.0
+  Titanium JSON-LD 1.1 (JRE11) under Apache License, Version 2.0
   tomcat-embed-core under Apache License, Version 2.0
   tomcat-embed-el under Apache License, Version 2.0
   tomcat-embed-websocket under Apache License, Version 2.0

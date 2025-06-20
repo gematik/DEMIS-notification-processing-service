@@ -74,7 +74,7 @@ public class NotificationValidator {
   @PostConstruct
   public void init() {
     lvDiseaseActivated = featureFlags.isEnabled("lv_disease");
-    relaxedValidationActivated = featureFlags.isEnabled("relaxed.validation");
+    relaxedValidationActivated = featureFlags.isEnabled("relaxed_validation");
   }
 
   private static void reduceIssuesSeverityToWarn(final OperationOutcome operationOutcome) {

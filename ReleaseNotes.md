@@ -3,7 +3,7 @@
 # Release Notification Processing Service
 
 ## Release 2.3.0
-- Renamed feature flag for relaxed validation to `feature.flag.relaxed.validation` and disabled by default
+- Renamed feature flag for relaxed validation to `feature.flag.relaxed_validation` and disabled by default
 - Updated dependencies
 
 ## Release 2.2.0

@@ -77,7 +77,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
-      "feature.flag.relaxed.validation=false",
+      "feature.flag.relaxed_validation=false",
       "feature.flag.lv_disease=true"
     })
 @AutoConfigureWireMock(port = 0)

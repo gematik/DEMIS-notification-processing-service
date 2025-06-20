@@ -96,7 +96,7 @@ class NotificationValidationRelaxedModeTest {
 
   @BeforeEach
   void setup() {
-    featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed.validation", true));
+    featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed_validation", true));
     underTest =
         new NotificationValidator(
             validationServiceClient, lifecycleValidationServiceClient, fhirContext, featureFlags);

@@ -84,4 +84,4 @@ feature:
     notifications.7_3: false
     test_routing_v2: false
     pseudo_storage_disabled: false
-    relaxed.validation: false
+    relaxed_validation: false

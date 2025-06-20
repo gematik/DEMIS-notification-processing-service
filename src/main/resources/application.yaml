@@ -16,6 +16,22 @@ spring:
       client-name: nps-svc
       connect-timeout: 5000
       timeout: 15000
+  threads:
+    virtual:
+      enabled: true
+# set base properties
+base:
+  errorhandler:
+    enabled: false
+  feign:
+    extension:
+      enabled: true
+  logging:
+    request:
+      enabled: true
+  meter:
+    aspect:
+      enabled: true
 
 info:
   app:
@@ -51,8 +67,6 @@ nps:
 
   outcome-issue-threshold: warning
 
-  relaxed-validation: ${NPS_FLAG_RELAXED_VALIDATION:false}
-
   health-offices-live-test: ${NPS_FLAG_LIVE_TEST:false}
 
   codemapping:
@@ -70,3 +84,4 @@ feature:
     notifications.7_3: false
     test_routing_v2: false
     pseudo_storage_disabled: false
+    relaxed.validation: false

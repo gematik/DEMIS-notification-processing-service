@@ -61,6 +61,7 @@ import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueType;
 import org.hl7.fhir.r4.model.OperationOutcome.OperationOutcomeIssueComponent;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -76,7 +77,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
-      "nps.relaxed-validation=false",
+      "feature.flag.relaxed.validation=false",
       "feature.flag.lv_disease=true"
     })
 @AutoConfigureWireMock(port = 0)
@@ -91,6 +92,11 @@ class NotificationValidatorIntegrationTest {
 
   @MockitoBean FhirContext fhirContext;
   @Autowired NotificationValidator underTest;
+
+  @BeforeEach
+  void beforeEach() {
+    WireMock.reset();
+  }
 
   private static void setupVS(
       final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
@@ -167,7 +173,7 @@ class NotificationValidatorIntegrationTest {
   class LaboratoryLifecycleValidationTest {
     private static final String ENDPOINT_LVS_LABORATORY = "/LVS/laboratory/$validate";
 
-    private static void setupLVS(final ResponseDefinitionBuilder responseDefBuilder) {
+    private static void setupLabLVS(final ResponseDefinitionBuilder responseDefBuilder) {
       stubFor(
           post(ENDPOINT_LVS_LABORATORY)
               .withHeader(CONTENT_TYPE, equalTo(APPLICATION_JSON_VALUE))
@@ -188,10 +194,15 @@ class NotificationValidatorIntegrationTest {
       return notification;
     }
 
+    @BeforeEach
+    void beforeEach() {
+      underTest.init();
+    }
+
     @Test
     void lifeCycleValidationForLaboratoryOkay() {
       final Notification notification = setupLaboratoryRequest();
-      setupLVS(okJson(RESPONSE_BODY));
+      setupLabLVS(okJson(RESPONSE_BODY));
 
       Assertions.assertDoesNotThrow(() -> underTest.validateLifecycle(notification));
       WireMock.verify(postRequestedFor(urlEqualTo(ENDPOINT_LVS_LABORATORY)));
@@ -200,7 +211,7 @@ class NotificationValidatorIntegrationTest {
     @Test
     void lifeCycleValidationForLaboratoryError() {
       final Notification notification = setupLaboratoryRequest();
-      setupLVS(status(422).withBody(RESPONSE_BODY));
+      setupLabLVS(status(422).withBody(RESPONSE_BODY));
 
       final var exception =
           catchThrowableOfType(
@@ -223,7 +234,7 @@ class NotificationValidatorIntegrationTest {
     @Test
     void lifecycleValidationCallException() {
       final Notification notification = setupLaboratoryRequest();
-      setupLVS(serverError());
+      setupLabLVS(serverError());
       assertThatThrownBy(() -> underTest.validateLifecycle(notification))
           .isExactlyInstanceOf(ServiceCallException.class);
     }
@@ -235,7 +246,7 @@ class NotificationValidatorIntegrationTest {
 
     private static final String ENDPOINT_LVS_DISEASE = "/LVS/disease/$validate";
 
-    private static void setupLVS(final ResponseDefinitionBuilder responseDefBuilder) {
+    private static void setupDiseaseLVS(final ResponseDefinitionBuilder responseDefBuilder) {
       stubFor(
           post(ENDPOINT_LVS_DISEASE)
               .withHeader(CONTENT_TYPE, equalTo(APPLICATION_JSON_VALUE))
@@ -244,19 +255,24 @@ class NotificationValidatorIntegrationTest {
               .willReturn(responseDefBuilder));
     }
 
+    @BeforeEach
+    void beforeEach() {
+      underTest.init();
+    }
+
     @Test
-    void lifeCycleValidationForLaboratoryOkay() {
+    void lifeCycleValidationForDiseaseOkay() {
       final Notification notification = setupDiseaseRequest();
-      setupLVS(okJson(RESPONSE_BODY));
+      setupDiseaseLVS(okJson(RESPONSE_BODY));
 
       Assertions.assertDoesNotThrow(() -> underTest.validateLifecycle(notification));
       WireMock.verify(postRequestedFor(urlEqualTo(ENDPOINT_LVS_DISEASE)));
     }
 
     @Test
-    void lifeCycleValidationForLaboratoryError() {
+    void lifeCycleValidationForDiseaseError() {
       final Notification notification = setupDiseaseRequest();
-      setupLVS(status(422).withBody(RESPONSE_BODY));
+      setupDiseaseLVS(status(422).withBody(RESPONSE_BODY));
 
       final var exception =
           catchThrowableOfType(
@@ -279,7 +295,7 @@ class NotificationValidatorIntegrationTest {
     @Test
     void lifecycleValidationCallException() {
       final Notification notification = setupDiseaseRequest();
-      setupLVS(serverError());
+      setupDiseaseLVS(serverError());
       assertThatThrownBy(() -> underTest.validateLifecycle(notification))
           .isExactlyInstanceOf(ServiceCallException.class);
     }

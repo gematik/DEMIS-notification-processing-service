@@ -35,7 +35,7 @@ import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.nps.config.NpsConfigProperties;
+import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
@@ -44,6 +44,7 @@ import de.gematik.demis.service.base.error.ServiceCallException;
 import feign.Response;
 import feign.codec.Decoder;
 import feign.codec.StringDecoder;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,6 @@ import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.Parameters;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -65,11 +65,17 @@ public class NotificationValidator {
   private final LifecycleValidationServiceClient lifecycleValidationServiceClient;
 
   private final FhirContext fhirContext;
-  private final NpsConfigProperties config;
+  private final FeatureFlagsConfigProperties featureFlags;
   private final Decoder decoder = new StringDecoder();
 
-  @Value("${feature.flag.lv_disease}")
   private boolean lvDiseaseActivated;
+  private boolean relaxedValidationActivated;
+
+  @PostConstruct
+  public void init() {
+    lvDiseaseActivated = featureFlags.isEnabled("lv_disease");
+    relaxedValidationActivated = featureFlags.isEnabled("relaxed.validation");
+  }
 
   private static void reduceIssuesSeverityToWarn(final OperationOutcome operationOutcome) {
     operationOutcome.getIssue().stream()
@@ -103,7 +109,7 @@ public class NotificationValidator {
     if (isStatusSuccessful(status)) {
       log.debug("Fhir Bundle successfully validated.");
       return new InternalOperationOutcome(operationOutcome);
-    } else if (config.relaxedValidation()) {
+    } else if (relaxedValidationActivated) {
       RelaxedValidationResult validInRelaxedMode =
           isValidInRelaxedMode(fhirNotification, contentType);
       if (validInRelaxedMode.isValid) {

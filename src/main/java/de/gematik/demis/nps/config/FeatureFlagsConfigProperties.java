@@ -41,6 +41,26 @@ public record FeatureFlagsConfigProperties(Map<String, Object> flag) {
 
   @PostConstruct
   void log() {
-    log.info("NPS FEATURE CONFIGURATION: " + this.flag);
+    log.info("NPS FEATURE FLAGS: {}", this.flag);
+  }
+
+  /**
+   * Checks if a feature is enabled.
+   *
+   * @param featureName the name of the feature to check, without the "feature.flag." prefix
+   * @return true if the feature is enabled, false otherwise
+   */
+  public boolean isEnabled(final String featureName) {
+    final var result = flag.getOrDefault(featureName, false);
+    if (result instanceof Boolean enabled) {
+      return enabled;
+    }
+    // in Integration Tests, the feature flags are defined as Strings from SpringBootTest
+    if (result instanceof String str) {
+      return Boolean.parseBoolean(str);
+    }
+
+    // fallback
+    return false;
   }
 }

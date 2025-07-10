@@ -33,11 +33,16 @@ import static de.gematik.demis.nps.test.TestData.LABORATORY_BUNDLE_RESOURCE;
 import static de.gematik.demis.nps.test.TestData.readResourceAsString;
 
 import ca.uhn.fhir.context.FhirContext;
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.base.util.UuidGenerator;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.test.TestData;
 import de.gematik.demis.nps.test.TestUtil;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
@@ -78,8 +83,11 @@ class NotByNameServiceIntegrationTest {
     Mockito.when(uuidGenerator.generateUuid()).thenReturn("u4-a1234-b9876");
 
     final Bundle bundle = TestData.getBundle(bundleResourceName);
+    final RoutingData routingOutputDto =
+        new RoutingData(
+            type, NotificationCategory.P_6_1, SequencedSets.of(), List.of(), Map.of(), "");
     final Notification notification =
-        Notification.builder().bundle(bundle).type(type).testUser(false).build();
+        Notification.builder().bundle(bundle).routingData(routingOutputDto).testUser(false).build();
     final Bundle result = underTest.createNotificationNotByName(notification);
 
     final SoftAssertions assertions = new SoftAssertions();
@@ -104,10 +112,18 @@ class NotByNameServiceIntegrationTest {
 
   @Test
   void testuser() {
+    final RoutingData routingData =
+        new RoutingData(
+            NotificationType.LABORATORY,
+            NotificationCategory.P_6_1,
+            SequencedSets.of(),
+            List.of(),
+            Map.of(),
+            "");
     final Notification notification =
         Notification.builder()
             .bundle(TestData.laboratoryBundle())
-            .type(NotificationType.LABORATORY)
+            .routingData(routingData)
             .testUser(true)
             .testUserRecipient("testuser")
             .build();

@@ -30,9 +30,7 @@ import de.gematik.demis.fhirparserlibrary.FhirParser;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.hl7.fhir.instance.model.api.IBaseResource;
-import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -41,39 +39,11 @@ public class NotificationStorageService {
 
   private final FhirParser fhirParser;
   private final TransactionBundleFactory factory;
-  private final NcapiClient client;
-
-  @Value("${nps.apikey.ncapi}")
-  private String apiKey;
-
-  /**
-   * can be removed when feature flag notifications.7_4 is removed
-   *
-   * <p>Use {@link #storeNotifications(Collection)} instead
-   *
-   * @param encryptedBinaryNotification
-   * @param encryptedSubsidiaryNotification
-   * @param anonymizedNotification
-   * @deprecated forRemoval = true
-   */
-  @Deprecated(forRemoval = true)
-  public void storeNotification(
-      final Binary encryptedBinaryNotification,
-      final Binary encryptedSubsidiaryNotification,
-      final Bundle anonymizedNotification) {
-
-    final Bundle transactionBundle =
-        factory.createTransactionBundle(
-            encryptedBinaryNotification, encryptedSubsidiaryNotification, anonymizedNotification);
-
-    final String json = fhirParser.encodeToJson(transactionBundle);
-    // TODO define timeouts (in application.yaml)
-    client.sendNotificationToNotificationClearingAPI("Bearer " + apiKey, json);
-  }
+  private final FhirStorageWriterClient client;
 
   public void storeNotifications(Collection<? extends IBaseResource> notificationsToForward) {
     final Bundle transactionBundle = factory.createTransactionBundle(notificationsToForward);
     final String json = fhirParser.encodeToJson(transactionBundle);
-    client.sendNotificationToNotificationClearingAPI("Bearer " + apiKey, json);
+    client.sendNotificationToFhirStorageWriter(json);
   }
 }

@@ -58,9 +58,11 @@ import org.springframework.web.context.request.WebRequest;
 @Slf4j
 public class NotificationController {
 
+  public static final String HEADER_REQUEST_ID = "X-Request-ID";
   public static final String HEADER_SENDER = "x-sender";
   public static final String HEADER_TEST_USER_RECIPIENT = "x-testuser-recipient";
   public static final String HEADER_IS_TEST_NOTIFICATION = "x-testuser";
+  public static final String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
 
   private final Processor processor;
   private final FhirConverter fhirConverter;
@@ -102,7 +104,7 @@ public class NotificationController {
   public ResponseEntity<Object> processNotification(
       @RequestBody @NotBlank final String fhirNotification,
       @RequestHeader(CONTENT_TYPE) final MediaType contentType,
-      @RequestHeader(value = "X-Request-ID", required = false) final String requestId,
+      @RequestHeader(value = HEADER_REQUEST_ID, required = false) final String requestId,
       @CheckForNull @RequestHeader(value = HEADER_SENDER, required = false) final String sender,
       @RequestHeader(value = HEADER_IS_TEST_NOTIFICATION, required = false)
           final boolean isTestNotification,

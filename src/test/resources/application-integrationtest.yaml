@@ -14,8 +14,7 @@ nps:
     routing: "http://localhost:${wiremock.server.port}/NRS"
     pdfgen: "http://localhost:${wiremock.server.port}/PDF"
     pseudonymization: "http://localhost:${wiremock.server.port}/PS"
-    pseudo-storage: "http://localhost:${wiremock.server.port}/PSS"
-    ncapi: "http://localhost:${wiremock.server.port}/NCAPI"
+    fhir-storage-writer: "http://localhost:${wiremock.server.port}/FSW"
     futs: "http://localhost:${wiremock.server.port}/FUTS"
 
   certificate-dir: src/test/resources/certificates

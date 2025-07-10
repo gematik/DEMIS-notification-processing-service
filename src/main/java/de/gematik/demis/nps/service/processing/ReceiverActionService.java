@@ -32,7 +32,6 @@ import static de.gematik.demis.nps.service.notification.Action.ENCRYPTION;
 import com.google.common.collect.Queues;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.copy.CopyStrategy;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.copy.CopyStrategyFactory;
-import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
@@ -41,7 +40,7 @@ import de.gematik.demis.nps.service.notbyname.NotByNameService;
 import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
-import de.gematik.demis.nps.service.routing.RoutingOutputDto;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.service.validation.BundleValidationResult;
 import de.gematik.demis.nps.service.validation.RKIBundleValidator;
 import java.util.ArrayDeque;
@@ -138,23 +137,6 @@ public class ReceiverActionService {
     return Optional.empty();
   }
 
-  private static Optional<? extends IBaseResource> applyRelatedToTag(
-      final String relatedIdentifier, Optional<? extends IBaseResource> forReceiver) {
-    if (forReceiver.isEmpty()) {
-      return forReceiver;
-    }
-
-    final String system = DemisSystems.RELATED_NOTIFICATION_CODING_SYSTEM;
-    final String display = "Relates to message with identifier: " + relatedIdentifier;
-    final IBaseResource resource = forReceiver.get();
-    // TODO remove with feature.flag.notifications.7_4
-    if (resource.getMeta().getTag(system, relatedIdentifier) == null) {
-      // TODO keep when feature.flag.notifications.7_4 is removed
-      resource.getMeta().addTag().setCode(relatedIdentifier).setDisplay(display).setSystem(system);
-    }
-    return Optional.of(resource);
-  }
-
   private static void logBundleValidationWarn(final String receiver, final String reason) {
     log.warn("Transformed bundle is not valid for receiver '{}'. reason: '{}'", receiver, reason);
   }
@@ -182,6 +164,9 @@ public class ReceiverActionService {
               intermediateResult
                   .map(ReceiverActionService::castToBundleOrNull)
                   .orElseThrow(() -> new IllegalStateException("Can only encrypt bundles"));
+          if (isProcessing73Enabled) {
+            notification.putPreEncryptedBundle(receiver.specificReceiverId(), asBundle);
+          }
           intermediateResult =
               processEncryption(
                   asBundle,
@@ -193,11 +178,10 @@ public class ReceiverActionService {
       }
 
       // Each of these must produce a new Bundle or something is amiss, e.g. we couldn't create a
-      // pseudonym, even
-      // though NRS told us to
+      // pseudonym, even though NRS told us to
       final Optional<? extends IBaseResource> possible =
           switch (action) {
-            case PSEUDO_ORIGINAL -> processPseudoOriginal(notification);
+            case REPRODUCE, PSEUDO_ORIGINAL -> processPseudoOriginal(notification);
             case PSEUDO_COPY -> processPseudoCopy(notification);
             case ENCRYPTION -> throw new InternalError("Encryption should terminate processing");
             case NO_ACTION -> intermediateResult;
@@ -212,18 +196,14 @@ public class ReceiverActionService {
       }
     }
 
-    intermediateResult =
+    Optional<? extends IBaseResource> result =
         assertAllActionsHaveBeenProcessed(
             intermediateResult, bundleIdentifier, receiver, remainingActions);
     if (!notification.isTestUser()) {
-      intermediateResult = validateProducedBundle(receiver, intermediateResult);
+      result = validateProducedBundle(receiver, result);
     }
 
-    final String relatedIdentifier = notification.getBundle().getIdentifier().getValue();
-    final Optional<? extends IBaseResource> result =
-        applyRelatedToTag(relatedIdentifier, intermediateResult);
     assertResultIsPresentForRequiredReceiver(receiver, bundleIdentifier, result);
-
     return result;
   }
 
@@ -253,8 +233,7 @@ public class ReceiverActionService {
   }
 
   private Optional<Bundle> processPseudoCopy(Notification notification) {
-    final RoutingOutputDto routingInformation = notification.getRoutingOutputDto();
-    Objects.requireNonNull(routingInformation);
+    final RoutingData routingInformation = notification.getRoutingData();
     return switch (routingInformation.notificationCategory()) {
       case P_6_1, P_7_1 -> {
         if (!configProperties.anonymizedAllowed()) {
@@ -310,8 +289,7 @@ public class ReceiverActionService {
 
   /** Throw exception if a 7.3 notification is passed, but the feature is disabled. */
   private void assert73ProcessingAllowed(final Notification notification) {
-    final RoutingOutputDto routingInformation = notification.getRoutingOutputDto();
-    Objects.requireNonNull(routingInformation);
+    final RoutingData routingInformation = notification.getRoutingData();
     if (routingInformation.notificationCategory().equals(P_7_3) && !isProcessing73Enabled) {
       throw new NpsServiceException(
           ErrorCode.UNSUPPORTED_PROFILE, "7.3 notifications can't be processed");

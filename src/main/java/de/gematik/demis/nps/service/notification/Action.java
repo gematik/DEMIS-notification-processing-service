@@ -36,6 +36,7 @@ public enum Action {
   ENCRYPTION,
   PSEUDO_COPY,
   PSEUDO_ORIGINAL,
+  REPRODUCE,
   NO_ACTION;
 
   @JsonCreator

@@ -33,8 +33,13 @@ import de.gematik.demis.notification.builder.demis.fhir.notification.builder.inf
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.technicals.HumanNameDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.service.notification.Notification;
+import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.DiagnosticReport;
@@ -104,8 +109,20 @@ class PseudonymizationRequestTest {
             .setIdentifier(new Identifier().setValue(DEFAULT_BUNDLE_ID))
             .build();
 
+    final RoutingData routingData =
+        new RoutingData(
+            NotificationType.DISEASE,
+            NotificationCategory.UNKNOWN,
+            SequencedSets.of(),
+            List.of(),
+            Map.of(),
+            "");
     final Notification notification =
-        Notification.builder().bundle(bundle).diseaseCode(DISEASE_CODE).build();
+        Notification.builder()
+            .bundle(bundle)
+            .diseaseCode(DISEASE_CODE)
+            .routingData(routingData)
+            .build();
 
     final PseudonymizationRequest request = PseudonymizationRequest.from(notification);
     assertThat(request.dateOfBirth()).isNotNull();

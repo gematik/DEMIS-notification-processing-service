@@ -30,14 +30,15 @@ import com.google.common.base.Strings;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Compositions;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Patients;
 import de.gematik.demis.nps.base.profile.DemisSystems;
-import de.gematik.demis.nps.service.routing.RoutingOutputDto;
+import de.gematik.demis.nps.service.routing.RoutingData;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Coding;
@@ -66,8 +67,7 @@ public class Notification {
       @Nonnull final String testUserRecipient,
       final String diseaseCode,
       final String originalNotificationAsJson,
-      final String reparsedNotification,
-      @CheckForNull final RoutingOutputDto routingOutputDto) {
+      @Nonnull final RoutingData routingData) {
     this.bundle = bundle;
     this.type = type;
     this.sender = sender;
@@ -75,27 +75,26 @@ public class Notification {
     this.testUserRecipient = testUserRecipient;
     this.diseaseCode = diseaseCode;
     this.originalNotificationAsJson = originalNotificationAsJson;
-    this.reparsedNotification = reparsedNotification;
-    this.routingOutputDto = routingOutputDto;
+    this.routingData = routingData;
+    this.preEncryptedBundles = new HashMap<>();
   }
 
-  @Setter private Bundle bundle;
-  @Setter private NotificationType type;
+  private final Bundle bundle;
+  private final NotificationType type;
   private final String sender;
   private final boolean testUser;
+  private Map<String, Bundle> preEncryptedBundles;
+
+  public void putPreEncryptedBundle(String receiverId, Bundle bundle) {
+    this.preEncryptedBundles.put(receiverId, bundle);
+  }
 
   /** In case of testUser=true, defines who is supposed to receive the test notification. */
   @Nonnull private final String testUserRecipient;
 
-  @Setter private String diseaseCode;
+  private final String diseaseCode;
   private final String originalNotificationAsJson;
-  @Setter private String reparsedNotification;
-  // Check for null can be removed once 7.4 OR 7.3 is available
-  @Setter @CheckForNull private RoutingOutputDto routingOutputDto;
-
-  public boolean wasReparsed() {
-    return reparsedNotification != null && !reparsedNotification.isBlank();
-  }
+  @Nonnull private final RoutingData routingData;
 
   public String getBundleIdentifier() {
     return Optional.ofNullable(bundle.getIdentifier())
@@ -136,13 +135,12 @@ public class Notification {
     @CheckForNull private String json;
     @CheckForNull private String sender;
     @CheckForNull private String testUserRecipient;
-    @CheckForNull private NotificationType type;
     @CheckForNull private String diseaseCode;
-    @CheckForNull private RoutingOutputDto routingOutputDto;
-    private String reparsedNotification;
+    @CheckForNull private RoutingData routingData;
+    @CheckForNull private NotificationType type;
 
-    public NotificationBuilder routingOutputDto(@Nonnull final RoutingOutputDto routingOutputDto) {
-      this.routingOutputDto = routingOutputDto;
+    public NotificationBuilder routingData(@Nonnull final RoutingData routingData) {
+      this.routingData = routingData;
       return this;
     }
 
@@ -153,11 +151,6 @@ public class Notification {
 
     public NotificationBuilder bundle(@Nonnull final Bundle bundle) {
       this.bundle = bundle;
-      return this;
-    }
-
-    public NotificationBuilder type(@Nonnull final NotificationType type) {
-      this.type = type;
       return this;
     }
 
@@ -182,8 +175,8 @@ public class Notification {
       return this;
     }
 
-    public NotificationBuilder reparsedNotification(@Nonnull final String reparsedNotification) {
-      this.reparsedNotification = reparsedNotification;
+    public NotificationBuilder type(@Nonnull final NotificationType type) {
+      this.type = type;
       return this;
     }
 
@@ -199,16 +192,17 @@ public class Notification {
         testUserRecipient = Strings.nullToEmpty(testUserRecipient);
       }
 
+      Objects.requireNonNull(routingData, "RoutingData must be set");
+
       return new Notification(
           bundle,
-          type,
+          routingData.type(),
           sender,
           isTestUser,
           testUserRecipient,
           diseaseCode,
           json,
-          reparsedNotification,
-          routingOutputDto);
+          routingData);
     }
   }
 }

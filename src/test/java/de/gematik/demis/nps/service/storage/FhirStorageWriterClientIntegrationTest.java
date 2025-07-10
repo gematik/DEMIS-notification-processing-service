@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.pseudonymization;
+package de.gematik.demis.nps.service.storage;
 
 /*-
  * #%L
@@ -28,12 +28,13 @@ package de.gematik.demis.nps.service.pseudonymization;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.springframework.http.HttpHeaders.ACCEPT;
@@ -41,6 +42,9 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import de.gematik.demis.nps.error.ServiceCallErrorCode;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.List;
@@ -49,57 +53,41 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 
-@SpringBootTest(properties = "nps.client.pseudo-storage=http://localhost:${wiremock.server.port}")
+@SpringBootTest(
+    properties = "nps.client.fhir-storage-writer=http://localhost:${wiremock.server.port}")
 @AutoConfigureWireMock(port = 0)
-class PseudoStorageServiceClientIntegrationTest {
+class FhirStorageWriterClientIntegrationTest {
+  private static final String ENDPOINT = "/notification-clearing-api/fhir/";
 
-  private static final String ENDPOINT = "/demis/storage";
-
-  private static final String EXPECTED_REQUEST_BODY =
+  private static final String REQUEST_BODY =
 """
-{
-    "type": "demisStorageRequest",
-    "pseudonym": {
-        "familyName": [
-            "XXXa"
-        ],
-        "firstName": [
-            "XXXb"
-        ],
-        "dateOfBirth": "XXXc",
-        "diseaseCode": "cvd"
-    },
-    "notificationBundleId": "2a40dccb-18da-5a9f-a11e-4ef3e0fd2096",
-    "pho": "1.52.03"
-}
+{"bundle": "does not matter"}
 """;
-
   private static final String RESPONSE_BODY =
 """
+{"bundle": "response"}
 """;
 
-  private static final PseudonymStorageRequest REQUEST =
-      new PseudonymStorageRequest(
-          new Pseudonym(List.of("XXXa"), List.of("XXXb"), "XXXc", "cvd"),
-          "2a40dccb-18da-5a9f-a11e-4ef3e0fd2096",
-          "1.52.03");
-
-  @Autowired PseudoStorageServiceClient underTest;
+  @Autowired FhirStorageWriterClient underTest;
 
   private static void setupRemoteService(final ResponseDefinitionBuilder responseDefBuilder) {
     stubFor(
         post(ENDPOINT)
-            .withHeader(CONTENT_TYPE, equalTo("application/vnd.demis_storage+json"))
-            .withHeader(ACCEPT, equalTo("application/vnd.demis_storage+json"))
-            .withRequestBody(equalToJson(EXPECTED_REQUEST_BODY))
+            .withHeader(CONTENT_TYPE, equalTo("application/fhir+json"))
+            .withHeader(ACCEPT, equalTo("application/fhir+json"))
+            .withRequestBody(equalToJson(REQUEST_BODY))
             .willReturn(responseDefBuilder));
   }
 
   @Test
   void success() {
-    setupRemoteService(okJson(RESPONSE_BODY));
-    underTest.store(REQUEST);
-    WireMock.verify(postRequestedFor(urlEqualTo(ENDPOINT)));
+    setupRemoteService(okForContentType("application/fhir+json;charset=utf-8", RESPONSE_BODY));
+    underTest.sendNotificationToFhirStorageWriter(REQUEST_BODY);
+    verify(postRequestedFor(urlEqualTo(ENDPOINT)));
+    final List<LoggedRequest> all =
+        WireMock.findAll(
+            RequestPatternBuilder.newRequestPattern(RequestMethod.POST, urlEqualTo(ENDPOINT)));
+    assertThat(all).hasSize(1);
   }
 
   @Test
@@ -107,11 +95,13 @@ class PseudoStorageServiceClientIntegrationTest {
     setupRemoteService(serverError());
 
     final ServiceCallException ex =
-        catchThrowableOfType(() -> underTest.store(REQUEST), ServiceCallException.class);
+        catchThrowableOfType(
+            () -> underTest.sendNotificationToFhirStorageWriter(REQUEST_BODY),
+            ServiceCallException.class);
 
     assertThat(ex)
         .isNotNull()
         .returns(500, ServiceCallException::getHttpStatus)
-        .returns(ServiceCallErrorCode.PSS, ServiceCallException::getErrorCode);
+        .returns(ServiceCallErrorCode.FSW, ServiceCallException::getErrorCode);
   }
 }

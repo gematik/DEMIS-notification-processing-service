@@ -26,11 +26,13 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
+import static de.gematik.demis.nps.api.NotificationController.HEADER_FHIR_API_VERSION;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_FATAL;
 import static de.gematik.demis.nps.error.ErrorCode.LIFECYCLE_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.LVS;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
+import static java.util.Optional.ofNullable;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
@@ -45,6 +47,7 @@ import feign.Response;
 import feign.codec.Decoder;
 import feign.codec.StringDecoder;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +69,9 @@ public class NotificationValidator {
 
   private final FhirContext fhirContext;
   private final FeatureFlagsConfigProperties featureFlags;
+
+  private final HttpServletRequest httpServletRequest;
+
   private final Decoder decoder = new StringDecoder();
 
   private boolean lvDiseaseActivated;
@@ -167,9 +173,12 @@ public class NotificationValidator {
 
   private Response callValidationService(
       final String fhirNotification, final MessageType contentType) {
+    // forward optional Fhir Version Header
+    final var versionHeader = ofNullable(httpServletRequest.getHeader(HEADER_FHIR_API_VERSION));
+
     return switch (contentType) {
-      case JSON -> validationServiceClient.validateJsonBundle(fhirNotification);
-      case XML -> validationServiceClient.validateXmlBundle(fhirNotification);
+      case JSON -> validationServiceClient.validateJsonBundle(versionHeader, fhirNotification);
+      case XML -> validationServiceClient.validateXmlBundle(versionHeader, fhirNotification);
     };
   }
 

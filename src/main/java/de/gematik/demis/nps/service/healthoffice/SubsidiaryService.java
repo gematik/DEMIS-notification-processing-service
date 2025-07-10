@@ -26,9 +26,6 @@ package de.gematik.demis.nps.service.healthoffice;
  * #L%
  */
 
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 
 /**
@@ -39,14 +36,8 @@ import org.springframework.stereotype.Service;
 @Service
 public final class SubsidiaryService {
 
-  /** Prefix for subsidiary health office (Gesundheitsamt) IDs. */
-  private static final String SUBSIDIARY_PREFIX = "2.";
-
   /** Prefix for central/regular health office (Gesundheitsamt) IDs. */
   private static final String CENTRAL_OFFICE_PREFIX = "1.";
-
-  private static final Pattern CENTRAL_PREFIX_PATTERN =
-      Pattern.compile("^" + Pattern.quote(CENTRAL_OFFICE_PREFIX));
 
   /**
    * Tests if the given {@code healthOfficeId} is an ID of a subsidiary health office.
@@ -56,25 +47,5 @@ public final class SubsidiaryService {
    */
   public boolean isSubsidiary(String healthOfficeId) {
     return !healthOfficeId.startsWith(CENTRAL_OFFICE_PREFIX);
-  }
-
-  /**
-   * Will return the subsidiary health office ID for the given {@code centralOfficeId}.<br>
-   * If this function is not called with a main office ID, the function will return an empty
-   * optional.
-   *
-   * @param centralOfficeId the central/regular health office ID, for which the subsidiary ID shall
-   *     be returned.
-   * @return subsidiary health office ID for the {@code centralOfficeId}, or empty optional if the
-   *     ID does not match a main office ID.
-   */
-  public Optional<String> getSubsidiaryId(final String centralOfficeId) {
-    Matcher matcher = CENTRAL_PREFIX_PATTERN.matcher(centralOfficeId);
-    if (matcher.find()) {
-      String result = matcher.replaceFirst(SUBSIDIARY_PREFIX);
-      return Optional.of(result);
-    } else {
-      return Optional.empty();
-    }
   }
 }

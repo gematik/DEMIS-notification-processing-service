@@ -9,11 +9,6 @@
       {
         "system": "https://demis.rki.de/fhir/CodeSystem/ResponsibleDepartment",
         "code": "1."
-      },
-      {
-        "system": "https://demis.rki.de/fhir/CodeSystem/RelatedNotificationBundle",
-        "code": "1a3a16aa-64e0-5eb1-8601-018fc3794b6e",
-        "display": "Relates to message with identifier: 1a3a16aa-64e0-5eb1-8601-018fc3794b6e"
       }
     ]
   },

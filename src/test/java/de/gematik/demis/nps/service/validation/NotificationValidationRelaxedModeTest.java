@@ -27,6 +27,7 @@ package de.gematik.demis.nps.service.validation;
  */
 
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
+import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -38,6 +39,7 @@ import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import feign.Response;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -72,6 +74,7 @@ class NotificationValidationRelaxedModeTest {
   FeatureFlagsConfigProperties featureFlags;
   @Mock ValidationServiceClient validationServiceClient;
   @Mock LifecycleValidationServiceClient lifecycleValidationServiceClient;
+  @Mock HttpServletRequest httpServletRequest;
 
   private NotificationValidator underTest;
 
@@ -99,7 +102,11 @@ class NotificationValidationRelaxedModeTest {
     featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed_validation", true));
     underTest =
         new NotificationValidator(
-            validationServiceClient, lifecycleValidationServiceClient, fhirContext, featureFlags);
+            validationServiceClient,
+            lifecycleValidationServiceClient,
+            fhirContext,
+            featureFlags,
+            httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();
   }
@@ -108,11 +115,11 @@ class NotificationValidationRelaxedModeTest {
   void parsedFhirNotificationIsValid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(empty(), ORIGINAL_NOTIFICATION))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(200, null);
-    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(empty(), CORRECTED_NOTIFICATION))
         .thenReturn(secondTryResponse);
 
     final InternalOperationOutcome result =
@@ -127,11 +134,11 @@ class NotificationValidationRelaxedModeTest {
   void parsedFhirNotificationIsStillInvalid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(empty(), ORIGINAL_NOTIFICATION))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(422, null);
-    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(empty(), CORRECTED_NOTIFICATION))
         .thenReturn(secondTryResponse);
 
     assertThatThrownBy(() -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML))
@@ -160,7 +167,7 @@ class NotificationValidationRelaxedModeTest {
                         """;
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(notParseableNotification))
+    when(validationServiceClient.validateXmlBundle(empty(), notParseableNotification))
         .thenReturn(firstResponse);
 
     assertThatThrownBy(() -> underTest.validateFhir(notParseableNotification, MessageType.XML))
@@ -184,11 +191,11 @@ class NotificationValidationRelaxedModeTest {
 
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(empty(), ORIGINAL_NOTIFICATION))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(200, null);
-    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(empty(), CORRECTED_NOTIFICATION))
         .thenReturn(secondTryResponse);
 
     final InternalOperationOutcome result =

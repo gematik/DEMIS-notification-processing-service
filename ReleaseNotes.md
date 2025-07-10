@@ -2,6 +2,25 @@
 
 # Release Notification Processing Service
 
+## Release 2.4.0
+- Remove Feature Flag for 7.4
+- Removal of deprecated NRS client
+- Removal of deprecated Pseudo-Storage Service (PSS) client
+- additional §7.3 handling
+- update spring parent
+- remove all NCAPI references
+- Removal of deprecated Pseudo-Storage Service (PSS) client
+- additional §7.3 handling
+- update spring parent
+- remove all NCAPI references
+
+## Release 2.3.2
+- Remove Feature Flag for 7.4
+- Removal of deprecated NRS client
+
+## Release 2.3.1
+- fixed relaxed validation feature flag naming
+
 ## Release 2.3.0
 - Renamed feature flag for relaxed validation to `feature.flag.relaxed_validation` and disabled by default
 - Updated dependencies

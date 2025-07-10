@@ -34,26 +34,25 @@ import static de.gematik.demis.nps.test.TestData.laboratoryBundle;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToXml;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import de.gematik.demis.fhirparserlibrary.FhirParser;
-import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.codemapping.CodeMappingService;
-import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import java.util.Collections;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CanonicalType;
-import org.hl7.fhir.r4.model.OperationOutcome;
+import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.Coding;
+import org.hl7.fhir.r4.model.Condition;
+import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,16 +61,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NotificationFhirServiceTest {
 
   private NotificationFhirService underTest;
-  @Mock private FhirParser fhirParserMock;
   @Mock private NotificationCleaning cleanerMock;
   @Mock private NotificationEnrichment enricherMock;
   @Mock private CodeMappingService codeMappingServiceMock;
 
   @BeforeEach
   void beforeAll() {
-    underTest =
-        new NotificationFhirService(
-            fhirParserMock, cleanerMock, enricherMock, codeMappingServiceMock);
+    underTest = new NotificationFhirService(cleanerMock, enricherMock, codeMappingServiceMock);
   }
 
   @Nested
@@ -143,40 +139,52 @@ class NotificationFhirServiceTest {
   }
 
   @Nested
-  class ReadNotification {
-    @ParameterizedTest
-    @EnumSource(MessageType.class)
-    void read(final MessageType messageType) {
-      final String fhirString = "valid fhir string";
-      final String sender = "me";
-      final var bundle = laboratoryBundle();
-      final var validationOutcome =
-          new InternalOperationOutcome(new OperationOutcome(), "someBundleString");
-      when(fhirParserMock.parseBundleOrParameter(fhirString, messageType)).thenReturn(bundle);
-      final Notification notification =
-          underTest.read(fhirString, messageType, sender, false, "", validationOutcome);
-      assertThat(notification)
-          .isNotNull()
-          .returns(bundle, Notification::getBundle)
-          .returns(NotificationType.LABORATORY, Notification::getType)
-          .returns(sender, Notification::getSender)
-          .returns(false, Notification::isTestUser)
-          .returns("", Notification::getTestUserRecipient);
+  class GetDiseaseCode {
+
+    @Test
+    void thatMissingDiseaseCodeLeadsToExceptionForLaboratoryReports() {
+      final DiagnosticReport diagnosticReport = new DiagnosticReport();
+      final Bundle laboratoryBundle = new Bundle();
+      laboratoryBundle.addEntry(new Bundle.BundleEntryComponent().setResource(diagnosticReport));
+
+      assertThatExceptionOfType(NpsServiceException.class)
+          .isThrownBy(
+              () -> underTest.getDiseaseCode(laboratoryBundle, NotificationType.LABORATORY));
     }
 
     @Test
-    void testUserHeaderFlag() {
-      final var validationOutcome =
-          new InternalOperationOutcome(new OperationOutcome(), "someBundleString");
-      when(fhirParserMock.parseBundleOrParameter(any(String.class), any(MessageType.class)))
-          .thenReturn(laboratoryBundle());
-      final Notification notification =
-          underTest.read(
-              "fhir", MessageType.JSON, "user-name", true, "test-recipient", validationOutcome);
-      assertThat(notification).isNotNull().returns(true, Notification::isTestUser);
-      assertThat(notification)
-          .isNotNull()
-          .returns("test-recipient", Notification::getTestUserRecipient);
+    void thatMissingDiseaseCodeLeadsToExceptionForDiseases() {
+      final Condition condition = new Condition();
+      final Bundle bundle = new Bundle();
+      bundle.addEntry(new Bundle.BundleEntryComponent().setResource(condition));
+
+      assertThatExceptionOfType(NpsServiceException.class)
+          .isThrownBy(() -> underTest.getDiseaseCode(bundle, NotificationType.DISEASE));
+    }
+
+    @Test
+    void thatDiseaseCodeIsFoundForLaboratoryReports() {
+      when(codeMappingServiceMock.getMappedPathogenCode("code")).thenReturn("hit");
+
+      final DiagnosticReport diagnosticReport = new DiagnosticReport();
+      diagnosticReport.setCode(new CodeableConcept(new Coding("system", "code", "code")));
+      final Bundle laboratoryBundle = new Bundle();
+      laboratoryBundle.addEntry(new Bundle.BundleEntryComponent().setResource(diagnosticReport));
+
+      String diseaseCode = underTest.getDiseaseCode(laboratoryBundle, NotificationType.LABORATORY);
+      assertThat(diseaseCode).isEqualTo("hit");
+    }
+
+    @Test
+    void thatDiseaseCodeIsFoundForDiseases() {
+      when(codeMappingServiceMock.getMappedDiseaseCode("code")).thenReturn("hit");
+      final Condition condition = new Condition();
+      condition.setCode(new CodeableConcept(new Coding("system", "code", "code")));
+      final Bundle bundle = new Bundle();
+      bundle.addEntry(new Bundle.BundleEntryComponent().setResource(condition));
+
+      final String diseaseCode = underTest.getDiseaseCode(bundle, NotificationType.DISEASE);
+      assertThat(diseaseCode).isEqualTo("hit");
     }
   }
 }

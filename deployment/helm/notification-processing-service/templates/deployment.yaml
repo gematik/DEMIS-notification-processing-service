@@ -3,8 +3,6 @@
 {{- $dockerImage := .Values.required.image.name | required ".Values.required.image.name is required." -}}
 {{- $dockerTag := .Values.required.image.tag | default .Chart.AppVersion -}}
 {{- $customEnvVars := .Values.customEnvVars -}}
-{{- $secretApiKeyName := .Values.config.secret.api.name | required ".Values.config.secret.api.name is required." -}}
-{{- $secretApiKeyEntry := .Values.config.secret.api.key -}}
 {{- $redisSecretKeyName := .Values.config.secret.redis.name | required ".Values.config.secret.redis.name is required." -}}
 {{- $redisKeyEntry := .Values.config.secret.redis.key -}}
 apiVersion: apps/v1
@@ -49,12 +47,6 @@ spec:
         - name: jfr-volume
           emptyDir: {}
         {{- end }}
-        - name: api-key-secret-volume
-          secret:
-            secretName: {{ $secretApiKeyName }}
-            items:
-              - key: {{ $secretApiKeyEntry }}
-                path: nps/apikey/ncapi
         - name: redis-cus-secret-volume
           secret:
             secretName: {{ $redisSecretKeyName }}
@@ -106,9 +98,6 @@ spec:
             - name: jfr-volume
               mountPath: "/jfrdump"
             {{- end }}
-            - name: api-key-secret-volume
-              readOnly: true
-              mountPath: "/secrets/api"
             - name: redis-cus-secret-volume
               readOnly: true
               mountPath: "/secrets/redis"

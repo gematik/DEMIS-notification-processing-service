@@ -32,14 +32,13 @@ import org.hl7.fhir.r4.model.Organization;
 
 public class HealthOfficeMasterDataService {
 
+  private static final Organization RKI_ORGANIZATION =
+      new RkiOrganizationBuilder().createRkiOrganization();
   private final Map<String, Organization> healthOfficeIdToOrganization;
 
-  public HealthOfficeMasterDataService(
-      Map<String, Organization> healthOfficeIdToOrganization, boolean isNewProcessing) {
+  public HealthOfficeMasterDataService(Map<String, Organization> healthOfficeIdToOrganization) {
 
-    if (isNewProcessing) {
-      healthOfficeIdToOrganization.put("1.", new RkiOrganizationBuilder().createRkiOrganization());
-    }
+    healthOfficeIdToOrganization.put("1.", RKI_ORGANIZATION);
     this.healthOfficeIdToOrganization = healthOfficeIdToOrganization;
   }
 

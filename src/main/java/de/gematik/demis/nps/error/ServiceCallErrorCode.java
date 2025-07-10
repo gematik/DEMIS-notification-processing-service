@@ -34,6 +34,6 @@ public interface ServiceCallErrorCode {
   String CES = "CES";
   String PS = "PS";
   String PSS = "PSS";
-  String NCAPI = "NCAPI";
+  String FSW = "FSW";
   String PDF = "PDF";
 }

@@ -26,19 +26,13 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
-import static de.gematik.demis.nps.base.profile.DemisSystems.*;
-
-import de.gematik.demis.fhirparserlibrary.FhirParser;
-import de.gematik.demis.nps.config.TestUserConfiguration;
+import com.google.common.base.Strings;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
-import de.gematik.demis.nps.service.notification.Notification;
-import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.hl7.fhir.r4.model.Bundle;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -47,106 +41,26 @@ import org.springframework.stereotype.Service;
 public class RoutingService {
 
   private final NotificationRoutingServiceClient client;
-  private final NotificationUpdateService updateService;
-  private final TestUserConfiguration testUserConfiguration;
-  private final FhirParser fhirParser;
 
-  private static String toResponsibleCodingSystem(final AddressOriginEnum addressOrigin) {
-    return switch (addressOrigin) {
-      case NOTIFIED_PERSON_PRIMARY -> HEALTH_DEPARTMENT_FOR_PRIMARY_ADDRESS_CODING_SYSTEM;
-      case NOTIFIED_PERSON_CURRENT -> HEALTH_DEPARTMENT_FOR_CURRENT_ADDRESS_CODING_SYSTEM;
-      case NOTIFIED_PERSON_ORDINARY -> HEALTH_DEPARTMENT_FOR_ORDINARY_ADDRESS_CODING_SYSTEM;
-      case NOTIFIED_PERSON_OTHER -> null;
-      case NOTIFIER -> NOTIFIER_HEALTH_DEPARTMENT_CODING_SYSTEM;
-      case SUBMITTER -> SUBMITTER_HEALTH_DEPARTMENT_CODING_SYSTEM;
-    };
-  }
-
-  /**
-   * set bundle.meta.CodeSystem/ResponsibleDepartment and add
-   * bundle.meta.CodeSystem/ResponsibleDepartmentPrimaryAddress for each address type
-   *
-   * @param notification
-   */
-  @Deprecated
-  public void determineHealthOfficesAndAddToNotification(final Notification notification) {
-    final Bundle bundle = notification.getBundle();
-    final LegacyRoutingOutputDto routingOutput = client.determineRouting(toJson(bundle));
-
-    final String responsibleHealthOffice =
-        getResponsibleHealthOffice(notification, routingOutput.getResponsible());
-    log.info("Route to '{}'. NRS response = {}", responsibleHealthOffice, routingOutput);
-
-    if (StringUtils.isBlank(responsibleHealthOffice)) {
-      throw new NpsServiceException(
-          ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
-    }
-
-    setResponsibleDepartment(bundle, responsibleHealthOffice);
-    addHealthOfficeTags(bundle, routingOutput.getHealthOffices());
-  }
-
-  public void setResponsibleHealthOffice(final Notification notification) {
-    final String healthOffice = notification.getRoutingOutputDto().responsible();
-    setResponsibleDepartment(notification.getBundle(), healthOffice);
-  }
-
-  public void setHealthOfficeTags(final Notification notification) {
-    addHealthOfficeTags(
-        notification.getBundle(), notification.getRoutingOutputDto().healthOffices());
-  }
-
-  private String toJson(final Bundle bundle) {
-    return fhirParser.encodeToJson(bundle);
-  }
-
-  /**
-   * Allows to substitute the originally responsible health office to be substituted with test data.
-   */
-  private String getResponsibleHealthOffice(
-      final Notification notification, final String originalResponsibleHealthOffice) {
-    if (notification.isTestUser()) {
-      return notification.getTestUserRecipient();
-    } else {
-      return originalResponsibleHealthOffice;
-    }
-  }
-
-  public void addHealthOfficeTags(
-      final Bundle notification, final Map<AddressOriginEnum, String> healthOffices) {
-    if (healthOffices == null || healthOffices.isEmpty()) {
-      return;
-    }
-
-    healthOffices.forEach(
-        (addressOrigin, healthOffice) ->
-            addHealthOfficeTag(notification, addressOrigin, healthOffice));
-  }
-
-  private void addHealthOfficeTag(
-      final Bundle notification, final AddressOriginEnum addressOrigin, final String healthOffice) {
-    final String codingSystem = toResponsibleCodingSystem(addressOrigin);
-    if (codingSystem != null) {
-      updateService.addMetaTag(notification, codingSystem, healthOffice);
-    }
-  }
-
-  private void setResponsibleDepartment(
-      final Bundle notification, final String responsibleHealthOffice) {
-    updateService.addOrReplaceMetaTag(
-        notification, RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, responsibleHealthOffice);
-  }
-
-  public RoutingOutputDto getRoutingInformation(final NRSRoutingInput request) {
-    final RoutingOutputDto routingOutputDto =
+  @Nonnull
+  public RoutingData getRoutingInformation(@Nonnull final NRSRoutingInput request) {
+    final NRSRoutingResponse response =
         client.ruleBased(
             request.originalNotificationAsJSON(), request.isTestUser(), request.testUserId());
-    log.info("Route to '{}'. NRS response = {}", routingOutputDto.responsible(), routingOutputDto);
-    if (StringUtils.isBlank(routingOutputDto.responsible())
-        || routingOutputDto.routes().isEmpty()) {
+    log.info("Route to '{}'. NRS response = {}", response.responsible(), response);
+    final Map<AddressOriginEnum, String> healthOffices = response.healthOffices();
+    final String responsible = Strings.nullToEmpty(response.responsible());
+    if (responsible.isBlank() || response.routes().isEmpty() || healthOffices == null) {
       throw new NpsServiceException(
           ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
     }
-    return routingOutputDto;
+
+    return new RoutingData(
+        response.type(),
+        response.notificationCategory(),
+        response.bundleActions(),
+        response.routes(),
+        healthOffices,
+        responsible);
   }
 }

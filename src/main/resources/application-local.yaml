@@ -9,8 +9,7 @@ nps:
         routing: "http://localhost:9012"
         pdfgen: "http://localhost:9013"
         pseudonymization: "http://localhost:9014"
-        pseudo-storage: "http://localhost:9015"
-        ncapi: "http://localhost:9016"
+        fhir-storage-writer: "http://localhost:9016"
         futs: "http://localhost:9017"
 
 spring:

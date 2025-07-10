@@ -26,19 +26,22 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.processing.BundleAction;
+import java.util.List;
 import java.util.Map;
-import lombok.Data;
+import java.util.SequencedSet;
+import javax.annotation.CheckForNull;
 
 /**
- * Legacy DTO for routing output.
- *
- * <p>This class is deprecated and will be removed when feature flag notifications.7_4 is removed
- *
- * @deprecated forRemoval = true
+ * Required data for routing a notification as retrieved from the NRS. Note: the data needs to be
+ * validated before use, prefer {@link RoutingData} instead.
  */
-@Deprecated(forRemoval = true)
-@Data
-public class LegacyRoutingOutputDto {
-  private Map<AddressOriginEnum, String> healthOffices;
-  private String responsible;
-}
+record NRSRoutingResponse(
+    NotificationType type,
+    NotificationCategory notificationCategory,
+    SequencedSet<BundleAction> bundleActions,
+    List<NotificationReceiver> routes,
+    @CheckForNull Map<AddressOriginEnum, String> healthOffices,
+    @CheckForNull String responsible) {}

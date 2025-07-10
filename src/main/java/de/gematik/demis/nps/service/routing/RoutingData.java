@@ -32,12 +32,16 @@ import de.gematik.demis.nps.service.processing.BundleAction;
 import java.util.List;
 import java.util.Map;
 import java.util.SequencedSet;
-import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 
-public record RoutingOutputDto(
-    NotificationType type,
-    NotificationCategory notificationCategory,
-    SequencedSet<BundleAction> bundleActions,
-    List<NotificationReceiver> routes,
-    @CheckForNull Map<AddressOriginEnum, String> healthOffices,
-    @CheckForNull String responsible) {}
+/**
+ * Represents the data required to route a given notification. See {@link NRSRoutingResponse} for
+ * the response part we receive from the NRS.
+ */
+public record RoutingData(
+    @Nonnull NotificationType type,
+    @Nonnull NotificationCategory notificationCategory,
+    @Nonnull SequencedSet<BundleAction> bundleActions,
+    @Nonnull List<NotificationReceiver> routes,
+    @Nonnull Map<AddressOriginEnum, String> healthOffices,
+    @Nonnull String responsible) {}

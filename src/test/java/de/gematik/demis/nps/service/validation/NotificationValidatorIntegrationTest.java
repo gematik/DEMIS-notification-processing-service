@@ -26,6 +26,7 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -50,16 +51,22 @@ import ca.uhn.fhir.parser.IParser;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.service.base.error.ServiceCallException;
+import java.util.List;
+import java.util.Map;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueType;
 import org.hl7.fhir.r4.model.OperationOutcome.OperationOutcomeIssueComponent;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,7 +78,10 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @SpringBootTest(
     properties = {
@@ -98,16 +108,6 @@ class NotificationValidatorIntegrationTest {
     WireMock.reset();
   }
 
-  private static void setupVS(
-      final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
-    stubFor(
-        post(ENDPOINT_VS)
-            .withHeader(CONTENT_TYPE, equalTo(contentType))
-            .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
-            .withRequestBody(equalTo(REQUEST_BODY))
-            .willReturn(responseDefBuilder));
-  }
-
   private IParser setupFhirJsonParserMock() {
     final IParser parser = Mockito.mock(IParser.class);
     when(fhirContext.newJsonParser()).thenReturn(parser);
@@ -122,50 +122,101 @@ class NotificationValidatorIntegrationTest {
     return outcome;
   }
 
-  @ParameterizedTest
-  @EnumSource(MessageType.class)
-  void validationOkay(final MessageType messageType) {
-    final String contentType =
-        switch (messageType) {
-          case JSON -> APPLICATION_JSON_VALUE;
-          case XML -> APPLICATION_XML_VALUE;
-        };
-    setupVS(contentType, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
-    final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+  @Nested
+  class ValidationServiceTest {
 
-    assertThat(result.operationOutcome()).isEqualTo(outcome);
-  }
+    private static void setupVS(
+        final String contentType,
+        final String version,
+        final ResponseDefinitionBuilder responseDefBuilder) {
+      stubFor(
+          post(ENDPOINT_VS)
+              .withHeader(CONTENT_TYPE, equalTo(contentType))
+              .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
+              .withHeader("x-fhir-api-version", version == null ? absent() : equalTo(version))
+              .withRequestBody(equalTo(REQUEST_BODY))
+              .willReturn(responseDefBuilder));
+    }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = IssueSeverity.class,
-      names = {"ERROR", "FATAL"})
-  void validationErrorOutcome(final IssueSeverity severity) {
-    setupVS(
-        APPLICATION_JSON_VALUE,
-        WireMock.status(422)
-            .withBody(RESPONSE_BODY)
-            .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+    private static void setupVS(
+        final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
+      setupVS(contentType, null, responseDefBuilder);
+    }
 
-    final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
-    outcome.addIssue().setSeverity(severity);
+    private static void setRequestHeader(final String key, final String value) {
+      final var mockRequest = new MockHttpServletRequest();
+      mockRequest.addHeader(key, value);
+      final var attrs = new ServletRequestAttributes(mockRequest);
+      RequestContextHolder.setRequestAttributes(attrs);
+    }
 
-    final ErrorCode expectedErrorCode =
-        severity == FATAL ? ErrorCode.FHIR_VALIDATION_FATAL : ErrorCode.FHIR_VALIDATION_ERROR;
+    @AfterEach
+    void tearDown() {
+      RequestContextHolder.resetRequestAttributes();
+    }
 
-    assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
-        .isExactlyInstanceOf(NpsServiceException.class)
-        .hasFieldOrPropertyWithValue("errorCode", expectedErrorCode.getCode())
-        .hasFieldOrPropertyWithValue("responseStatus", expectedErrorCode.getHttpStatus())
-        .hasFieldOrPropertyWithValue("operationOutcome", outcome);
-  }
+    @ParameterizedTest
+    @EnumSource(MessageType.class)
+    void validationOkay(final MessageType messageType) {
+      final String contentType =
+          switch (messageType) {
+            case JSON -> APPLICATION_JSON_VALUE;
+            case XML -> APPLICATION_XML_VALUE;
+          };
+      setupVS(contentType, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
-  @Test
-  void validationCallException() {
-    setupVS(APPLICATION_JSON_VALUE, WireMock.serverError());
-    assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
-        .isExactlyInstanceOf(ServiceCallException.class);
+      assertThat(result.operationOutcome()).isEqualTo(outcome);
+    }
+
+    @ParameterizedTest
+    @EnumSource(MessageType.class)
+    void validationOkayWithSpecificVersion(final MessageType messageType) {
+      final String apiVersion = "6";
+      setRequestHeader("x-fhir-api-version", apiVersion);
+      final String contentType =
+          switch (messageType) {
+            case JSON -> APPLICATION_JSON_VALUE;
+            case XML -> APPLICATION_XML_VALUE;
+          };
+      setupVS(contentType, apiVersion, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+
+      assertThat(result.operationOutcome()).isEqualTo(outcome);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = IssueSeverity.class,
+        names = {"ERROR", "FATAL"})
+    void validationErrorOutcome(final IssueSeverity severity) {
+      setupVS(
+          APPLICATION_JSON_VALUE,
+          WireMock.status(422)
+              .withBody(RESPONSE_BODY)
+              .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+
+      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      outcome.addIssue().setSeverity(severity);
+
+      final ErrorCode expectedErrorCode =
+          severity == FATAL ? ErrorCode.FHIR_VALIDATION_FATAL : ErrorCode.FHIR_VALIDATION_ERROR;
+
+      assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
+          .isExactlyInstanceOf(NpsServiceException.class)
+          .hasFieldOrPropertyWithValue("errorCode", expectedErrorCode.getCode())
+          .hasFieldOrPropertyWithValue("responseStatus", expectedErrorCode.getHttpStatus())
+          .hasFieldOrPropertyWithValue("operationOutcome", outcome);
+    }
+
+    @Test
+    void validationCallException() {
+      setupVS(APPLICATION_JSON_VALUE, WireMock.serverError());
+      assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
+          .isExactlyInstanceOf(ServiceCallException.class);
+    }
   }
 
   @Nested
@@ -185,8 +236,16 @@ class NotificationValidatorIntegrationTest {
     private Notification setupLaboratoryRequest() {
       final var bundle = new Bundle();
       bundle.setId("my-bundle");
+      final RoutingData routingData =
+          new RoutingData(
+              NotificationType.LABORATORY,
+              NotificationCategory.P_6_1,
+              SequencedSets.of(),
+              List.of(),
+              Map.of(),
+              "");
       final var notification =
-          Notification.builder().bundle(bundle).type(NotificationType.LABORATORY).build();
+          Notification.builder().bundle(bundle).routingData(routingData).build();
 
       final var parser = setupFhirJsonParserMock();
       when(parser.encodeResourceToString(bundle)).thenReturn(REQUEST_BODY);
@@ -303,8 +362,16 @@ class NotificationValidatorIntegrationTest {
     private Notification setupDiseaseRequest() {
       final var bundle = new Bundle();
       bundle.setId("my-bundle");
+      final RoutingData routingData =
+          new RoutingData(
+              NotificationType.DISEASE,
+              NotificationCategory.P_6_1,
+              SequencedSets.of(),
+              List.of(),
+              Map.of(),
+              "");
       final var notification =
-          Notification.builder().bundle(bundle).type(NotificationType.DISEASE).build();
+          Notification.builder().bundle(bundle).routingData(routingData).build();
 
       final var parser = setupFhirJsonParserMock();
       when(parser.encodeResourceToString(bundle)).thenReturn(REQUEST_BODY);

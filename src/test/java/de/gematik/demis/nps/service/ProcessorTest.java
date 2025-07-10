@@ -32,10 +32,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
@@ -48,6 +53,7 @@ import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
 import de.gematik.demis.nps.service.notification.NotificationType;
+import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import de.gematik.demis.nps.service.processing.BundleAction;
 import de.gematik.demis.nps.service.processing.BundleActionService;
 import de.gematik.demis.nps.service.processing.ReceiverActionService;
@@ -56,7 +62,7 @@ import de.gematik.demis.nps.service.receipt.ReceiptService;
 import de.gematik.demis.nps.service.response.FhirResponseService;
 import de.gematik.demis.nps.service.routing.NRSRoutingInput;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
-import de.gematik.demis.nps.service.routing.RoutingOutputDto;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
@@ -80,11 +86,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessorTest {
 
   private static final String FHIR_NOTIFICATION = "Just for testing. Content does not matter";
+  private static final String REPARSED_FHIR_NOTIFICATION = "someBundleString";
   private static final MessageType CONTENT_TYPE = MessageType.JSON;
   private static final String REQUEST_ID = "1234";
   private static final String SENDER = "Me";
@@ -104,6 +112,31 @@ class ProcessorTest {
   @Mock ReceiverActionService receiverActionService;
   @Mock Statistics statistics;
   @Mock FhirParser fhirParser;
+  @Mock NotificationUpdateService updateService;
+
+  /** Help with checked issues on Collections: https://stackoverflow.com/a/5655702 */
+  @Captor private ArgumentCaptor<Collection<? extends IBaseResource>> storageParameter;
+
+  private static Notification createNotification(
+      final Bundle bundle, final RoutingData routingData) {
+    return Notification.builder()
+        .bundle(bundle)
+        .sender(SENDER)
+        .testUser(false)
+        .testUserRecipient("")
+        .diseaseCode("xxx")
+        .originalNotificationAsJson(FHIR_NOTIFICATION)
+        .routingData(routingData)
+        .build();
+  }
+
+  private static <T> ListAppender<ILoggingEvent> listenToLog(final Class<T> clazz) {
+    final var log = (Logger) LoggerFactory.getLogger(clazz);
+    final var listAppender = new ListAppender<ILoggingEvent>();
+    listAppender.start();
+    log.addAppender(listAppender);
+    return listAppender;
+  }
 
   @ParameterizedTest
   @EnumSource(MessageType.class)
@@ -112,8 +145,6 @@ class ProcessorTest {
     // GIVEN a parsed bundle
     final Bundle BUNDLE = new Bundle();
     BUNDLE.setIdentifier(new Identifier().setValue("notification-id"));
-    // AND a notification that will be created
-    Notification notification = createNotification(BUNDLE);
     // AND routing information retrieved from the NRS
     final String HEALTH_OFFICE_1 = "1.123.312.3.";
     final String HEALTH_OFFICE_2 = "3.321.123.4.";
@@ -129,25 +160,25 @@ class ProcessorTest {
             HEALTH_OFFICE_2,
             SequencedSets.of(Action.ENCRYPTION),
             false);
-    RoutingOutputDto routingOutputDto =
-        new RoutingOutputDto(
+    RoutingData routingData =
+        new RoutingData(
             DISEASE,
             NotificationCategory.P_6_1,
             SequencedSets.of(BundleAction.optionalOf(CREATE_PSEUDONYM_RECORD)),
             List.of(receiver1, receiver2),
             new LinkedHashMap<>(),
             HEALTH_OFFICE_1);
-    notification.setRoutingOutputDto(routingOutputDto);
-    notification.setReparsedNotification("someBundleString");
+    // AND a notification that will be created
+    final Notification notification = createNotification(BUNDLE, routingData);
 
-    when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
+    when(routingService.getRoutingInformation(any())).thenReturn(routingData);
 
     // AND we mock irrelvant services
     OperationOutcome operationOutcome = new OperationOutcome();
     InternalOperationOutcome validationOutcome =
         new InternalOperationOutcome(operationOutcome, "someBundleString");
     when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, contentType)).thenReturn(BUNDLE);
+    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, MessageType.JSON)).thenReturn(BUNDLE);
     when(notificationFhirService.getDiseaseCode(BUNDLE, DISEASE)).thenReturn("xxx");
 
     if (contentType == MessageType.XML) {
@@ -170,10 +201,8 @@ class ProcessorTest {
     when(receiptService.generateReceipt(any())).thenReturn(receiptBundle);
     when(responseService.success(receiptBundle, operationOutcome)).thenReturn(new Parameters());
 
-    // WHEN we process the input
-    // an error with stubbing here indicates, that execute creates a different Notification from the
-    // createNotification method
-    // in this test
+    // WHEN we process the input an error with stubbing here indicates, that execute creates a
+    // different Notification from the createNotification method in this test
     service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN);
 
     // THEN
@@ -189,27 +218,11 @@ class ProcessorTest {
                         && list.contains(ho2_encrypted)));
   }
 
-  private static Notification createNotification(final Bundle bundle) {
-    return Notification.builder()
-        .bundle(bundle)
-        .type(DISEASE)
-        .sender(SENDER)
-        .testUser(false)
-        .testUserRecipient("")
-        .diseaseCode("xxx")
-        .originalNotificationAsJson(FHIR_NOTIFICATION)
-        .build();
-  }
-
   private Processor createProcessor() {
     return new Processor(
-        configProperties,
         notificationValidator,
         notificationFhirService,
         routingService,
-        pseudoService,
-        notByNameCreator,
-        encryptionService,
         notificationStorageService,
         receiptService,
         responseService,
@@ -218,8 +231,8 @@ class ProcessorTest {
         receiverActionService,
         fhirParser,
         new BundleActionService(pseudoService),
+        updateService,
         false,
-        true,
         true);
   }
 
@@ -229,7 +242,7 @@ class ProcessorTest {
 
     when(routingService.getRoutingInformation(any()))
         .thenReturn(
-            new RoutingOutputDto(
+            new RoutingData(
                 NotificationType.LABORATORY,
                 NotificationCategory.UNKNOWN,
                 SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
@@ -256,15 +269,12 @@ class ProcessorTest {
     assertThat(actualRoutingInput.testUserId()).isEqualTo("test-user-other");
   }
 
-  /** Help with checked issues on Collections: https://stackoverflow.com/a/5655702 */
-  @Captor private ArgumentCaptor<Collection<? extends IBaseResource>> storageParameter;
-
   @Test
   void thatMultipleNotificationsForSameRecipientCanBeProcessed() {
     // GIVEN a Notification with two routes for one Recipient
     when(routingService.getRoutingInformation(any()))
         .thenReturn(
-            new RoutingOutputDto(
+            new RoutingData(
                 NotificationType.LABORATORY,
                 NotificationCategory.UNKNOWN,
                 SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
@@ -303,8 +313,6 @@ class ProcessorTest {
     // GIVEN a parsed bundle
     final Bundle BUNDLE = new Bundle();
     BUNDLE.setIdentifier(new Identifier().setValue("notification-id"));
-    // AND a notification that will be created
-    Notification notification = createNotification(BUNDLE);
     // AND routing information retrieved from the NRS
     final String HEALTH_OFFICE_1 = "1.123.312.3.";
     final String HEALTH_OFFICE_2 = "3.321.123.4.";
@@ -320,16 +328,16 @@ class ProcessorTest {
             HEALTH_OFFICE_2,
             SequencedSets.of(Action.ENCRYPTION),
             false);
-    RoutingOutputDto routingOutputDto =
-        new RoutingOutputDto(
+    RoutingData routingOutputDto =
+        new RoutingData(
             DISEASE,
             NotificationCategory.P_6_1,
             SequencedSets.of(BundleAction.optionalOf(CREATE_PSEUDONYM_RECORD)),
             List.of(receiver1, receiver2),
             new LinkedHashMap<>(),
             HEALTH_OFFICE_1);
-    notification.setRoutingOutputDto(routingOutputDto);
-    notification.setReparsedNotification("someBundleString");
+    // AND a notification that will be created
+    Notification notification = createNotification(BUNDLE, routingOutputDto);
 
     when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
 
@@ -357,10 +365,9 @@ class ProcessorTest {
     when(receiptService.generateReceipt(any())).thenReturn(receiptBundle);
     when(responseService.success(receiptBundle, operationOutcome)).thenReturn(new Parameters());
 
-    // WHEN we process the input
-    // an error with stubbing here indicates, that execute creates a different Notification from the
-    // createNotification method
-    // in this test
+    // WHEN we process the input an error with stubbing here indicates, that
+    // execute creates a different Notification from the createNotification
+    // method in this test
     service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN);
 
     // THEN
@@ -380,6 +387,58 @@ class ProcessorTest {
     verify(routingService).getRoutingInformation(routingServiceRequest.capture());
 
     final NRSRoutingInput actualRoutingInput = routingServiceRequest.getValue();
-    assertThat(actualRoutingInput.originalNotificationAsJSON()).isEqualTo("someBundleString");
+    assertThat(actualRoutingInput.originalNotificationAsJSON())
+        .isEqualTo(REPARSED_FHIR_NOTIFICATION);
+  }
+
+  @Test
+  void logNotificationBundleId() {
+    final Bundle bundle = new Bundle();
+    bundle.setIdentifier(new Identifier().setValue("notification-id"));
+
+    final var validationOutcome =
+        new InternalOperationOutcome(new OperationOutcome(), "someBundleString");
+    when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
+    when(fhirParser.parseBundleOrParameter(any(), any(MessageType.class))).thenReturn(bundle);
+    when(routingService.getRoutingInformation(any()))
+        .thenReturn(
+            new RoutingData(
+                NotificationType.LABORATORY,
+                NotificationCategory.UNKNOWN,
+                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+                List.of(),
+                Map.of(),
+                ""));
+    when(notificationFhirService.getDiseaseCode(any(), any())).thenReturn("xxx");
+
+    doAnswer(
+            invocation -> {
+              final var notification = invocation.getArgument(0, Notification.class);
+              notification
+                  .getBundle()
+                  .setIdentifier(new Identifier().setValue("my-new-generated-uuid"));
+              return null;
+            })
+        .when(notificationFhirService)
+        .cleanAndEnrichNotification(any(), any());
+
+    final var listenToLog = listenToLog(Processor.class);
+
+    final Processor service = createProcessor();
+    service.execute(FHIR_NOTIFICATION, MessageType.JSON, REQUEST_ID, SENDER, false, "", TOKEN);
+
+    final Optional<ILoggingEvent> logEntry =
+        listenToLog.list.stream()
+            .filter(event -> Level.INFO.equals(event.getLevel()))
+            .filter(event -> event.getMessage().startsWith("Notification:"))
+            .findFirst();
+
+    final String expectedLogLine =
+        "Notification: bundleId=my-new-generated-uuid, type=LABORATORY, diseaseCode=xxx, sender=Me, testUser=false";
+    assertThat(logEntry)
+        .isPresent()
+        .get()
+        .extracting(ILoggingEvent::getFormattedMessage)
+        .isEqualTo(expectedLogLine);
   }
 }

@@ -46,7 +46,6 @@ import de.gematik.demis.notification.builder.demis.fhir.notification.types.Notif
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.DemisConstants;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Metas;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Patients;
-import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -57,7 +56,7 @@ import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.routing.AddressOriginEnum;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
-import de.gematik.demis.nps.service.routing.RoutingOutputDto;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.service.validation.RKIBundleValidator;
 import de.gematik.demis.nps.test.TestData;
 import de.gematik.demis.nps.test.TestUtil;
@@ -91,16 +90,24 @@ class ReceiverActionServiceTest {
       new NotificationReceiver(
           "responsible_health_office_sormas", "2.2.3.4", SequencedSets.of(ENCRYPTION), true);
 
-  private static final RoutingOutputDto P73_ROUTING =
-      new RoutingOutputDto(
+  private static final RoutingData P73_ROUTING =
+      new RoutingData(
           NotificationType.LABORATORY,
           NotificationCategory.P_7_3,
           SequencedSets.of(),
           List.of(),
           Map.of(),
           "no one");
-  private static final RoutingOutputDto ROUTING =
-      new RoutingOutputDto(
+  private static final RoutingData P73_ROUTING_WITH_TERMINAL_ACTION =
+      new RoutingData(
+          NotificationType.LABORATORY,
+          NotificationCategory.P_7_3,
+          SequencedSets.of(),
+          List.of(),
+          Map.of(),
+          "no one");
+  private static final RoutingData ROUTING =
+      new RoutingData(
           NotificationType.LABORATORY,
           NotificationCategory.P_7_1,
           SequencedSets.of(),
@@ -127,15 +134,14 @@ class ReceiverActionServiceTest {
             rkiBundleValidator, npsConfigProperties, encryptionService, notByNameService, true);
   }
 
-  private static Notification fromJSON(final String path, final RoutingOutputDto routingOutput) {
+  private static Notification fromJSON(final String path, final RoutingData routingData) {
     final Bundle original = TestData.getBundle(path);
     return Notification.builder()
-        .type(NotificationType.LABORATORY)
         .originalNotificationAsJson(TestData.readResourceAsString(path))
         .diseaseCode("xxx")
         .sender("Me")
         .bundle(original)
-        .routingOutputDto(routingOutput)
+        .routingData(routingData)
         .build();
   }
 
@@ -271,7 +277,6 @@ class ReceiverActionServiceTest {
     final Bundle original =
         TestData.getBundle("/bundles/7_3/laboratory-nonnominal-notifiedperson.json");
     return Notification.builder()
-        .type(NotificationType.LABORATORY)
         .testUser(isTestNotification)
         .testUserRecipient("1.")
         // AND a 7.3 bundle with NotifiedPerson
@@ -281,8 +286,8 @@ class ReceiverActionServiceTest {
         .sender("Me")
         .bundle(original)
         // AND a matching routing output
-        .routingOutputDto(
-            new RoutingOutputDto(
+        .routingData(
+            new RoutingData(
                 NotificationType.LABORATORY,
                 NotificationCategory.UNKNOWN,
                 SequencedSets.of(),
@@ -348,6 +353,22 @@ class ReceiverActionServiceTest {
     // THEN we still get another instance, because we copied the original
     assertThat(transform).containsInstanceOf(Bundle.class);
     assertThat(transform.orElseThrow()).isNotEqualTo(notification.getBundle());
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "/bundles/7_3/laboratory-nonnominal-notbyname.json",
+        "/bundles/7_3/disease-nonnominal-notbyname.json",
+      })
+  void thatPreEncryptedBundlesAreAdded(@Nonnull final String bundlePath) {
+    when(encryptionService.encryptFor(any(), eq("1."))).thenReturn(new Binary());
+    final Notification notification = fromJSON(bundlePath, P73_ROUTING);
+    final Optional<? extends IBaseResource> transform =
+        receiverActionService.transform(
+            notification, new NotificationReceiver("", "1.", SequencedSets.of(ENCRYPTION), false));
+
+    assertThat(notification.getPreEncryptedBundles()).hasSize(1);
   }
 
   @Test
@@ -445,40 +466,11 @@ class ReceiverActionServiceTest {
 
     final String originalJSON = TestUtil.fhirResourceToJson(bundle);
     return Notification.builder()
-        .type(NotificationType.LABORATORY)
         .originalNotificationAsJson(originalJSON)
         .diseaseCode("xxx")
         .sender("Me")
         .bundle(bundle)
-        .routingOutputDto(ROUTING)
+        .routingData(ROUTING)
         .build();
-  }
-
-  @Test
-  void thatAllProducedResourceGetATagWithRelatedTo() {
-    final String system = DemisSystems.RELATED_NOTIFICATION_CODING_SYSTEM;
-    final Notification notification = p71Notification();
-
-    // prevent NPE
-    when(encryptionService.encryptFor(any(), eq(""))).thenReturn(new Binary());
-    // WHEN we produce a Binary
-    Optional<? extends IBaseResource> transform =
-        receiverActionService.transform(
-            notification, new NotificationReceiver("", "", SequencedSets.of(ENCRYPTION), false));
-    // THEN a relates-to tag is added
-    assertThat(transform).isNotEmpty().containsInstanceOf(Binary.class);
-    final Binary binary = (Binary) transform.orElseThrow();
-    assertThat(binary.getMeta().getTag(system, notification.getBundleIdentifier())).isNotNull();
-
-    when(npsConfigProperties.anonymizedAllowed()).thenReturn(true);
-    when(notByNameService.createNotificationNotByName(notification)).thenReturn(new Bundle());
-    // WHEN we produce a Bundle
-    transform =
-        receiverActionService.transform(
-            notification, new NotificationReceiver("", "", SequencedSets.of(PSEUDO_COPY), false));
-    // THEN a relates-to tag is added
-    assertThat(transform).isNotEmpty().containsInstanceOf(Bundle.class);
-    final Bundle actual = (Bundle) transform.orElseThrow();
-    assertThat(actual.getMeta().getTag(system, notification.getBundleIdentifier())).isNotNull();
   }
 }

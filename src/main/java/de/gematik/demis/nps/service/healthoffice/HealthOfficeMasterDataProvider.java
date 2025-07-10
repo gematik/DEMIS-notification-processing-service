@@ -30,7 +30,6 @@ import de.gematik.demis.nps.config.NpsConfigProperties;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.hl7.fhir.r4.model.Organization;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -47,8 +46,7 @@ class HealthOfficeMasterDataProvider {
   public HealthOfficeMasterDataService healthOfficeMasterDataService(
       final TransmittingSiteSearchParser parser,
       final SubsidiaryService subsidiaryService,
-      final NpsConfigProperties config,
-      @Value("${feature.flag.notifications.7_4}") boolean isNewProcessing) {
+      final NpsConfigProperties config) {
     final String dataFile = getDataFile(config.healthOfficesLiveTest());
 
     final Map<String, Organization> map =
@@ -58,7 +56,7 @@ class HealthOfficeMasterDataProvider {
                 Collectors.toMap(
                     TransmittingSite::code, HealthOfficeOrganizationCreator::createOrganization));
 
-    return new HealthOfficeMasterDataService(map, isNewProcessing);
+    return new HealthOfficeMasterDataService(map);
   }
 
   private String getDataFile(final boolean forLiveTest) {

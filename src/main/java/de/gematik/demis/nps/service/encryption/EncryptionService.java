@@ -28,11 +28,8 @@ package de.gematik.demis.nps.service.encryption;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
-import de.gematik.demis.nps.service.healthoffice.SubsidiaryService;
-import de.gematik.demis.nps.service.notification.Notification;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Binary;
@@ -48,36 +45,16 @@ public class EncryptionService {
   private final CertificateProvider certificateProvider;
   private final FhirContext fhirContext;
   private final BinaryCreator binaryCreator;
-  private final SubsidiaryService subsidiaryService;
 
   /** Encrypt a bundle for the health office */
   public Binary encryptFor(final Bundle bundle, final String healthOffice) {
     return encryptInternal(bundle, healthOffice);
   }
 
-  public Binary encryptForResponsibleHealthOffice(final Notification notification) {
-    final String healthOfficeId =
-        notification
-            .getResponsibleHealthOfficeId()
-            .orElseThrow(() -> new IllegalStateException("responsible health office is not set"));
-    return encryptInternal(notification.getBundle(), healthOfficeId);
-  }
-
-  public Optional<Binary> encryptForSubsidiary(final Notification notification) {
-    return notification
-        .getResponsibleHealthOfficeId()
-        .flatMap(subsidiaryService::getSubsidiaryId)
-        .filter(certificateProvider::hasCertificate)
-        .map(
-            targetHealthOfficeId ->
-                encryptInternal(notification.getBundle(), targetHealthOfficeId));
-  }
-
   private Binary encryptInternal(final Bundle content, final String targetHealthOffice) {
     return binaryCreator
         .builder()
         .addTags(content.getMeta().copy().getTag())
-        // TODO remove when feature.flag.notifications.7_4 is removed
         .addRelatedNotificationIdentifierTag(content.getIdentifier())
         .setContent(encryptBundle(content, targetHealthOffice))
         .setResponsibleHealthOfficeTag(targetHealthOffice)

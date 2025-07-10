@@ -36,7 +36,6 @@ import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Base64BinaryType;
 import org.hl7.fhir.r4.model.Extension;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -44,25 +43,19 @@ import org.springframework.stereotype.Service;
 public class PseudoService {
 
   private final PseudonymizationServiceClient pseudonymizationServiceClient;
-  private final PseudoStorageServiceClient storageServiceClient;
   private final NotificationUpdateService notificationUpdateService;
   private final ObjectMapper objectMapper;
   private final Statistics statistics;
-  private final boolean isPseudoStorageDisabled;
 
   public PseudoService(
       PseudonymizationServiceClient pseudonymizationServiceClient,
-      PseudoStorageServiceClient storageServiceClient,
       NotificationUpdateService notificationUpdateService,
       ObjectMapper objectMapper,
-      Statistics statistics,
-      @Value("${feature.flag.pseudo_storage_disabled}") boolean isPseudoStorageDisabled) {
+      Statistics statistics) {
     this.pseudonymizationServiceClient = pseudonymizationServiceClient;
-    this.storageServiceClient = storageServiceClient;
     this.notificationUpdateService = notificationUpdateService;
     this.objectMapper = objectMapper;
     this.statistics = statistics;
-    this.isPseudoStorageDisabled = isPseudoStorageDisabled;
   }
 
   /**
@@ -72,7 +65,7 @@ public class PseudoService {
    * <p>Store Call: PseudonymResponse BundleId Responsible HealthOfficeId
    *
    * <p>Notification Update PseudonymResponse Patient->addExtention PseudonymRecordType+Binary ->
-   * extention wird von notByName gelesen
+   * extentson will be read from notByName
    *
    * @return true if the Pseudonym was processed and added to the Notification's bundle. Exceptions
    *     are handled internally and don't have to be logged again by the caller.
@@ -80,9 +73,6 @@ public class PseudoService {
   public boolean createAndStorePseudonymAndAddToNotification(final Notification notification) {
     try {
       final PseudonymizationResponse pseudonymizationResponse = createPseudonym(notification);
-      if (!isPseudoStorageDisabled) {
-        storePseudonym(notification, pseudonymizationResponse);
-      }
       addPseudonymToFhirResource(notification, pseudonymizationResponse);
       return true;
     } catch (final RuntimeException e) {
@@ -98,27 +88,6 @@ public class PseudoService {
     final PseudonymizationRequest pseudonymizationRequest =
         PseudonymizationRequest.from(notification);
     return pseudonymizationServiceClient.generatePseudonym(pseudonymizationRequest);
-  }
-
-  /**
-   * Deprecated: This method will be removed once the feature flag is permanently enabled in PROD.
-   *
-   * @param notification the notification to be used of the Storage request
-   * @param pseudonymizationResponse the pseudonymization response containing the pseudonym
-   */
-  @Deprecated(forRemoval = true, since = "2.2.0")
-  void storePseudonym(
-      final Notification notification, final PseudonymizationResponse pseudonymizationResponse) {
-    final String responsibleHealthOfficeId =
-        notification.getResponsibleHealthOfficeId().orElseThrow();
-
-    final var storageRequest =
-        new PseudonymStorageRequest(
-            pseudonymizationResponse.activePseudonym(),
-            notification.getBundleIdentifier(),
-            responsibleHealthOfficeId);
-
-    storageServiceClient.store(storageRequest);
   }
 
   private void addPseudonymToFhirResource(

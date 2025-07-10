@@ -96,11 +96,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     useMainMethod = UseMainMethod.ALWAYS,
-    properties = {
-      "feature.flag.notifications.7_4=true",
-      "feature.flag.notification_pre_check=true",
-      "feature.flag.lv_disease=true"
-    })
+    properties = {"feature.flag.notification_pre_check=true", "feature.flag.lv_disease=true"})
 @AutoConfigureWireMock(port = 0)
 @ActiveProfiles("integrationtest")
 @AutoConfigureMockMvc
@@ -164,7 +160,7 @@ class NpsIntegrationTest {
     setupStub(NRS, okJsonResource(resourceName));
     setupStub(PS, okJsonResource("ps-response-okay"));
     setupStub(PSS, ok());
-    setupStub(NCAPI, ok());
+    setupStub(FSW, ok());
     setupStub(PDF, okByteResource("receipt-lab.pdf"));
 
     final String resourceDir =
@@ -188,7 +184,6 @@ class NpsIntegrationTest {
     assertThat(getRequestBody(LVS)).isEqualToIgnoringWhitespace(input);
 
     assertPSGenCall(resourceDir + "expected-ps-request.json");
-    assertPSStoreCall();
 
     assertThat(getRequestBody(NRS)).isEqualToIgnoringWhitespace(input);
 
@@ -196,7 +191,7 @@ class NpsIntegrationTest {
     assertThat(getRequestBody(PDF))
         .isEqualToIgnoringWhitespace(expectedNotificationForHealthOffice);
 
-    assertNcapiRequest(
+    assertFhirStorageRequest(
         rkiBundle -> assertFhirResource(rkiBundle, resource(resourceDir + "expected-rki.json")),
         healthOfficeBundle ->
             assertFhirResource(healthOfficeBundle, expectedNotificationForHealthOffice),
@@ -214,7 +209,7 @@ class NpsIntegrationTest {
     setupStub(NRS, okJsonResource(resourceName));
     setupStub(PS, okJsonResource("ps-response-okay"));
     setupStub(PSS, ok());
-    setupStub(NCAPI, ok());
+    setupStub(FSW, ok());
     setupStub(PDF, okByteResource("receipt-lab.pdf"));
 
     final String resourceDir = "laboratory/";
@@ -235,8 +230,8 @@ class NpsIntegrationTest {
     // pdf service becomes exactly the notification, which is stored for the health office
     assertThat(getRequestBody(PDF)).isEqualToIgnoringWhitespace(expectedNotificationForRKI);
 
-    final Bundle ncapiBundle = getJsonParser().parseResource(Bundle.class, getRequestBody(NCAPI));
-    assertThat(ncapiBundle.getEntry()).hasSize(1);
+    final Bundle fswBundle = getJsonParser().parseResource(Bundle.class, getRequestBody(FSW));
+    assertThat(fswBundle.getEntry()).hasSize(1);
 
     counterVerifier.assertSuccessCounter(NotificationType.LABORATORY, "cvd");
   }
@@ -264,20 +259,20 @@ class NpsIntegrationTest {
     assertThat(jsonNode.get("pseudonym")).isEqualTo(expectedPseudonym);
   }
 
-  private void assertNcapiRequest(
+  private void assertFhirStorageRequest(
       final Consumer<Resource> anonymizedBundleAsserter,
       final Consumer<Resource> healthOfficeBundleAsserter,
       final String healthOffice)
       throws Exception {
-    final Bundle ncapiBundle = getJsonParser().parseResource(Bundle.class, getRequestBody(NCAPI));
+    final Bundle fswBundle = getJsonParser().parseResource(Bundle.class, getRequestBody(FSW));
 
     // all testcases have no subsidiary notification, thus we expect 2 entries
-    assertThat(ncapiBundle.getEntry()).hasSize(2);
+    assertThat(fswBundle.getEntry()).hasSize(2);
 
-    final BundleEntryComponent anonymizedEntry = ncapiBundle.getEntry().get(0);
+    final BundleEntryComponent anonymizedEntry = fswBundle.getEntry().get(0);
     anonymizedBundleAsserter.accept(anonymizedEntry.getResource());
 
-    final BundleEntryComponent encryptedEntry = ncapiBundle.getEntry().get(1);
+    final BundleEntryComponent encryptedEntry = fswBundle.getEntry().get(1);
     final byte[] encryptedData = ((Binary) encryptedEntry.getResource()).getData();
     final String decrypted =
         new String(decryptData(healthOffice, encryptedData), StandardCharsets.UTF_8);
@@ -287,14 +282,14 @@ class NpsIntegrationTest {
     healthOfficeBundleAsserter.accept(decryptedBundle);
   }
 
-  private void assertNcapiRequest(
+  private void assertFhirStorageRequest(
       final Consumer<Resource> healthOfficeBundleAsserter, final String responsibleDepartment)
       throws Exception {
-    final Bundle ncapiBundle = getJsonParser().parseResource(Bundle.class, getRequestBody(NCAPI));
+    final Bundle fswBundle = getJsonParser().parseResource(Bundle.class, getRequestBody(FSW));
 
-    assertThat(ncapiBundle.getEntry()).hasSize(1);
+    assertThat(fswBundle.getEntry()).hasSize(1);
 
-    final BundleEntryComponent encryptedEntry = ncapiBundle.getEntry().get(0);
+    final BundleEntryComponent encryptedEntry = fswBundle.getEntry().get(0);
     final byte[] encryptedData = ((Binary) encryptedEntry.getResource()).getData();
     final String decrypted =
         new String(decryptData(responsibleDepartment, encryptedData), StandardCharsets.UTF_8);
@@ -348,13 +343,13 @@ class NpsIntegrationTest {
     setupStub(LVS, ok());
     setupStub(NRS, okJsonResource("nrs-response-okay-laboratory"));
     setupStub(PS, statusJsonResource(400, "ps-response-400"));
-    setupStub(NCAPI, ok());
+    setupStub(FSW, ok());
     setupStub(PDF, okByteResource("receipt-lab.pdf"));
 
     // 200, no pss call, storage call without pseudonym, same result
     executeTest(OK, "laboratory/expected-response.json");
 
-    assertNcapiRequest(
+    assertFhirStorageRequest(
         rkiBundle ->
             assertFhirResource(
                 rkiBundle,
@@ -388,7 +383,7 @@ class NpsIntegrationTest {
     setupStub(NRS, okJsonResource("nrs-response-okay-laboratory"));
     setupStub(PS, okJsonResource("ps-response-okay"));
     setupStub(PSS, ok());
-    setupStub(NCAPI, status(500));
+    setupStub(FSW, status(500));
 
     executeTest(BAD_GATEWAY, "errors/expected-storage-error-response.json");
   }
@@ -400,7 +395,7 @@ class NpsIntegrationTest {
     setupStub(NRS, okJsonResource("nrs-response-okay-laboratory"));
     setupStub(PS, okJsonResource("ps-response-okay"));
     setupStub(PSS, ok());
-    setupStub(NCAPI, ok());
+    setupStub(FSW, ok());
     setupStub(PDF, status(500));
 
     // 200, storage same, response without binary
@@ -416,13 +411,13 @@ class NpsIntegrationTest {
     setupStub(NRS, okJsonResource("nrs-response-okay-laboratory-with-test-user"));
     setupStub(PS, okJsonResource("ps-response-okay"));
     setupStub(PSS, ok());
-    setupStub(NCAPI, ok());
+    setupStub(FSW, ok());
     setupStub(PDF, okByteResource("receipt-lab.pdf"));
     final String expectedNotificationForHealthOffice =
         resource("laboratory/expected-ga-test-user.json");
     executeTest(OK, "laboratory/expected-response-testuser.json");
 
-    assertNcapiRequest(
+    assertFhirStorageRequest(
         healthOfficeBundle ->
             assertFhirResource(healthOfficeBundle, expectedNotificationForHealthOffice),
         "test-int");

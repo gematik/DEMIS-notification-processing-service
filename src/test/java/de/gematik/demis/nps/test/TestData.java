@@ -50,7 +50,6 @@ public class TestData {
   public static final String LABORATORY_BUNDLE_ESCAPED_RESOURCE =
       "/bundles/laboratory_cvdp_bundle_escaped.json";
   public static final String PROVENANCE_RESOURCE = "/entries/provenanceResource.json";
-  public static final String PROVENANCE_ENTRY = "/entries/context_entry.json";
 
   public static Bundle diseaseBundle() {
     return getBundle(DISEASE_BUNDLE_RESOURCE);

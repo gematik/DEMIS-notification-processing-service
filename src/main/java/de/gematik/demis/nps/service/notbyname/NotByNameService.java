@@ -71,7 +71,6 @@ public class NotByNameService {
     // Create a tag that references the NotificationBundleId (MeldevorgangsId) of the 'name'
     // notification
     final String originalBundleIdentifier = notification.getBundleIdentifier();
-    // TODO remove when feature.flag.notifications.7_4 is removed
     copiedBundle
         .getMeta()
         .addTag()

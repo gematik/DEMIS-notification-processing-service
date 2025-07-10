@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 class RKIBundleValidatorTest {
 
   public static final Patient NOTIFIED_PERSON =
-      new NotifiedPersonByNameDataBuilder().setId("np1").build();
+      new NotifiedPersonByNameDataBuilder().setDefault().setId("np1").build();
   public static final Composition COMPOSITION_WITH_NOTIFIED_PERSON =
       new NotificationLaboratoryDataBuilder()
           .setDefault()

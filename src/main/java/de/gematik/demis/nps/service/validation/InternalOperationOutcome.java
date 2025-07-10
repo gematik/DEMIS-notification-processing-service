@@ -26,6 +26,7 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
+import javax.annotation.CheckForNull;
 import org.hl7.fhir.r4.model.OperationOutcome;
 
 /**
@@ -38,7 +39,8 @@ import org.hl7.fhir.r4.model.OperationOutcome;
  *     string contains the reparsed notification in json
  */
 public record InternalOperationOutcome(
-    OperationOutcome operationOutcome, String reparsedStringAsJsonWhenRelaxedValidationWasUsed) {
+    OperationOutcome operationOutcome,
+    @CheckForNull String reparsedStringAsJsonWhenRelaxedValidationWasUsed) {
 
   public InternalOperationOutcome(OperationOutcome operationOutcome) {
     this(operationOutcome, null);

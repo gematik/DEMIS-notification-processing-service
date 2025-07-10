@@ -35,24 +35,30 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonByNameDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.technicals.HumanNameDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.base.profile.DemisExtensions;
+import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.notification.Notification;
+import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.test.TestUtil;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.assertj.core.api.Assertions;
 import org.hl7.fhir.r4.model.Base64BinaryType;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Identifier;
@@ -60,8 +66,6 @@ import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Specimen;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -74,7 +78,6 @@ class PseudoServiceTest {
   private static final String DISEASE_CODE = "cov";
 
   @Mock PseudonymizationServiceClient pseudonymizationServiceClient;
-  @Mock PseudoStorageServiceClient storageServiceClient;
   @Mock NotificationUpdateService notificationUpdateService;
   @Mock Statistics statistics;
 
@@ -121,17 +124,14 @@ class PseudoServiceTest {
   private static Patient createPatient(
       final String birthDay, final String familyName, final String firstName) {
     final LocalDate date = LocalDate.parse(birthDay, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    final Patient notifiedPerson =
-        new NotifiedPersonDataBuilder()
-            .setDefaults()
-            .setHumanName(
-                new HumanNameDataBuilder()
-                    .setFamilyName(familyName)
-                    .setGivenEntry(List.of(firstName))
-                    .build())
-            .setBirthdate(TestUtil.toDate(date))
-            .build();
-    return notifiedPerson;
+    return new NotifiedPersonByNameDataBuilder()
+        .setHumanName(
+            new HumanNameDataBuilder()
+                .setFamilyName(familyName)
+                .setGivenEntry(List.of(firstName))
+                .build())
+        .setBirthdate(new DateType(TestUtil.toDate(date)))
+        .build();
   }
 
   private static Optional<ILoggingEvent> getFirstErrorLog(
@@ -147,17 +147,13 @@ class PseudoServiceTest {
     return listAppender;
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void createAndStorePseudonymAndAddToNotification(boolean isPseudoStorageDisabled) {
+  void createAndStorePseudonymAndAddToNotification() {
     underTest =
         new PseudoService(
             pseudonymizationServiceClient,
-            storageServiceClient,
             notificationUpdateService,
             new ObjectMapper(),
-            statistics,
-            isPseudoStorageDisabled);
+            statistics);
 
     final String familyName = "Mustermann";
     final String firstName = "Max";
@@ -165,10 +161,23 @@ class PseudoServiceTest {
     final String healthOffice = "1.23.45.";
     final String birthDay = "23.05.1979";
 
+    final RoutingData routingData =
+        new RoutingData(
+            NotificationType.DISEASE,
+            NotificationCategory.UNKNOWN,
+            SequencedSets.of(),
+            List.of(),
+            Map.of(),
+            "");
     final var notifiedPerson = createPatient(birthDay, familyName, firstName);
     final var bundle = createBundle(notifiedPerson, bundleId, healthOffice);
     final var notification =
-        Notification.builder().bundle(bundle).diseaseCode(DISEASE_CODE).testUser(false).build();
+        Notification.builder()
+            .bundle(bundle)
+            .diseaseCode(DISEASE_CODE)
+            .routingData(routingData)
+            .testUser(false)
+            .build();
 
     final var expectedRequest =
         new PseudonymizationRequest(bundleId, DISEASE_CODE, familyName, firstName, birthDay);
@@ -181,13 +190,6 @@ class PseudoServiceTest {
         .thenReturn(pseudoResponse);
 
     underTest.createAndStorePseudonymAndAddToNotification(notification);
-
-    if (!isPseudoStorageDisabled) {
-      final var expectedStorageRequest =
-          new PseudonymStorageRequest(activePseudonym, bundleId, healthOffice);
-      Mockito.verify(storageServiceClient).store(expectedStorageRequest);
-      verifyNotificationUpdate(bundle, notifiedPerson, pseudoResponse);
-    }
   }
 
   private void verifyNotificationUpdate(
@@ -210,15 +212,26 @@ class PseudoServiceTest {
     underTest =
         new PseudoService(
             pseudonymizationServiceClient,
-            storageServiceClient,
             notificationUpdateService,
             new ObjectMapper(),
-            statistics,
-            true);
+            statistics);
+    final RoutingData routingData =
+        new RoutingData(
+            NotificationType.DISEASE,
+            NotificationCategory.UNKNOWN,
+            SequencedSets.of(),
+            List.of(),
+            Map.of(),
+            "");
     final var notifiedPerson = createPatient("23.05.1980", "Mustermann", "Max");
     final var bundle = createBundle(notifiedPerson, "123", "xxx");
     final var notification =
-        Notification.builder().bundle(bundle).diseaseCode(DISEASE_CODE).testUser(false).build();
+        Notification.builder()
+            .bundle(bundle)
+            .diseaseCode(DISEASE_CODE)
+            .routingData(routingData)
+            .testUser(false)
+            .build();
 
     Mockito.when(pseudonymizationServiceClient.generatePseudonym(Mockito.any()))
         .thenThrow(new ServiceCallException(null, null, 400, null));
@@ -227,8 +240,6 @@ class PseudoServiceTest {
 
     assertThatNoException()
         .isThrownBy(() -> underTest.createAndStorePseudonymAndAddToNotification(notification));
-
-    Mockito.verifyNoInteractions(storageServiceClient, notificationUpdateService);
 
     final Optional<ILoggingEvent> log = getFirstErrorLog(logEvents);
     Assertions.assertThat(log)

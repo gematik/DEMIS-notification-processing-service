@@ -39,26 +39,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 interface NotificationRoutingServiceClient {
 
   @PostMapping(
-      path = "routing",
-      consumes = APPLICATION_JSON_VALUE,
-      produces = APPLICATION_JSON_VALUE)
-  @ErrorCode(ServiceCallErrorCode.NRS)
-  LegacyRoutingOutputDto determineRouting(@RequestBody final String fhirNotificationAsJson);
-
-  @PostMapping(
       path = "routing/v2",
       consumes = APPLICATION_JSON_VALUE,
       produces = APPLICATION_JSON_VALUE)
   @ErrorCode(ServiceCallErrorCode.NRS)
-  RoutingOutputDto ruleBased(
+  NRSRoutingResponse ruleBased(
       @RequestBody final String fhirNotificationAsJson,
       @RequestParam("isTestUser") final boolean isTestUser,
       @RequestParam("testUserID") final String sender);
-
-  @PostMapping(
-      path = "routing/v2",
-      consumes = APPLICATION_JSON_VALUE,
-      produces = APPLICATION_JSON_VALUE)
-  @ErrorCode(ServiceCallErrorCode.NRS)
-  RoutingOutputDto ruleBased(final NRSRoutingInput request);
 }

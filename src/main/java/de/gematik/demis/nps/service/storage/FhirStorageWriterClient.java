@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.pseudonymization;
+package de.gematik.demis.nps.service.storage;
 
 /*-
  * #%L
@@ -30,14 +30,13 @@ import de.gematik.demis.nps.error.ServiceCallErrorCode;
 import de.gematik.demis.service.base.feign.annotations.ErrorCode;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "pseudo-storage", url = "${nps.client.pseudo-storage}")
-interface PseudoStorageServiceClient {
+@FeignClient(name = "fhir-storage-writer", url = "${nps.client.fhir-storage-writer}")
+interface FhirStorageWriterClient {
   @PostMapping(
-      path = "/demis/storage",
-      produces = "application/vnd.demis_storage+json",
-      consumes = "application/vnd.demis_storage+json")
-  @ErrorCode(ServiceCallErrorCode.PSS)
-  String store(@RequestBody PseudonymStorageRequest request);
+      value = "/notification-clearing-api/fhir/",
+      consumes = "application/fhir+json",
+      produces = "application/fhir+json")
+  @ErrorCode(ServiceCallErrorCode.FSW)
+  void sendNotificationToFhirStorageWriter(String bundleAsJson);
 }

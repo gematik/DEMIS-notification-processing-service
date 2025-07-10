@@ -35,10 +35,15 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
+import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.pseudonymization.PseudoService;
+import de.gematik.demis.nps.service.routing.RoutingData;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +63,15 @@ class BundleActionServiceTest {
   }
 
   private static Notification notification() {
-    return Notification.builder().build();
+    final RoutingData routingData =
+        new RoutingData(
+            NotificationType.DISEASE,
+            NotificationCategory.UNKNOWN,
+            SequencedSets.of(),
+            List.of(),
+            Map.of(),
+            "");
+    return Notification.builder().routingData(routingData).build();
   }
 
   @Test

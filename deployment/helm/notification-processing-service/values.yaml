@@ -21,10 +21,6 @@ required:
 
 config:
   secret:
-    # secret with the ncapi api key
-    api:
-      name: ncapi-apikey
-      key: NCS_APIKEY
     # The (external) Secret for Redis
     redis:
       # The name of the (external) Secret for Redis and the entry to be used
@@ -43,21 +39,11 @@ deploymentLabels: {}
 # Environment Variables to be defined
 customEnvVars:
   FEATURE_FLAG_RELAXED_VALIDATION: "false"
-  FEATURE_FLAG_NOTIFICATIONS_7_4: "false"
   FEATURE_FLAG_NOTIFICATIONS_7_3: "false"
   FEATURE_FLAG_TEST_ROUTING_V2: "false"
   REDIS_HOST: "redis-cus.demis.svc.cluster.local"
   REDIS_PORT: "6379"
   REDIS_USER: "reader"
-  NPS_CLIENT_ROUTING: http://notification-routing-service.demis.svc.cluster.local
-  NPS_CLIENT_LIFECYCLE_VS: http://lifecycle-validation-service.demis.svc.cluster.local
-  NPS_CLIENT_FUTS: http://futs.demis.svc.cluster.local
-  NPS_CLIENT_PSEUDONYMIZATION: http://pseudonymization-service.demis.svc.cluster.local
-  NPS_CLIENT_PSEUDO_STORAGE: http://pseudonymization-storage-service.demis.svc.cluster.local
-  NPS_CLIENT_NCAPI: http://notification-clearing-api.demis.svc.cluster.local
-  NPS_CLIENT_PDFGEN: http://pdfgen-service.demis.svc.cluster.local
-  NPS_CLIENT_VALIDATION: http://validation-service.demis.svc.cluster.local
-  NPS_CLIENT_CONTEXT_ENRICHMENT_SERVICE: http://context-enrichment-service.demis.svc.cluster.local
 
 # Define custom Container Entrypoint and Arguments (e.g. JVM Tuning)
 # If not given, the Entrypoint defined in Dockerfile will be used

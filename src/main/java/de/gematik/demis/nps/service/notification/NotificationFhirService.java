@@ -26,16 +26,13 @@ package de.gematik.demis.nps.service.notification;
  * #L%
  */
 
-import de.gematik.demis.fhirparserlibrary.FhirParser;
-import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.DemisConstants;
 import de.gematik.demis.nps.base.fhir.BundleQueries;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.codemapping.CodeMappingService;
-import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
-import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -61,7 +58,11 @@ public class NotificationFhirService {
           DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_ANONYMOUS,
           DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_NON_NOMINAL);
 
-  private final FhirParser fhirParser;
+  private static final Supplier<NpsServiceException> CANT_PARSE_DISEASE_CODE_ERROR =
+      () ->
+          new NpsServiceException(
+              ErrorCode.NRS_PROCESSING_ERROR, "Can't parse disease code from notification");
+
   private final NotificationCleaning cleaner;
   private final NotificationEnrichment enricher;
   private final CodeMappingService codeMappingService;
@@ -77,26 +78,6 @@ public class NotificationFhirService {
     }
   }
 
-  public Notification read(
-      final String fhirNotification,
-      final MessageType contentType,
-      final String sender,
-      final boolean testUserFlag,
-      @Nonnull final String testUserRecipient,
-      InternalOperationOutcome validationOutcome) {
-    final Bundle bundle = fhirParser.parseBundleOrParameter(fhirNotification, contentType);
-    final NotificationType notificationType = detectNotificationType(bundle);
-    return Notification.builder()
-        .bundle(bundle)
-        .type(notificationType)
-        .sender(sender)
-        .testUser(testUserFlag)
-        .testUserRecipient(testUserRecipient)
-        .diseaseCode(getDiseaseCode(bundle, notificationType))
-        .reparsedNotification(validationOutcome.reparsedStringAsJsonWhenRelaxedValidationWasUsed())
-        .build();
-  }
-
   public void cleanAndEnrichNotification(final Notification notification, final String requestId) {
     // Remove unwanted information and data
     cleaner.cleanNotification(notification.getBundle());
@@ -105,47 +86,31 @@ public class NotificationFhirService {
     enricher.enrichNotification(notification, requestId);
   }
 
-  private NotificationType detectNotificationType(final Bundle bundle) {
-    return Arrays.stream(NotificationType.values())
-        .filter(type -> type.getProfile().isApplied(bundle))
-        .findFirst()
-        .orElseThrow(
-            () -> {
-              String s;
-              try {
-                s = bundle.getMeta().getProfile().toString();
-              } catch (Exception e) {
-                s = "unknown profile";
-                log.warn("Error getting profile information form bundle", e);
-              }
-              return new NpsServiceException(
-                  ErrorCode.UNSUPPORTED_PROFILE,
-                  String.format("bundle profile %s not supported.", s));
-            });
-  }
-
-  public String getDiseaseCode(final Bundle notification, final NotificationType type) {
+  @Nonnull
+  public String getDiseaseCode(@Nonnull final Bundle notification, final NotificationType type) {
     return switch (type) {
       case LABORATORY -> getDiseaseCodeFromLaboratoryNotification(notification);
       case DISEASE -> getDiseaseCodeFromDiseaseNotification(notification);
     };
   }
 
-  private String getDiseaseCodeFromLaboratoryNotification(final Bundle bundle) {
+  @Nonnull
+  private String getDiseaseCodeFromLaboratoryNotification(@Nonnull final Bundle bundle) {
     return BundleQueries.findFirstResource(bundle, DiagnosticReport.class)
         .map(DiagnosticReport::getCode)
         .map(CodeableConcept::getCodingFirstRep)
         .map(Coding::getCode)
         .map(codeMappingService::getMappedPathogenCode)
-        .orElse(null);
+        .orElseThrow(CANT_PARSE_DISEASE_CODE_ERROR);
   }
 
-  private String getDiseaseCodeFromDiseaseNotification(final Bundle bundle) {
+  @Nonnull
+  private String getDiseaseCodeFromDiseaseNotification(@Nonnull final Bundle bundle) {
     return BundleQueries.findFirstResource(bundle, Condition.class)
         .map(Condition::getCode)
         .map(CodeableConcept::getCodingFirstRep)
         .map(Coding::getCode)
         .map(codeMappingService::getMappedDiseaseCode)
-        .orElse(null);
+        .orElseThrow(CANT_PARSE_DISEASE_CODE_ERROR);
   }
 }

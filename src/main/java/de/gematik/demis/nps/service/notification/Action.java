@@ -34,6 +34,7 @@ import de.gematik.demis.nps.error.NpsServiceException;
 
 public enum Action {
   ENCRYPTION,
+  ENCRYPT,
   PSEUDO_COPY,
   PSEUDO_ORIGINAL,
   REPRODUCE,

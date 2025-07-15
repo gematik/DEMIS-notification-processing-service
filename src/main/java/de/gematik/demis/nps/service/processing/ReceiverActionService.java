@@ -27,6 +27,7 @@ package de.gematik.demis.nps.service.processing;
  */
 
 import static de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory.P_7_3;
+import static de.gematik.demis.nps.service.notification.Action.ENCRYPT;
 import static de.gematik.demis.nps.service.notification.Action.ENCRYPTION;
 
 import com.google.common.collect.Queues;
@@ -60,7 +61,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ReceiverActionService {
 
-  private static final Set<Action> TERMINAL_ACTIONS = Set.of(ENCRYPTION);
+  private static final Set<Action> TERMINAL_ACTIONS = Set.of(ENCRYPTION, ENCRYPT);
 
   private final RKIBundleValidator rkiBundleValidator;
   private final NpsConfigProperties configProperties;
@@ -159,7 +160,8 @@ public class ReceiverActionService {
     while (!remainingActions.isEmpty()) {
       final Action action = remainingActions.poll();
       if (TERMINAL_ACTIONS.contains(action)) {
-        if (Objects.requireNonNull(action) == ENCRYPTION) {
+        if (Objects.requireNonNull(action) == ENCRYPTION
+            || Objects.requireNonNull(action) == ENCRYPT) {
           final Bundle asBundle =
               intermediateResult
                   .map(ReceiverActionService::castToBundleOrNull)
@@ -183,7 +185,8 @@ public class ReceiverActionService {
           switch (action) {
             case REPRODUCE, PSEUDO_ORIGINAL -> processPseudoOriginal(notification);
             case PSEUDO_COPY -> processPseudoCopy(notification);
-            case ENCRYPTION -> throw new InternalError("Encryption should terminate processing");
+            case ENCRYPTION, ENCRYPT ->
+                throw new InternalError("Encryption should terminate processing");
             case NO_ACTION -> intermediateResult;
           };
 

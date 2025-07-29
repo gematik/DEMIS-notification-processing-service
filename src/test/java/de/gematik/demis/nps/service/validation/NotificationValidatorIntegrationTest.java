@@ -36,6 +36,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static de.gematik.demis.nps.error.ErrorCode.LIFECYCLE_VALIDATION_ERROR;
+import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
@@ -88,7 +89,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
-      "feature.flag.lv_disease=true"
+      "feature.flag.lv_disease=true",
+      "feature.flag.new_api_endpoints=false"
     })
 @AutoConfigureWireMock(port = 0)
 class NotificationValidatorIntegrationTest {
@@ -133,7 +135,7 @@ class NotificationValidatorIntegrationTest {
           post(ENDPOINT_VS)
               .withHeader(CONTENT_TYPE, equalTo(contentType))
               .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
-              .withHeader("x-fhir-api-version", version == null ? absent() : equalTo(version))
+              .withHeader(HEADER_FHIR_API_VERSION, version == null ? absent() : equalTo(version))
               .withRequestBody(equalTo(REQUEST_BODY))
               .willReturn(responseDefBuilder));
     }

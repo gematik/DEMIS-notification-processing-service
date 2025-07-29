@@ -26,13 +26,13 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
-import static de.gematik.demis.nps.api.NotificationController.HEADER_FHIR_API_VERSION;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_FATAL;
 import static de.gematik.demis.nps.error.ErrorCode.LIFECYCLE_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.LVS;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
-import static java.util.Optional.ofNullable;
+import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
+import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
@@ -49,6 +49,10 @@ import feign.codec.StringDecoder;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -56,6 +60,7 @@ import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.Parameters;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -63,7 +68,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationValidator {
-
   private final ValidationServiceClient validationServiceClient;
   private final LifecycleValidationServiceClient lifecycleValidationServiceClient;
 
@@ -76,11 +80,13 @@ public class NotificationValidator {
 
   private boolean lvDiseaseActivated;
   private boolean relaxedValidationActivated;
+  private boolean isVersionHeaderForwardEnabled;
 
   @PostConstruct
   public void init() {
     lvDiseaseActivated = featureFlags.isEnabled("lv_disease");
     relaxedValidationActivated = featureFlags.isEnabled("relaxed_validation");
+    isVersionHeaderForwardEnabled = featureFlags.isEnabled("new_api_endpoints");
   }
 
   private static void reduceIssuesSeverityToWarn(final OperationOutcome operationOutcome) {
@@ -94,6 +100,10 @@ public class NotificationValidator {
 
   private static boolean isStatusSuccessful(final int status) {
     return status >= 200 && status < 300;
+  }
+
+  private List<String> headersFromRequestByName(@Nonnull String headerName) {
+    return Stream.of(httpServletRequest.getHeader(headerName)).filter(Objects::nonNull).toList();
   }
 
   public InternalOperationOutcome validateFhir(
@@ -173,12 +183,15 @@ public class NotificationValidator {
 
   private Response callValidationService(
       final String fhirNotification, final MessageType contentType) {
-    // forward optional Fhir Version Header
-    final var versionHeader = ofNullable(httpServletRequest.getHeader(HEADER_FHIR_API_VERSION));
-
+    // forward optional Fhir Version and Fhir Profile Headers
+    final HttpHeaders headers = new HttpHeaders();
+    headers.computeIfAbsent(HEADER_FHIR_API_VERSION, this::headersFromRequestByName);
+    if (isVersionHeaderForwardEnabled) {
+      headers.computeIfAbsent(HEADER_FHIR_PROFILE, this::headersFromRequestByName);
+    }
     return switch (contentType) {
-      case JSON -> validationServiceClient.validateJsonBundle(versionHeader, fhirNotification);
-      case XML -> validationServiceClient.validateXmlBundle(versionHeader, fhirNotification);
+      case JSON -> validationServiceClient.validateJsonBundle(headers, fhirNotification);
+      case XML -> validationServiceClient.validateXmlBundle(headers, fhirNotification);
     };
   }
 

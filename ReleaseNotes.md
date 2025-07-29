@@ -2,13 +2,20 @@
 
 # Release Notification Processing Service
 
+## Release 2.4.3
+- add feature flag FEATURE_FLAG_NEW_API_ENDPOINTS for header propagation of x-fhir-api-version and fhirProfile to validation-service
+
+## Release 2.4.2
+- update Spring-Parent with new Notification-Builder-Library
+- add default feature flags FEATURE_FLAG_NOTIFICATION_PRE_CHECK, FEATURE_FLAG_LV_DISEASE to values.yaml
+- handle 422 from NRS
+
+## Release 2.4.1
+- add support for new NRS Action
+
 ## Release 2.4.0
 - Remove Feature Flag for 7.4
 - Removal of deprecated NRS client
-- Removal of deprecated Pseudo-Storage Service (PSS) client
-- additional §7.3 handling
-- update spring parent
-- remove all NCAPI references
 - Removal of deprecated Pseudo-Storage Service (PSS) client
 - additional §7.3 handling
 - update spring parent

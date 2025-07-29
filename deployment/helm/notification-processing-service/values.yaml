@@ -1,7 +1,7 @@
 # Default values for notification-processing-service.
 
 # Number of Pod Replicas desired
-replicaCount: 1
+replicaCount: 2
 
 # Enables debug mode
 debug:
@@ -38,9 +38,13 @@ deploymentLabels: {}
 
 # Environment Variables to be defined
 customEnvVars:
+  FEATURE_FLAG_NOTIFICATION_PRE_CHECK: "false"
+  FEATURE_FLAG_LV_DISEASE: "false"
   FEATURE_FLAG_RELAXED_VALIDATION: "false"
   FEATURE_FLAG_NOTIFICATIONS_7_3: "false"
   FEATURE_FLAG_TEST_ROUTING_V2: "false"
+  FEATURE_FLAG_TUBERCULOSIS_ROUTING_ENABLED: "false"
+  FEATURE_FLAG_NEW_API_ENDPOINTS: "false"
   REDIS_HOST: "redis-cus.demis.svc.cluster.local"
   REDIS_PORT: "6379"
   REDIS_USER: "reader"

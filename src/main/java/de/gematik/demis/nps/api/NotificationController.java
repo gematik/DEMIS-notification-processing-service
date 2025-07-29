@@ -62,7 +62,6 @@ public class NotificationController {
   public static final String HEADER_SENDER = "x-sender";
   public static final String HEADER_TEST_USER_RECIPIENT = "x-testuser-recipient";
   public static final String HEADER_IS_TEST_NOTIFICATION = "x-testuser";
-  public static final String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
 
   private final Processor processor;
   private final FhirConverter fhirConverter;

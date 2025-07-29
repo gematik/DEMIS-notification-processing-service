@@ -26,8 +26,9 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
+import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
+import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
-import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -43,6 +44,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
@@ -99,7 +102,9 @@ class NotificationValidationRelaxedModeTest {
 
   @BeforeEach
   void setup() {
-    featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed_validation", true));
+    featureFlags =
+        new FeatureFlagsConfigProperties(
+            Map.of("relaxed_validation", true, "new_api_endpoints", true));
     underTest =
         new NotificationValidator(
             validationServiceClient,
@@ -109,17 +114,24 @@ class NotificationValidationRelaxedModeTest {
             httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();
+    lenient()
+        .when(httpServletRequest.getHeaderNames())
+        .thenReturn(Collections.enumeration(List.of(HEADER_FHIR_API_VERSION, HEADER_FHIR_PROFILE)));
+    lenient().when(httpServletRequest.getHeader(eq(HEADER_FHIR_API_VERSION))).thenReturn("v1");
+    lenient()
+        .when(httpServletRequest.getHeader(eq(HEADER_FHIR_PROFILE)))
+        .thenReturn("ars-profile-snapshots");
   }
 
   @Test
   void parsedFhirNotificationIsValid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(empty(), ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(any(), eq(ORIGINAL_NOTIFICATION)))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(200, null);
-    when(validationServiceClient.validateJsonBundle(empty(), CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(any(), eq(CORRECTED_NOTIFICATION)))
         .thenReturn(secondTryResponse);
 
     final InternalOperationOutcome result =
@@ -134,11 +146,11 @@ class NotificationValidationRelaxedModeTest {
   void parsedFhirNotificationIsStillInvalid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(empty(), ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(any(), eq(ORIGINAL_NOTIFICATION)))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(422, null);
-    when(validationServiceClient.validateJsonBundle(empty(), CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(any(), eq(CORRECTED_NOTIFICATION)))
         .thenReturn(secondTryResponse);
 
     assertThatThrownBy(() -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML))
@@ -167,7 +179,7 @@ class NotificationValidationRelaxedModeTest {
                         """;
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(empty(), notParseableNotification))
+    when(validationServiceClient.validateXmlBundle(any(), eq(notParseableNotification)))
         .thenReturn(firstResponse);
 
     assertThatThrownBy(() -> underTest.validateFhir(notParseableNotification, MessageType.XML))
@@ -191,11 +203,11 @@ class NotificationValidationRelaxedModeTest {
 
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(empty(), ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(any(), eq(ORIGINAL_NOTIFICATION)))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(200, null);
-    when(validationServiceClient.validateJsonBundle(empty(), CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(any(), eq(CORRECTED_NOTIFICATION)))
         .thenReturn(secondTryResponse);
 
     final InternalOperationOutcome result =

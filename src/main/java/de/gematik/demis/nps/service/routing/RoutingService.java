@@ -29,32 +29,39 @@ package de.gematik.demis.nps.service.routing;
 import com.google.common.base.Strings;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
+import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nonnull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RoutingService {
 
   private final NotificationRoutingServiceClient client;
+  private final boolean isErrorRewritingEnabled;
+
+  public RoutingService(
+      final NotificationRoutingServiceClient client,
+      @Value("${feature.flag.tuberculosis.routing.enabled}")
+          final boolean isErrorRewritingEnabled) {
+    this.client = client;
+    this.isErrorRewritingEnabled = isErrorRewritingEnabled;
+  }
 
   @Nonnull
   public RoutingData getRoutingInformation(@Nonnull final NRSRoutingInput request) {
-    final NRSRoutingResponse response =
-        client.ruleBased(
-            request.originalNotificationAsJSON(), request.isTestUser(), request.testUserId());
-    log.info("Route to '{}'. NRS response = {}", response.responsible(), response);
-    final Map<AddressOriginEnum, String> healthOffices = response.healthOffices();
-    final String responsible = Strings.nullToEmpty(response.responsible());
-    if (responsible.isBlank() || response.routes().isEmpty() || healthOffices == null) {
-      throw new NpsServiceException(
-          ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
-    }
 
+    final NRSRoutingResponse response = fetchRoutingResponse(request);
+    log.info("Route to '{}'. NRS response = {}", response.responsible(), response);
+    validateResponse(response);
+    final Map<AddressOriginEnum, String> healthOffices =
+        Objects.requireNonNull(response.healthOffices());
+    final String responsible = Strings.nullToEmpty(response.responsible());
     return new RoutingData(
         response.type(),
         response.notificationCategory(),
@@ -62,5 +69,28 @@ public class RoutingService {
         response.routes(),
         healthOffices,
         responsible);
+  }
+
+  @Nonnull
+  private NRSRoutingResponse fetchRoutingResponse(@Nonnull final NRSRoutingInput request) {
+    try {
+      return client.ruleBased(
+          request.originalNotificationAsJSON(), request.isTestUser(), request.testUserId());
+    } catch (final ServiceCallException e) {
+      if (isErrorRewritingEnabled && e.getHttpStatus() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
+        throw new NpsServiceException(
+            ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
+      }
+      throw e;
+    }
+  }
+
+  private static void validateResponse(@Nonnull final NRSRoutingResponse response) {
+    final Map<AddressOriginEnum, String> healthOffices = response.healthOffices();
+    final String responsible = Strings.nullToEmpty(response.responsible());
+    if (responsible.isBlank() || response.routes().isEmpty() || healthOffices == null) {
+      throw new NpsServiceException(
+          ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
+    }
   }
 }

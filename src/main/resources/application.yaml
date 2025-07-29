@@ -80,3 +80,5 @@ feature:
     notifications.7_3: false
     test_routing_v2: false
     relaxed_validation: false
+    tuberculosis.routing.enabled: false
+    new_api_endpoints: false

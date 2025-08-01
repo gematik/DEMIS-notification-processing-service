@@ -31,10 +31,10 @@ import de.gematik.demis.service.base.feign.annotations.ErrorCode;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 
-@FeignClient(name = "fhir-storage-writer", url = "${nps.client.fhir-storage-writer}")
+@FeignClient(name = "fhir-storage-writer", url = "${nps.client.fhir-storage-writer.address}")
 interface FhirStorageWriterClient {
   @PostMapping(
-      value = "/notification-clearing-api/fhir/",
+      value = "${nps.client.fhir-storage-writer.context-path}",
       consumes = "application/fhir+json",
       produces = "application/fhir+json")
   @ErrorCode(ServiceCallErrorCode.FSW)

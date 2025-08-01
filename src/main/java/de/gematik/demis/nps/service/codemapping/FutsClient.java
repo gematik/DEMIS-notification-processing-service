@@ -33,11 +33,11 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "futs", url = "${nps.client.futs}")
+@FeignClient(name = "futs", url = "${nps.client.futs.address}")
 interface FutsClient {
 
   @GetMapping(
-      value = "/fhir-ui-data-model-translation/conceptmap/{name}",
+      value = "${nps.client.futs.context-path}conceptmap/{name}",
       produces = APPLICATION_JSON_VALUE)
   Map<String, String> getConceptMap(@PathVariable String name);
 }

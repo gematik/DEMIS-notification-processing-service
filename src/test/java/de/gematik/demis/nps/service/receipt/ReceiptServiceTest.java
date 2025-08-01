@@ -30,6 +30,7 @@ import static de.gematik.demis.nps.base.profile.DemisSystems.RESPONSIBLE_HEALTH_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +51,7 @@ import de.gematik.demis.nps.service.routing.RoutingData;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.SequencedSet;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
@@ -419,5 +421,44 @@ class ReceiptServiceTest {
     when(healthOfficeMasterDataService.getHealthOfficeOrganization("1.1.", false)).thenReturn(null);
 
     assertThatThrownBy(() -> receiptService.generateReceipt(notification));
+  }
+
+  @Test
+  void shouldUseOriginalBundleFor74Notifications() {
+    receiptBundleCreator = new ReceiptBundleCreator(new UuidGenerator(), new TimeProvider());
+
+    receiptService =
+        new ReceiptService(
+            receiptBundleCreator,
+            pdfGenServiceClient,
+            healthOfficeMasterDataService,
+            fhirParser,
+            statistics,
+            true);
+
+    Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
+    bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
+
+    HashMap<AddressOriginEnum, String> addressOriginEnumStringHashMap = new HashMap<>();
+    SequencedSet<BundleAction> bundleActions = new LinkedHashSet<>();
+    SequencedSet<Action> actions = new LinkedHashSet<>();
+    RoutingData routingData =
+        new RoutingData(
+            NotificationType.LABORATORY,
+            NotificationCategory.P_7_4,
+            bundleActions,
+            List.of(new NotificationReceiver("type", "1.1.", actions, false)),
+            addressOriginEnumStringHashMap,
+            "1.1");
+    Notification notification = mock(Notification.class);
+    when(notification.getBundle()).thenReturn(bundle);
+    when(notification.getRoutingData()).thenReturn(routingData);
+    when(notification.getResponsibleHealthOfficeId()).thenReturn(Optional.of("1.1."));
+    when(notification.getType()).thenReturn(NotificationType.LABORATORY);
+    when(fhirParser.encodeToJson(bundle)).thenReturn("someBundleJsonMock");
+
+    receiptService.generateReceipt(notification);
+
+    verify(pdfGenServiceClient).createLaboratoryPdfFromJson("someBundleJsonMock");
   }
 }

@@ -44,8 +44,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
@@ -114,9 +112,6 @@ class NotificationValidationRelaxedModeTest {
             httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();
-    lenient()
-        .when(httpServletRequest.getHeaderNames())
-        .thenReturn(Collections.enumeration(List.of(HEADER_FHIR_API_VERSION, HEADER_FHIR_PROFILE)));
     lenient().when(httpServletRequest.getHeader(eq(HEADER_FHIR_API_VERSION))).thenReturn("v1");
     lenient()
         .when(httpServletRequest.getHeader(eq(HEADER_FHIR_PROFILE)))

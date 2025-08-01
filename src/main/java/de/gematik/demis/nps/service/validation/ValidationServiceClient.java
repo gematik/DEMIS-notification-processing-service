@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @FeignClient(name = "validation-service", url = "${nps.client.validation}")
 interface ValidationServiceClient {
   String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
-  String HEADER_FHIR_PROFILE = "fhirProfile";
+  String HEADER_FHIR_PROFILE = "x-fhir-profile";
 
   // Note: @RequestHeader for Content-Type as method parameter does not work
   // -> so let's define two methods

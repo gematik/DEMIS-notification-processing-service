@@ -26,6 +26,7 @@ package de.gematik.demis.nps.service.receipt;
  */
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
+import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.healthoffice.HealthOfficeMasterDataService;
@@ -114,7 +115,8 @@ public class ReceiptService {
 
   /**
    * Generates a PDF for the given notification. Handles different notification types and routing
-   * logic.
+   * logic. for §7.4 notifications the original bundle is used. for all other bundles (§7.1, §7.3,
+   * §6.1) which should be encrypted, the pre encrypted bundle is used.
    *
    * @param notification the notification to process
    * @return the generated PDF as a byte array
@@ -122,21 +124,10 @@ public class ReceiptService {
    */
   private byte[] generatePdf(final Notification notification) {
     String bundleAsJson;
-    if (isNotification73enabled) {
-      String id;
-      if (notification.isTestUser()) {
-        id = notification.getTestUserRecipient();
-      } else {
-        id =
-            notification
-                .getResponsibleHealthOfficeId()
-                .orElseThrow(
-                    () ->
-                        new IllegalStateException(
-                            "no responsilbe health office found through routing"));
-      }
-      bundleAsJson = fhirParser.encodeToJson((notification.getPreEncryptedBundles().get(id)));
-
+    if (NotificationCategory.P_7_4.equals(notification.getRoutingData().notificationCategory())) {
+      bundleAsJson = getBundleFor74Notification(notification);
+    } else if (isNotification73enabled) {
+      bundleAsJson = getPreEncryptedBundle(notification);
     } else {
       bundleAsJson = fhirParser.encodeToJson(notification.getBundle());
     }
@@ -144,5 +135,31 @@ public class ReceiptService {
       case DISEASE -> pdfGenServiceClient.createDiseasePdfFromJson(bundleAsJson);
       case LABORATORY -> pdfGenServiceClient.createLaboratoryPdfFromJson(bundleAsJson);
     };
+  }
+
+  private String getPreEncryptedBundle(Notification notification) {
+    String id;
+    if (notification.isTestUser()) {
+      id = notification.getTestUserRecipient();
+    } else {
+      id =
+          notification
+              .getResponsibleHealthOfficeId()
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "no responsilbe health office found through routing"));
+    }
+    return fhirParser.encodeToJson((notification.getPreEncryptedBundles().get(id)));
+  }
+
+  /**
+   * we cannot use notification.getOriginalBundleAsJson since data is added to the bundle
+   *
+   * @param notification
+   * @return
+   */
+  private String getBundleFor74Notification(Notification notification) {
+    return fhirParser.encodeToJson(notification.getBundle());
   }
 }

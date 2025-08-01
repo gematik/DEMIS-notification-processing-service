@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonByNameDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonNominalDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
@@ -452,7 +452,7 @@ class ReceiverActionServiceTest {
   }
 
   private static Notification p71Notification() {
-    final Patient notifiedPerson = new NotifiedPersonByNameDataBuilder().setId("1").build();
+    final Patient notifiedPerson = new NotifiedPersonNominalDataBuilder().setId("1").build();
     final Composition compositionWithNotifiedPerson =
         new NotificationLaboratoryDataBuilder()
             .setDefault()

@@ -45,8 +45,12 @@ nps:
     routing: "http://notification-routing-service.demis.svc.cluster.local"
     pdfgen: "http://pdfgen-service.demis.svc.cluster.local"
     pseudonymization: "http://pseudonymization-service.demis.svc.cluster.local"
-    fhir-storage-writer: "http://fhir-storage-writer.demis.svc.cluster.local"
-    futs: "http://futs.demis.svc.cluster.local"
+    fhir-storage-writer:
+      address: "http://fhir-storage-writer.demis.svc.cluster.local"
+      context-path: ${DEMIS_NETWORK_FSS_CONTEXT_PATH:/notification-clearing-api/fhir/}
+    futs:
+      address: "http://futs.demis.svc.cluster.local"
+      context-path: ${DEMIS_NETWORK_FUTS_CONTEXT_PATH:/fhir-ui-data-model-translation/}
     context-enrichment-service: "http://context-enrichment-service.demis.svc.cluster.local"
 
   certificate-dir: ${NPS_CERTIFICATES_PATH:data/certificates}

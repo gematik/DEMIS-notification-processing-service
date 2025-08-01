@@ -76,6 +76,12 @@ spec:
           env:
             - name: "TZ"
               value: "Europe/Berlin"
+            {{- if eq (.Values.customEnvVars.FEATURE_FLAG_NEW_API_ENDPOINTS | toString) "true" }}
+            - name: "DEMIS_NETWORK_FSS_CONTEXT_PATH"
+              value: "/"
+            - name: "DEMIS_NETWORK_FUTS_CONTEXT_PATH"
+              value: "/"
+            {{- end }}
             {{- if .Values.debug.enable }}
             - name: "JAVA_TOOL_OPTIONS"
               value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:9000"

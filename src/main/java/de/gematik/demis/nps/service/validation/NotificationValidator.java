@@ -33,6 +33,7 @@ import static de.gematik.demis.nps.error.ServiceCallErrorCode.LVS;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
+import static java.util.Optional.ofNullable;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
@@ -50,8 +51,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -103,7 +102,7 @@ public class NotificationValidator {
   }
 
   private List<String> headersFromRequestByName(@Nonnull String headerName) {
-    return Stream.of(httpServletRequest.getHeader(headerName)).filter(Objects::nonNull).toList();
+    return ofNullable(httpServletRequest.getHeader(headerName)).map(List::of).orElse(null);
   }
 
   public InternalOperationOutcome validateFhir(

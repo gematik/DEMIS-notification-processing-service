@@ -70,6 +70,8 @@ This project includes:
   HAPI FHIR Structures - FHIR R4 under Apache Software License 2.0
   HdrHistogram under Public Domain, per Creative Commons CC0 or BSD-2-Clause
   Hibernate Validator Engine under Apache License 2.0
+  HL7 Core Artifact - R4 under Apache Software License 2.0
+  HL7 Core Artifact - Utilities under Apache Software License 2.0
   ICU4J under Unicode/ICU License
   J2ObjC Annotations under Apache License, Version 2.0
   Jackson datatype: jdk8 under The Apache Software License, Version 2.0
@@ -143,8 +145,6 @@ This project includes:
   OpenTelemetry Semantic Conventions Java under The Apache License, Version 2.0
   org.apiguardian:apiguardian-api under The Apache License, Version 2.0
   org.eclipse.sisu.inject under Eclipse Public License, Version 2.0
-  org.hl7.fhir.r4 under Apache Software License 2.0
-  org.hl7.fhir.utilities under Apache Software License 2.0
   org.opentest4j:opentest4j under The Apache License, Version 2.0
   org.roaringbitmap:RoaringBitmap under Apache 2
   org.xmlunit:xmlunit-core under The Apache Software License, Version 2.0
@@ -154,13 +154,13 @@ This project includes:
   Prometheus Metrics Config under The Apache Software License, Version 2.0
   Prometheus Metrics Core under The Apache Software License, Version 2.0
   Prometheus Metrics Exposition Formats under The Apache Software License, Version 2.0
-  Prometheus Metrics Exposition Formats no protobuf under The Apache Software License, Version 2.0
   Prometheus Metrics Exposition Text Formats under The Apache Software License, Version 2.0
   Prometheus Metrics Model under The Apache Software License, Version 2.0
   Prometheus Metrics Tracer Common under The Apache Software License, Version 2.0
   Protocol Buffers [Core] under BSD-3-Clause
   reactive-streams under MIT-0
   redis-authx-core under MIT
+  Saxon-HE under Mozilla Public License Version 2.0
   service-base under Licensed under the EUPL 1.2
   SLF4J API Module under MIT
   SnakeYAML under Apache License, Version 2.0
@@ -218,5 +218,6 @@ This project includes:
   Ucum-java under BSD 3 Clause
   webjars-locator-lite under MIT
   WireMock under The Apache Software License, Version 2.0
+  XML Resolver under Apache License version 2.0
 
 

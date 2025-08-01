@@ -14,8 +14,12 @@ nps:
     routing: "http://localhost:${wiremock.server.port}/NRS"
     pdfgen: "http://localhost:${wiremock.server.port}/PDF"
     pseudonymization: "http://localhost:${wiremock.server.port}/PS"
-    fhir-storage-writer: "http://localhost:${wiremock.server.port}/FSW"
-    futs: "http://localhost:${wiremock.server.port}/FUTS"
+    fhir-storage-writer:
+      address: "http://localhost:${wiremock.server.port}/FSW"
+      context-path: /notification-clearing-api/fhir/
+    futs:
+      address: "http://localhost:${wiremock.server.port}/FUTS"
+      context-path: /fhir-ui-data-model-translation/
 
   certificate-dir: src/test/resources/certificates
   outcome-issue-threshold: error

@@ -2,8 +2,9 @@
 
 # Release Notification Processing Service
 
-## Release 2.4.3
-- add feature flag FEATURE_FLAG_NEW_API_ENDPOINTS for header propagation of x-fhir-api-version and fhirProfile to validation-service
+## Release 2.5.0
+- add feature flag FEATURE_FLAG_NEW_API_ENDPOINTS for header propagation of x-fhir-api-version and x-fhir-profile to validation-service
+- fix issue with §7.4 notification and pdf creation
 
 ## Release 2.4.2
 - update Spring-Parent with new Notification-Builder-Library

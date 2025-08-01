@@ -29,10 +29,10 @@ package de.gematik.demis.nps.service.validation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonAnonymousDataBuilder;
-import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonByNameDataBuilder;
-import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.AnonymousBundleBuilder;
-import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NonNominalBundleBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonNominalDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryAnonymousDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryNonNominalDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Composition;
@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 class RKIBundleValidatorTest {
 
   public static final Patient NOTIFIED_PERSON =
-      new NotifiedPersonByNameDataBuilder().setDefault().setId("np1").build();
+      new NotifiedPersonNominalDataBuilder().setDefault().setId("np1").build();
   public static final Composition COMPOSITION_WITH_NOTIFIED_PERSON =
       new NotificationLaboratoryDataBuilder()
           .setDefault()
@@ -62,7 +62,7 @@ class RKIBundleValidatorTest {
   }
 
   private static Bundle nonNominalBundleWithNotifiedPerson() {
-    return new NonNominalBundleBuilder()
+    return new NotificationBundleLaboratoryNonNominalDataBuilder()
         .setDefaults()
         .setNotificationLaboratory(COMPOSITION_WITH_NOTIFIED_PERSON)
         // DEMIS-2803 you can remove this line below
@@ -71,7 +71,8 @@ class RKIBundleValidatorTest {
   }
 
   private static Bundle anonymousBundle() {
-    final AnonymousBundleBuilder bundle = new AnonymousBundleBuilder();
+    final NotificationBundleLaboratoryAnonymousDataBuilder bundle =
+        new NotificationBundleLaboratoryAnonymousDataBuilder();
     bundle.setDefaults();
     final Patient anonymousPerson = new NotifiedPersonAnonymousDataBuilder().setId("ap1").build();
     bundle

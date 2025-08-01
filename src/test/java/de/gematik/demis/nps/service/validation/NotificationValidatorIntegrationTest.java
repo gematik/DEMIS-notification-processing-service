@@ -37,6 +37,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static de.gematik.demis.nps.error.ErrorCode.LIFECYCLE_VALIDATION_ERROR;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
+import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
@@ -98,11 +99,12 @@ class NotificationValidatorIntegrationTest {
 
   private static final String REQUEST_BODY = "my body";
   private static final String RESPONSE_BODY =
-"""
-        {"outcome":"does not matter"}
-""";
+      """
+      {"outcome":"does not matter"}
+      """;
 
-  @MockitoBean FhirContext fhirContext;
+  @MockitoBean private FhirContext fhirContext;
+
   @Autowired NotificationValidator underTest;
 
   @BeforeEach
@@ -124,33 +126,37 @@ class NotificationValidatorIntegrationTest {
     return outcome;
   }
 
+  private static void setupVS(
+      final String contentType,
+      final String version,
+      final String profile,
+      final ResponseDefinitionBuilder responseDefBuilder) {
+    stubFor(
+        post(ENDPOINT_VS)
+            .withHeader(CONTENT_TYPE, equalTo(contentType))
+            .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
+            .withHeader(HEADER_FHIR_API_VERSION, version == null ? absent() : equalTo(version))
+            .withHeader(HEADER_FHIR_PROFILE, profile == null ? absent() : equalTo(profile))
+            .withRequestBody(equalTo(REQUEST_BODY))
+            .willReturn(responseDefBuilder));
+  }
+
+  private static void setupVS(
+      final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
+    setupVS(contentType, null, null, responseDefBuilder);
+  }
+
+  private static void setRequestHeaders(final Map<String, String> headers) {
+    final var mockRequest = new MockHttpServletRequest();
+    for (var entry : headers.entrySet()) {
+      mockRequest.addHeader(entry.getKey(), entry.getValue());
+    }
+    final var attrs = new ServletRequestAttributes(mockRequest);
+    RequestContextHolder.setRequestAttributes(attrs);
+  }
+
   @Nested
   class ValidationServiceTest {
-
-    private static void setupVS(
-        final String contentType,
-        final String version,
-        final ResponseDefinitionBuilder responseDefBuilder) {
-      stubFor(
-          post(ENDPOINT_VS)
-              .withHeader(CONTENT_TYPE, equalTo(contentType))
-              .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
-              .withHeader(HEADER_FHIR_API_VERSION, version == null ? absent() : equalTo(version))
-              .withRequestBody(equalTo(REQUEST_BODY))
-              .willReturn(responseDefBuilder));
-    }
-
-    private static void setupVS(
-        final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
-      setupVS(contentType, null, responseDefBuilder);
-    }
-
-    private static void setRequestHeader(final String key, final String value) {
-      final var mockRequest = new MockHttpServletRequest();
-      mockRequest.addHeader(key, value);
-      final var attrs = new ServletRequestAttributes(mockRequest);
-      RequestContextHolder.setRequestAttributes(attrs);
-    }
 
     @AfterEach
     void tearDown() {
@@ -168,7 +174,6 @@ class NotificationValidatorIntegrationTest {
       setupVS(contentType, okJson(RESPONSE_BODY));
       final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
       final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
-
       assertThat(result.operationOutcome()).isEqualTo(outcome);
     }
 
@@ -176,13 +181,31 @@ class NotificationValidatorIntegrationTest {
     @EnumSource(MessageType.class)
     void validationOkayWithSpecificVersion(final MessageType messageType) {
       final String apiVersion = "6";
-      setRequestHeader("x-fhir-api-version", apiVersion);
+      final String profile = "fhir-profile-snapshots";
+      setRequestHeaders(Map.of(HEADER_FHIR_API_VERSION, apiVersion, HEADER_FHIR_PROFILE, profile));
       final String contentType =
           switch (messageType) {
             case JSON -> APPLICATION_JSON_VALUE;
             case XML -> APPLICATION_XML_VALUE;
           };
-      setupVS(contentType, apiVersion, okJson(RESPONSE_BODY));
+      setupVS(contentType, apiVersion, null, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+
+      assertThat(result.operationOutcome()).isEqualTo(outcome);
+    }
+
+    @ParameterizedTest
+    @EnumSource(MessageType.class)
+    void validationOkayWithoutSpecificVersion(final MessageType messageType) {
+      final String profile = "fhir-profile-snapshots";
+      setRequestHeaders(Map.of(HEADER_FHIR_PROFILE, profile));
+      final String contentType =
+          switch (messageType) {
+            case JSON -> APPLICATION_JSON_VALUE;
+            case XML -> APPLICATION_XML_VALUE;
+          };
+      setupVS(contentType, null, null, okJson(RESPONSE_BODY));
       final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
       final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
@@ -196,9 +219,7 @@ class NotificationValidatorIntegrationTest {
     void validationErrorOutcome(final IssueSeverity severity) {
       setupVS(
           APPLICATION_JSON_VALUE,
-          WireMock.status(422)
-              .withBody(RESPONSE_BODY)
-              .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+          status(422).withBody(RESPONSE_BODY).withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
 
       final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
       outcome.addIssue().setSeverity(severity);
@@ -215,7 +236,7 @@ class NotificationValidatorIntegrationTest {
 
     @Test
     void validationCallException() {
-      setupVS(APPLICATION_JSON_VALUE, WireMock.serverError());
+      setupVS(APPLICATION_JSON_VALUE, serverError());
       assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
           .isExactlyInstanceOf(ServiceCallException.class);
     }
@@ -224,6 +245,7 @@ class NotificationValidatorIntegrationTest {
   @Nested
   @DisplayName("Lifecycle validation for laboratory")
   class LaboratoryLifecycleValidationTest {
+
     private static final String ENDPOINT_LVS_LABORATORY = "/LVS/laboratory/$validate";
 
     private static void setupLabLVS(final ResponseDefinitionBuilder responseDefBuilder) {

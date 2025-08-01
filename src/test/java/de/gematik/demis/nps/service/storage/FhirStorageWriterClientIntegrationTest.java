@@ -54,7 +54,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 
 @SpringBootTest(
-    properties = "nps.client.fhir-storage-writer=http://localhost:${wiremock.server.port}")
+    properties = {
+      "nps.client.fhir-storage-writer.address=http://localhost:${wiremock.server.port}",
+      "nps.client.fhir-storage-writer.context-path=/notification-clearing-api/fhir/"
+    })
 @AutoConfigureWireMock(port = 0)
 class FhirStorageWriterClientIntegrationTest {
   private static final String ENDPOINT = "/notification-clearing-api/fhir/";

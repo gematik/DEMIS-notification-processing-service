@@ -52,7 +52,7 @@ nps:
       address: "http://futs.demis.svc.cluster.local"
       context-path: ${DEMIS_NETWORK_FUTS_CONTEXT_PATH:/fhir-ui-data-model-translation/}
     context-enrichment-service: "http://context-enrichment-service.demis.svc.cluster.local"
-
+  context-path: ${API_ENTRYPOINT:/fhir/}
   certificate-dir: ${NPS_CERTIFICATES_PATH:data/certificates}
 
   testuser:

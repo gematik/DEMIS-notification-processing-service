@@ -2,6 +2,9 @@
 
 # Release Notification Processing Service
 
+## Release 2.6.0
+- add API_ENTRYPOINT configuration for new api endpoints
+
 ## Release 2.5.0
 - add feature flag FEATURE_FLAG_NEW_API_ENDPOINTS for header propagation of x-fhir-api-version and x-fhir-profile to validation-service
 - fix issue with §7.4 notification and pdf creation

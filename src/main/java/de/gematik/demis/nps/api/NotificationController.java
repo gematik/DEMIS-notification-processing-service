@@ -81,7 +81,7 @@ public class NotificationController {
   }
 
   @PostMapping(
-      path = "fhir/$process-notification",
+      path = "${nps.context-path}$process-notification",
       consumes = {
         APPLICATION_JSON_VALUE,
         "application/json+fhir",

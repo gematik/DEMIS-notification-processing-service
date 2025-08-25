@@ -81,6 +81,8 @@ spec:
               value: "/"
             - name: "DEMIS_NETWORK_FUTS_CONTEXT_PATH"
               value: "/"
+            - name: "API_ENTRYPOINT"
+              value: "/"
             {{- end }}
             {{- if .Values.debug.enable }}
             - name: "JAVA_TOOL_OPTIONS"

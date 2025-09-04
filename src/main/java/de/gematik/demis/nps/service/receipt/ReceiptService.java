@@ -52,6 +52,7 @@ public class ReceiptService {
   private final FhirParser fhirParser;
   private final Statistics statistics;
   private final boolean isNotification73enabled;
+  private final boolean isCustodianEnabled;
 
   /**
    * Constructs a ReceiptService instance.
@@ -62,6 +63,7 @@ public class ReceiptService {
    * @param fhirParser the parser for FHIR resources
    * @param statistics the statistics service for tracking errors
    * @param isNotification73enabled flag indicating if Notification 7.3 is enabled
+   * @param isCustodianEnabled set to true to add custodian reference for test users
    */
   public ReceiptService(
       ReceiptBundleCreator receiptBundleCreator,
@@ -69,13 +71,15 @@ public class ReceiptService {
       HealthOfficeMasterDataService healthOfficeMasterDataService,
       FhirParser fhirParser,
       Statistics statistics,
-      @Value("${feature.flag.notifications.7_3}") boolean isNotification73enabled) {
+      @Value("${feature.flag.notifications.7_3}") boolean isNotification73enabled,
+      @Value("${feature.flag.custodian.enabled}") boolean isCustodianEnabled) {
     this.receiptBundleCreator = receiptBundleCreator;
     this.pdfGenServiceClient = pdfGenServiceClient;
     this.healthOfficeMasterDataService = healthOfficeMasterDataService;
     this.fhirParser = fhirParser;
     this.statistics = statistics;
     this.isNotification73enabled = isNotification73enabled;
+    this.isCustodianEnabled = isCustodianEnabled;
   }
 
   /**
@@ -91,14 +95,28 @@ public class ReceiptService {
 
     final String responsibleHealthOfficeId =
         notification.getResponsibleHealthOfficeId().orElseThrow();
-    final Organization healthOfficeOrganization =
-        healthOfficeMasterDataService.getHealthOfficeOrganization(
-            responsibleHealthOfficeId, notification.isTestUser());
+    final Organization healthOfficeOrganization;
+    if (isCustodianEnabled) {
+      healthOfficeOrganization =
+          healthOfficeMasterDataService.getHealthOfficeOrganization(responsibleHealthOfficeId);
+    } else {
+      healthOfficeOrganization =
+          healthOfficeMasterDataService.getHealthOfficeOrganization(
+              responsibleHealthOfficeId, notification.isTestUser());
+    }
     if (healthOfficeOrganization != null) {
       receiptBuilder.addResponsibleHealthOffice(healthOfficeOrganization);
     } else {
       log.warn("No Organization info for health office {}", responsibleHealthOfficeId);
     }
+
+    final String custodianId = notification.getRoutingData().custodian();
+    if (isCustodianEnabled && custodianId != null) {
+      final Organization custodianOrganization =
+          healthOfficeMasterDataService.getTestUserHealthOfficeOrganization(custodianId);
+      receiptBuilder.addCustodian(custodianOrganization);
+    }
+
     notification.getCompositionIdentifier().ifPresent(receiptBuilder::addRelatesNotificationId);
 
     try {

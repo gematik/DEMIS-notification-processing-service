@@ -28,6 +28,8 @@ package de.gematik.demis.nps.service.healthoffice;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.receipt.RkiOrganizationBuilder;
 import java.util.Map;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import org.hl7.fhir.r4.model.Organization;
 
 public class HealthOfficeMasterDataService {
@@ -42,7 +44,8 @@ public class HealthOfficeMasterDataService {
     this.healthOfficeIdToOrganization = healthOfficeIdToOrganization;
   }
 
-  private static Organization createTestHealthOffice(final String id) {
+  @Nonnull
+  private static Organization createTestHealthOffice(@Nonnull final String id) {
     final String tel = "";
     final String fax = "";
     final String email = "test@test.com";
@@ -55,8 +58,19 @@ public class HealthOfficeMasterDataService {
         new TransmittingSite(id, tel, fax, email, department, name, street, zipCode, city));
   }
 
+  @CheckForNull
   public Organization getHealthOfficeOrganization(
       final String id, final boolean isTestHealthOffice) {
     return isTestHealthOffice ? createTestHealthOffice(id) : healthOfficeIdToOrganization.get(id);
+  }
+
+  @CheckForNull
+  public Organization getHealthOfficeOrganization(@Nonnull final String id) {
+    return getHealthOfficeOrganization(id, false);
+  }
+
+  @Nonnull
+  public Organization getTestUserHealthOfficeOrganization(@Nonnull final String custodian) {
+    return createTestHealthOffice(custodian);
   }
 }

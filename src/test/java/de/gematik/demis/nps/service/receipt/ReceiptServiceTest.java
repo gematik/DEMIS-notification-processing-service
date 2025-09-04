@@ -28,14 +28,12 @@ package de.gematik.demis.nps.service.receipt;
 
 import static de.gematik.demis.nps.base.profile.DemisSystems.RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Compositions;
 import de.gematik.demis.nps.base.util.TimeProvider;
 import de.gematik.demis.nps.base.util.UuidGenerator;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -48,18 +46,11 @@ import de.gematik.demis.nps.service.processing.BundleAction;
 import de.gematik.demis.nps.service.routing.AddressOriginEnum;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
 import de.gematik.demis.nps.service.routing.RoutingData;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.SequencedSet;
-import org.hl7.fhir.r4.model.Binary;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Composition;
-import org.hl7.fhir.r4.model.Identifier;
-import org.hl7.fhir.r4.model.Meta;
-import org.hl7.fhir.r4.model.Organization;
+import de.gematik.demis.nps.test.RoutingDataUtil;
+import java.util.*;
+import org.hl7.fhir.r4.model.*;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -91,6 +82,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            false,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -99,17 +91,7 @@ class ReceiptServiceTest {
     Composition composition = new Composition();
     composition.setIdentifier(new Identifier().setValue("test-identifier-composition"));
 
-    HashMap<AddressOriginEnum, String> addressOriginEnumStringHashMap = new HashMap<>();
-    SequencedSet<BundleAction> bundleActions = new LinkedHashSet<>();
-    SequencedSet<Action> actions = new LinkedHashSet<>();
-    RoutingData routingData =
-        new RoutingData(
-            NotificationType.DISEASE,
-            NotificationCategory.P_6_1,
-            bundleActions,
-            List.of(new NotificationReceiver("type", "1.1.", actions, false)),
-            addressOriginEnumStringHashMap,
-            "1.1.");
+    RoutingData routingData = RoutingDataUtil.empty61For("1.1.");
     Notification notification =
         Notification.builder()
             .bundle(bundle)
@@ -156,6 +138,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            false,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -174,7 +157,9 @@ class ReceiptServiceTest {
             bundleActions,
             List.of(new NotificationReceiver("type", "1.1.", actions, false)),
             addressOriginEnumStringHashMap,
-            "1.1.");
+            "1.1.",
+            Set.of(),
+            null);
     Notification notification =
         Notification.builder()
             .bundle(bundle)
@@ -216,6 +201,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            false,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -224,17 +210,7 @@ class ReceiptServiceTest {
     Composition composition = new Composition();
     composition.setIdentifier(new Identifier().setValue("test-identifier-composition"));
 
-    HashMap<AddressOriginEnum, String> addressOriginEnumStringHashMap = new HashMap<>();
-    SequencedSet<BundleAction> bundleActions = new LinkedHashSet<>();
-    SequencedSet<Action> actions = new LinkedHashSet<>();
-    RoutingData routingData =
-        new RoutingData(
-            NotificationType.DISEASE,
-            NotificationCategory.P_6_1,
-            bundleActions,
-            List.of(new NotificationReceiver("type", "1.1.", actions, false)),
-            addressOriginEnumStringHashMap,
-            "1.1.");
+    RoutingData routingData = RoutingDataUtil.empty61For("1.1.");
     Notification notification =
         Notification.builder()
             .bundle(bundle)
@@ -279,7 +255,8 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
-            true);
+            true,
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -297,7 +274,9 @@ class ReceiptServiceTest {
             bundleActions,
             List.of(new NotificationReceiver("type", "1.1.", actions, false)),
             addressOriginEnumStringHashMap,
-            "1.1.");
+            "1.1.",
+            Set.of(),
+            null);
     Notification notification =
         Notification.builder()
             .bundle(bundle)
@@ -333,7 +312,8 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
-            true);
+            true,
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -351,7 +331,9 @@ class ReceiptServiceTest {
             bundleActions,
             List.of(new NotificationReceiver("type", "1.1.", actions, false)),
             addressOriginEnumStringHashMap,
-            "1.1.");
+            "1.1.",
+            Set.of(),
+            null);
     Notification notification =
         Notification.builder()
             .bundle(bundle)
@@ -378,51 +360,6 @@ class ReceiptServiceTest {
     verify(pdfGenServiceClient).createDiseasePdfFromJson("someBundleJsonMock");
   }
 
-  //  Bei fehlender ResponsibleHealthOfficeId wird eine Exception geworfen
-  @Test
-  void shouldThrowExceptionForMissingResponsibleHealthOfficeId() {
-    receiptBundleCreator = new ReceiptBundleCreator(new UuidGenerator(), new TimeProvider());
-
-    receiptService =
-        new ReceiptService(
-            receiptBundleCreator,
-            pdfGenServiceClient,
-            healthOfficeMasterDataService,
-            fhirParser,
-            statistics,
-            true);
-
-    Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
-    bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
-
-    Composition composition = new Composition();
-    composition.setIdentifier(new Identifier().setValue("test-identifier-composition"));
-
-    HashMap<AddressOriginEnum, String> addressOriginEnumStringHashMap = new HashMap<>();
-    SequencedSet<BundleAction> bundleActions = new LinkedHashSet<>();
-    SequencedSet<Action> actions = new LinkedHashSet<>();
-    RoutingData routingData =
-        new RoutingData(
-            NotificationType.DISEASE,
-            NotificationCategory.P_6_1,
-            bundleActions,
-            List.of(new NotificationReceiver("type", "1.1.", actions, false)),
-            addressOriginEnumStringHashMap,
-            null);
-    Notification notification =
-        Notification.builder()
-            .bundle(bundle)
-            .testUser(true)
-            .testUserRecipient("testUser")
-            .type(NotificationType.DISEASE)
-            .routingData(routingData)
-            .build();
-
-    when(healthOfficeMasterDataService.getHealthOfficeOrganization("1.1.", false)).thenReturn(null);
-
-    assertThatThrownBy(() -> receiptService.generateReceipt(notification));
-  }
-
   @Test
   void shouldUseOriginalBundleFor74Notifications() {
     receiptBundleCreator = new ReceiptBundleCreator(new UuidGenerator(), new TimeProvider());
@@ -434,7 +371,8 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
-            true);
+            true,
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -449,7 +387,9 @@ class ReceiptServiceTest {
             bundleActions,
             List.of(new NotificationReceiver("type", "1.1.", actions, false)),
             addressOriginEnumStringHashMap,
-            "1.1");
+            "1.1",
+            Set.of(),
+            null);
     Notification notification = mock(Notification.class);
     when(notification.getBundle()).thenReturn(bundle);
     when(notification.getRoutingData()).thenReturn(routingData);
@@ -460,5 +400,182 @@ class ReceiptServiceTest {
     receiptService.generateReceipt(notification);
 
     verify(pdfGenServiceClient).createLaboratoryPdfFromJson("someBundleJsonMock");
+  }
+
+  @Test
+  void thatRegularNotificationProcessingDoesntSetACustodian() {
+    final String responsibleHealthOffice = "responsible";
+
+    receiptBundleCreator = new ReceiptBundleCreator(new UuidGenerator(), new TimeProvider());
+    final Bundle processedBundle =
+        new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
+    receiptService =
+        new ReceiptService(
+            receiptBundleCreator,
+            pdfGenServiceClient,
+            healthOfficeMasterDataService,
+            fhirParser,
+            statistics,
+            true,
+            false);
+
+    // We just need to ensure correct data flow, and we don't mind what's the organization exactly
+    final Organization value = new Organization();
+    when(healthOfficeMasterDataService.getHealthOfficeOrganization(anyString(), anyBoolean()))
+        .thenReturn(value);
+
+    final Notification notification = mock(Notification.class);
+    // GIVEN a responsible health office
+    when(notification.getResponsibleHealthOfficeId())
+        .thenReturn(Optional.of(responsibleHealthOffice));
+    when(notification.getBundle()).thenReturn(processedBundle);
+    when(notification.getRoutingData())
+        .thenReturn(RoutingDataUtil.emptyFor(responsibleHealthOffice));
+
+    // WHEN we generate a receipt
+    final Bundle receipt = receiptService.generateReceipt(notification);
+    final Composition composition = Compositions.from(receipt).orElseThrow();
+
+    // THEN we have the responsible health office as regular entry
+    // We don't care what the service will compute it only matters that it gets the right parameters
+    // passed
+    verify(healthOfficeMasterDataService)
+        .getHealthOfficeOrganization(responsibleHealthOffice, false);
+    // AND no custodian
+    // Composition::getCustodian would create an empty reference, so we just verify it's absent
+    assertThat(composition.hasCustodian()).isFalse();
+  }
+
+  @Test
+  void thatTestNotificationsSetACustomResponsibleHealthOffice() {
+    final String responsibleHealthOffice = "responsible";
+
+    receiptBundleCreator = new ReceiptBundleCreator(new UuidGenerator(), new TimeProvider());
+    final Bundle processedBundle =
+        new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
+    receiptService =
+        new ReceiptService(
+            receiptBundleCreator,
+            pdfGenServiceClient,
+            healthOfficeMasterDataService,
+            fhirParser,
+            statistics,
+            true,
+            false);
+
+    // We just need to ensure correct data flow, and we don't mind what is the organization exactly
+    final Organization value = new Organization();
+    when(healthOfficeMasterDataService.getHealthOfficeOrganization(anyString(), anyBoolean()))
+        .thenReturn(value);
+
+    final Notification notification = mock(Notification.class);
+    // GIVEN a responsible health office
+    when(notification.getResponsibleHealthOfficeId())
+        .thenReturn(Optional.of(responsibleHealthOffice));
+    when(notification.getBundle()).thenReturn(processedBundle);
+    when(notification.getRoutingData())
+        .thenReturn(RoutingDataUtil.emptyFor(responsibleHealthOffice));
+    when(notification.isTestUser()).thenReturn(true);
+
+    // WHEN we generate a receipt
+    final Bundle receipt = receiptService.generateReceipt(notification);
+    final Composition composition = Compositions.from(receipt).orElseThrow();
+
+    // THEN we have the responsible health office as regular entry
+    // We don't care what the service will compute it only matters that it gets the right parameters
+    // passed
+    verify(healthOfficeMasterDataService)
+        .getHealthOfficeOrganization(responsibleHealthOffice, true);
+    // AND no custodian
+    // Composition::getCustodian would create an empty reference, so we just verify it's absent
+    assertThat(composition.hasCustodian()).isFalse();
+  }
+
+  @Nested
+  class Custodian {
+
+    private static final String RESPONSIBLE_HEALTH_OFFICE = "responsible";
+
+    private ReceiptService receiptService;
+
+    @BeforeEach
+    void setup() {
+      receiptService =
+          new ReceiptService(
+              new ReceiptBundleCreator(new UuidGenerator(), new TimeProvider()),
+              pdfGenServiceClient,
+              healthOfficeMasterDataService,
+              fhirParser,
+              statistics,
+              true,
+              true);
+    }
+
+    @Test
+    void thatTestNotificationsRetainOriginalResponsibleHealthOfficeData() {
+      final String custodian = "custodian";
+
+      // We just need to ensure correct data flow, and we don't mind what is the organization
+      // exactly
+      final Organization value = new Organization();
+      when(healthOfficeMasterDataService.getHealthOfficeOrganization(RESPONSIBLE_HEALTH_OFFICE))
+          .thenReturn(value);
+      when(healthOfficeMasterDataService.getTestUserHealthOfficeOrganization(custodian))
+          .thenCallRealMethod();
+
+      final Notification notification = testNotification(custodian);
+
+      // WHEN we generate a receipt
+      final Bundle receipt = receiptService.generateReceipt(notification);
+      final Composition composition = Compositions.from(receipt).orElseThrow();
+
+      final Reference custodianRef = composition.getCustodian();
+      assertThat(((Organization) custodianRef.getResource()).getId()).isEqualTo(custodian);
+
+      // THEN we have the responsible health office as regular entry
+      /* We don't test the HealthOfficeMasterDataService here, we ensure that the right parameters are passed */
+      verify(healthOfficeMasterDataService).getHealthOfficeOrganization(RESPONSIBLE_HEALTH_OFFICE);
+      verify(healthOfficeMasterDataService).getTestUserHealthOfficeOrganization(custodian);
+    }
+
+    @Test
+    void thatMissingCustodianIsProcessedWithoutException() {
+      // We just need to ensure correct data flow, and we don't mind what is the organization
+      // exactly
+      final Organization value = new Organization();
+      when(healthOfficeMasterDataService.getHealthOfficeOrganization(RESPONSIBLE_HEALTH_OFFICE))
+          .thenReturn(value);
+
+      final Notification notification = testNotification(null);
+
+      // WHEN we generate a receipt
+      final Bundle receipt = receiptService.generateReceipt(notification);
+
+      // THEN we have the responsible health office as regular entry
+      /* We don't test the HealthOfficeMasterDataService here, we ensure that the right parameters are passed */
+      verify(healthOfficeMasterDataService).getHealthOfficeOrganization(RESPONSIBLE_HEALTH_OFFICE);
+      verify(healthOfficeMasterDataService, never())
+          .getTestUserHealthOfficeOrganization(anyString());
+
+      // AND no custodian
+      // Composition::getCustodian would create an empty reference, so we just verify it's absent
+      final Composition composition = Compositions.from(receipt).orElseThrow();
+      assertThat(composition.hasCustodian()).isFalse();
+    }
+
+    private static Notification testNotification(final String custodian) {
+      final Bundle processedBundle =
+          new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
+
+      final Notification notification = mock(Notification.class);
+      // GIVEN a responsible health office
+      when(notification.getResponsibleHealthOfficeId())
+          .thenReturn(Optional.of(RESPONSIBLE_HEALTH_OFFICE));
+      when(notification.getBundle()).thenReturn(processedBundle);
+      when(notification.getRoutingData())
+          .thenReturn(RoutingDataUtil.emptyFor(RESPONSIBLE_HEALTH_OFFICE, custodian));
+      when(notification.isTestUser()).thenReturn(true);
+      return notification;
+    }
   }
 }

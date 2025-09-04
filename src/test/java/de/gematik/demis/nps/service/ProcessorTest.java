@@ -28,7 +28,7 @@ package de.gematik.demis.nps.service;
 
 import static de.gematik.demis.nps.service.notification.NotificationType.DISEASE;
 import static de.gematik.demis.nps.service.processing.BundleActionType.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,6 +46,8 @@ import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.config.NpsConfigProperties;
+import de.gematik.demis.nps.error.ErrorCode;
+import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
 import de.gematik.demis.nps.service.notbyname.NotByNameService;
@@ -67,17 +69,15 @@ import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import org.assertj.core.api.ThrowableAssertAlternative;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Parameters;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -141,10 +141,10 @@ class ProcessorTest {
   @ParameterizedTest
   @EnumSource(MessageType.class)
   void ensureProcessOrchestratesTheFlowAsExpected(MessageType contentType) {
-    final Processor service = createProcessor();
+    final Processor service = createProcessor(false);
     // GIVEN a parsed bundle
-    final Bundle BUNDLE = new Bundle();
-    BUNDLE.setIdentifier(new Identifier().setValue("notification-id"));
+    final Bundle bundle = new Bundle();
+    bundle.setIdentifier(new Identifier().setValue("notification-id"));
     // AND routing information retrieved from the NRS
     final String HEALTH_OFFICE_1 = "1.123.312.3.";
     final String HEALTH_OFFICE_2 = "3.321.123.4.";
@@ -167,9 +167,11 @@ class ProcessorTest {
             SequencedSets.of(BundleAction.optionalOf(CREATE_PSEUDONYM_RECORD)),
             List.of(receiver1, receiver2),
             new LinkedHashMap<>(),
-            HEALTH_OFFICE_1);
+            HEALTH_OFFICE_1,
+            Set.of(),
+            null);
     // AND a notification that will be created
-    final Notification notification = createNotification(BUNDLE, routingData);
+    final Notification notification = createNotification(bundle, routingData);
 
     when(routingService.getRoutingInformation(any())).thenReturn(routingData);
 
@@ -178,21 +180,21 @@ class ProcessorTest {
     InternalOperationOutcome validationOutcome =
         new InternalOperationOutcome(operationOutcome, "someBundleString");
     when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, MessageType.JSON)).thenReturn(BUNDLE);
-    when(notificationFhirService.getDiseaseCode(BUNDLE, DISEASE)).thenReturn("xxx");
+    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, MessageType.JSON)).thenReturn(bundle);
+    when(notificationFhirService.getDiseaseCode(bundle, DISEASE)).thenReturn("xxx");
 
     if (contentType == MessageType.XML) {
       when(fhirParser.encodeToJson(any())).thenReturn(FHIR_NOTIFICATION);
     }
 
     // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
-    final Binary ho1_encrypted = new Binary();
-    final Binary ho2_encrypted = new Binary();
+    final Binary ho1Encrypted = new Binary();
+    final Binary ho2Encrypted = new Binary();
     // Can't use when().doReturn() due to wildcard capture
-    doReturn(Optional.of(ho1_encrypted))
+    doReturn(Optional.of(ho1Encrypted))
         .when(receiverActionService)
         .transform(any(Notification.class), eq(receiver1));
-    doReturn(Optional.of(ho2_encrypted))
+    doReturn(Optional.of(ho2Encrypted))
         .when(receiverActionService)
         .transform(any(Notification.class), eq(receiver2));
 
@@ -203,7 +205,7 @@ class ProcessorTest {
 
     // WHEN we process the input an error with stubbing here indicates, that execute creates a
     // different Notification from the createNotification method in this test
-    service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN);
+    service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN, Set.of());
 
     // THEN
     verify(notificationValidator).validateLifecycle(notification);
@@ -214,11 +216,11 @@ class ProcessorTest {
             argThat(
                 list ->
                     list.size() == 2
-                        && list.contains(ho1_encrypted)
-                        && list.contains(ho2_encrypted)));
+                        && list.contains(ho1Encrypted)
+                        && list.contains(ho2Encrypted)));
   }
 
-  private Processor createProcessor() {
+  private Processor createProcessor(final boolean isPermissionCheckEnabled) {
     return new Processor(
         notificationValidator,
         notificationFhirService,
@@ -233,7 +235,8 @@ class ProcessorTest {
         new BundleActionService(pseudoService),
         updateService,
         false,
-        true);
+        true,
+        isPermissionCheckEnabled);
   }
 
   @Test
@@ -241,24 +244,24 @@ class ProcessorTest {
     // GIVEN a Notification for a test user
 
     when(routingService.getRoutingInformation(any()))
-        .thenReturn(
-            new RoutingData(
-                NotificationType.LABORATORY,
-                NotificationCategory.UNKNOWN,
-                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
-                List.of(),
-                Map.of(),
-                ""));
+        .thenReturn(getArbitraryRoutingResult(Set.of()));
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
     when(notificationValidator.validateFhir(any(), any()))
         .thenReturn(new InternalOperationOutcome(new OperationOutcome(), "someBundleString"));
 
-    final Processor processor = createProcessor();
+    final Processor processor = createProcessor(false);
     // WHEN we process a notification
     processor.execute(
-        FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "test-user", true, "test-user-other", TOKEN);
+        FHIR_NOTIFICATION,
+        CONTENT_TYPE,
+        REQUEST_ID,
+        "test-user",
+        true,
+        "test-user-other",
+        TOKEN,
+        Set.of());
 
     final ArgumentCaptor<NRSRoutingInput> routingServiceRequest =
         ArgumentCaptor.forClass(NRSRoutingInput.class);
@@ -284,7 +287,9 @@ class ProcessorTest {
                     new NotificationReceiver(
                         "any", "1.", SequencedSets.of(Action.NO_ACTION), false)),
                 Map.of(),
-                ""));
+                "",
+                Set.of(),
+                null));
     final Bundle result = new Bundle();
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(notificationValidator.validateFhir(any(), any()))
@@ -295,10 +300,11 @@ class ProcessorTest {
     // AND when the receiverActionService processes anything return a new placeholder Bundle
     doReturn(Optional.of(new Bundle())).when(receiverActionService).transform(any(), any());
 
-    final Processor processor = createProcessor();
+    final Processor processor = createProcessor(false);
     // AND we process a notification
     // TODO come back here and check, this is essentially the RKI test case
-    processor.execute(FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "1.", true, "1.", TOKEN);
+    processor.execute(
+        FHIR_NOTIFICATION, CONTENT_TYPE, REQUEST_ID, "1.", true, "1.", TOKEN, Set.of());
 
     // THEN ensure that we store the two placeholder Bundles
     verify(notificationStorageService).storeNotifications(storageParameter.capture());
@@ -309,10 +315,10 @@ class ProcessorTest {
   @Test
   void checkAdditionalParsingIsUsed() {
     MessageType contentType = MessageType.JSON;
-    final Processor service = createProcessor();
+    final Processor service = createProcessor(false);
     // GIVEN a parsed bundle
-    final Bundle BUNDLE = new Bundle();
-    BUNDLE.setIdentifier(new Identifier().setValue("notification-id"));
+    final Bundle bundle = new Bundle();
+    bundle.setIdentifier(new Identifier().setValue("notification-id"));
     // AND routing information retrieved from the NRS
     final String HEALTH_OFFICE_1 = "1.123.312.3.";
     final String HEALTH_OFFICE_2 = "3.321.123.4.";
@@ -335,9 +341,11 @@ class ProcessorTest {
             SequencedSets.of(BundleAction.optionalOf(CREATE_PSEUDONYM_RECORD)),
             List.of(receiver1, receiver2),
             new LinkedHashMap<>(),
-            HEALTH_OFFICE_1);
+            HEALTH_OFFICE_1,
+            Set.of(),
+            null);
     // AND a notification that will be created
-    Notification notification = createNotification(BUNDLE, routingOutputDto);
+    Notification notification = createNotification(bundle, routingOutputDto);
 
     when(routingService.getRoutingInformation(any())).thenReturn(routingOutputDto);
 
@@ -346,17 +354,17 @@ class ProcessorTest {
     InternalOperationOutcome validationOutcome =
         new InternalOperationOutcome(operationOutcome, "someBundleString");
     when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
-    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, contentType)).thenReturn(BUNDLE);
-    when(notificationFhirService.getDiseaseCode(BUNDLE, DISEASE)).thenReturn("xxx");
+    when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, contentType)).thenReturn(bundle);
+    when(notificationFhirService.getDiseaseCode(bundle, DISEASE)).thenReturn("xxx");
 
     // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
-    final Binary ho1_encrypted = new Binary();
-    final Binary ho2_encrypted = new Binary();
+    final Binary ho1Encrypted = new Binary();
+    final Binary ho2Encrypted = new Binary();
     // Can't use when().doReturn() due to wildcard capture
-    doReturn(Optional.of(ho1_encrypted))
+    doReturn(Optional.of(ho1Encrypted))
         .when(receiverActionService)
         .transform(any(Notification.class), eq(receiver1));
-    doReturn(Optional.of(ho2_encrypted))
+    doReturn(Optional.of(ho2Encrypted))
         .when(receiverActionService)
         .transform(any(Notification.class), eq(receiver2));
 
@@ -368,7 +376,7 @@ class ProcessorTest {
     // WHEN we process the input an error with stubbing here indicates, that
     // execute creates a different Notification from the createNotification
     // method in this test
-    service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN);
+    service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN, Set.of());
 
     // THEN
     verify(notificationValidator).validateLifecycle(notification);
@@ -379,8 +387,8 @@ class ProcessorTest {
             argThat(
                 list ->
                     list.size() == 2
-                        && list.contains(ho1_encrypted)
-                        && list.contains(ho2_encrypted)));
+                        && list.contains(ho1Encrypted)
+                        && list.contains(ho2Encrypted)));
 
     final ArgumentCaptor<NRSRoutingInput> routingServiceRequest =
         ArgumentCaptor.forClass(NRSRoutingInput.class);
@@ -401,14 +409,7 @@ class ProcessorTest {
     when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
     when(fhirParser.parseBundleOrParameter(any(), any(MessageType.class))).thenReturn(bundle);
     when(routingService.getRoutingInformation(any()))
-        .thenReturn(
-            new RoutingData(
-                NotificationType.LABORATORY,
-                NotificationCategory.UNKNOWN,
-                SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
-                List.of(),
-                Map.of(),
-                ""));
+        .thenReturn(getArbitraryRoutingResult(Set.of()));
     when(notificationFhirService.getDiseaseCode(any(), any())).thenReturn("xxx");
 
     doAnswer(
@@ -424,8 +425,9 @@ class ProcessorTest {
 
     final var listenToLog = listenToLog(Processor.class);
 
-    final Processor service = createProcessor();
-    service.execute(FHIR_NOTIFICATION, MessageType.JSON, REQUEST_ID, SENDER, false, "", TOKEN);
+    final Processor service = createProcessor(false);
+    service.execute(
+        FHIR_NOTIFICATION, MessageType.JSON, REQUEST_ID, SENDER, false, "", TOKEN, Set.of());
 
     final Optional<ILoggingEvent> logEntry =
         listenToLog.list.stream()
@@ -440,5 +442,155 @@ class ProcessorTest {
         .get()
         .extracting(ILoggingEvent::getFormattedMessage)
         .isEqualTo(expectedLogLine);
+  }
+
+  @Nested
+  class Permissions {
+
+    @Test
+    void thatNothingHappensWhenDisabled() {
+      // GIVEN a routing result that no one is allowed to send
+      mockNRSReturnsAllowedRoles(Set.of());
+
+      final Processor processor = createProcessor(false);
+      // WHEN we process a notification and have no roles at all
+      // THEN we can still route the request, because the feature flag is disabled
+      assertThatNoException()
+          .isThrownBy(
+              () -> {
+                processor.execute(
+                    FHIR_NOTIFICATION,
+                    CONTENT_TYPE,
+                    REQUEST_ID,
+                    "test-user",
+                    true,
+                    "test-user-other",
+                    TOKEN,
+                    Set.of());
+              });
+    }
+
+    @Test
+    void thatEmptyAllowedRolesAlwaysRaisesException() {
+      // GIVEN NRS returns an empty set for allowedRoles
+      mockNRSReturnsAllowedRoles(Set.of());
+      final Processor processor = createProcessor(true);
+
+      // WHEN we process a notification and have all possible roles
+      final Set<String> principalRoles = Set.of("all possible roles");
+      // THEN an exception is raised nevertheless
+      final ThrowableAssertAlternative<NpsServiceException> thrownBy =
+          assertThatExceptionOfType(NpsServiceException.class)
+              .isThrownBy(
+                  () ->
+                      processor.execute(
+                          FHIR_NOTIFICATION,
+                          CONTENT_TYPE,
+                          REQUEST_ID,
+                          "test-user",
+                          true,
+                          "test-user-other",
+                          TOKEN,
+                          principalRoles));
+      thrownBy.satisfies(
+          serviceException -> {
+            assertThat(serviceException.getErrorCode())
+                .isEqualTo(ErrorCode.MISSING_ROLES.getCode());
+          });
+    }
+
+    @Test
+    void thatPartialMatchOnAllowedRolesIsOk() {
+      mockNRSReturnsAllowedRoles(Set.of("a", "b"));
+      final Processor processor = createProcessor(true);
+
+      // WHEN we process a notification and have only some of the NRS allowedRoles
+      final Set<String> principalRoles = Set.of("a");
+      // THEN an exception is raised nevertheless
+      assertThatNoException()
+          .isThrownBy(
+              () -> {
+                processor.execute(
+                    FHIR_NOTIFICATION,
+                    CONTENT_TYPE,
+                    REQUEST_ID,
+                    "test-user",
+                    true,
+                    "test-user-other",
+                    TOKEN,
+                    principalRoles);
+              });
+    }
+
+    @Test
+    void thatFullMatchOnAllowedRolesIsOk() {
+      mockNRSReturnsAllowedRoles(Set.of("a", "b"));
+      final Processor processor = createProcessor(true);
+
+      // WHEN we process a notification and have only some of the NRS allowedRoles
+      final Set<String> principalRoles = Set.of("b", "a");
+      // THEN an exception is raised nevertheless
+      assertThatNoException()
+          .isThrownBy(
+              () ->
+                  processor.execute(
+                      FHIR_NOTIFICATION,
+                      CONTENT_TYPE,
+                      REQUEST_ID,
+                      "test-user",
+                      true,
+                      "test-user-other",
+                      TOKEN,
+                      principalRoles));
+    }
+
+    @Test
+    void thatNoMatchOnAllowedRolesRaisesException() {
+      mockNRSReturnsAllowedRoles(Set.of("a", "b"));
+      final Processor processor = createProcessor(true);
+      // WHEN we process a notification and have no roles at all
+      final Set<String> roles = Set.of("c", "d");
+      final ThrowableAssertAlternative<NpsServiceException> thrownBy =
+          assertThatExceptionOfType(NpsServiceException.class)
+              .isThrownBy(
+                  () ->
+                      processor.execute(
+                          FHIR_NOTIFICATION,
+                          CONTENT_TYPE,
+                          REQUEST_ID,
+                          "test-user",
+                          true,
+                          "test-user-other",
+                          TOKEN,
+                          roles));
+      thrownBy.satisfies(
+          serviceException -> {
+            assertThat(serviceException.getErrorCode())
+                .isEqualTo(ErrorCode.MISSING_ROLES.getCode());
+          });
+    }
+
+    private void mockNRSReturnsAllowedRoles(final Set<String> allowedRolesFromNRS) {
+      when(routingService.getRoutingInformation(any()))
+          .thenReturn(getArbitraryRoutingResult(allowedRolesFromNRS));
+
+      final Bundle result = new Bundle();
+      result.setIdentifier(new Identifier().setValue("bundle-id"));
+      when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
+      when(notificationValidator.validateFhir(any(), any()))
+          .thenReturn(new InternalOperationOutcome(new OperationOutcome(), "someBundleString"));
+    }
+  }
+
+  private static RoutingData getArbitraryRoutingResult(final Set<String> allowedRolesFromNRS) {
+    return new RoutingData(
+        NotificationType.LABORATORY,
+        NotificationCategory.UNKNOWN,
+        SequencedSets.of(BundleAction.requiredOf(NO_ACTION)),
+        List.of(),
+        Map.of(),
+        "",
+        allowedRolesFromNRS,
+        null);
   }
 }

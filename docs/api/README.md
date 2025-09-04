@@ -13,7 +13,9 @@ All URIs are relative to *http://localhost*
 <a name="documentation-for-models"></a>
 ## Documentation for Models
 
+ - [JwtToken](./Models/JwtToken.md)
  - [MediaType](./Models/MediaType.md)
+ - [TestUserProps](./Models/TestUserProps.md)
 
 
 <a name="documentation-for-authorization"></a>

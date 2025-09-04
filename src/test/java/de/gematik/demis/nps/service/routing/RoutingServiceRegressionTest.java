@@ -41,6 +41,7 @@ import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -98,9 +99,30 @@ class RoutingServiceRegressionTest {
                 SequencedSets.of(),
                 VALID_RECEIVERS,
                 Map.of(),
-                "1."));
+                "1.",
+                Set.of(),
+                null));
 
     assertThat(routingService.getRoutingInformation(REQUEST)).isNotNull();
+  }
+
+  @Test
+  void thatServiceCanDealWithAbsentAllowedRolesField() {
+    // duplicate here because in the legacy mode we will always receive null, but later on we still
+    // need to deal
+    // with potential null values
+    when(mock.ruleBased(anyString(), anyBoolean(), anyString()))
+        .thenReturn(
+            new NRSRoutingResponse(
+                NotificationType.LABORATORY,
+                NotificationCategory.P_7_1,
+                SequencedSets.of(),
+                VALID_RECEIVERS,
+                Map.of(),
+                "1.",
+                null,
+                null));
+    assertThat(routingService.getRoutingInformation(REQUEST).allowedRoles()).isEmpty();
   }
 
   private static Stream<NRSRoutingResponse> invalidResponses() {
@@ -111,20 +133,26 @@ class RoutingServiceRegressionTest {
             SequencedSets.of(),
             VALID_RECEIVERS,
             Map.of(),
-            ""),
+            "",
+            Set.of(),
+            null),
         new NRSRoutingResponse(
             NotificationType.LABORATORY,
             NotificationCategory.P_7_1,
             SequencedSets.of(),
             VALID_RECEIVERS,
             null,
-            "1."),
+            "1.",
+            Set.of(),
+            null),
         new NRSRoutingResponse(
             NotificationType.LABORATORY,
             NotificationCategory.P_7_1,
             SequencedSets.of(),
             List.of(),
             Map.of(),
-            "1."));
+            "1.",
+            Set.of(),
+            null));
   }
 }

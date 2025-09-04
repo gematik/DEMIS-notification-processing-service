@@ -58,6 +58,7 @@ import de.gematik.demis.nps.service.routing.AddressOriginEnum;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
 import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.service.validation.RKIBundleValidator;
+import de.gematik.demis.nps.test.RoutingDataUtil;
 import de.gematik.demis.nps.test.TestData;
 import de.gematik.demis.nps.test.TestUtil;
 import java.util.List;
@@ -97,7 +98,9 @@ class ReceiverActionServiceTest {
           SequencedSets.of(),
           List.of(),
           Map.of(),
-          "no one");
+          "no one",
+          Set.of(),
+          null);
   private static final RoutingData P73_ROUTING_WITH_TERMINAL_ACTION =
       new RoutingData(
           NotificationType.LABORATORY,
@@ -105,7 +108,9 @@ class ReceiverActionServiceTest {
           SequencedSets.of(),
           List.of(),
           Map.of(),
-          "no one");
+          "no one",
+          Set.of(),
+          null);
   private static final RoutingData ROUTING =
       new RoutingData(
           NotificationType.LABORATORY,
@@ -117,7 +122,9 @@ class ReceiverActionServiceTest {
               "1.2.3.4",
               AddressOriginEnum.SUBMITTER,
               "1.2.3.4"),
-          "1.2.3.4");
+          "1.2.3.4",
+          Set.of(),
+          null);
 
   @Mock private NotByNameService notByNameService;
   @Mock private EncryptionService encryptionService;
@@ -286,14 +293,7 @@ class ReceiverActionServiceTest {
         .sender("Me")
         .bundle(original)
         // AND a matching routing output
-        .routingData(
-            new RoutingData(
-                NotificationType.LABORATORY,
-                NotificationCategory.UNKNOWN,
-                SequencedSets.of(),
-                List.of(),
-                Map.of(),
-                "noone"))
+        .routingData(RoutingDataUtil.emptyFor("noone"))
         .build();
   }
 

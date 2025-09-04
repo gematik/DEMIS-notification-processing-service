@@ -50,6 +50,7 @@ import de.gematik.demis.nps.service.response.FhirConverter;
 import de.gematik.demis.nps.service.response.FhirResponseService;
 import de.gematik.demis.service.base.error.rest.api.ErrorDTO;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import org.hamcrest.Matchers;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -123,7 +124,7 @@ class NotificationControllerIntegrationTestRegression {
     final MessageType messageType = getMessageType(contentType);
 
     final Parameters parameters = new Parameters();
-    when(processor.execute(FHIR_NOTIFICATION, messageType, null, null, false, "", TOKEN))
+    when(processor.execute(FHIR_NOTIFICATION, messageType, null, null, false, "", TOKEN, Set.of()))
         .thenReturn(parameters);
 
     final String outputType = accept.equals("*/*") ? contentType : accept;
@@ -179,7 +180,8 @@ class NotificationControllerIntegrationTestRegression {
             sender,
             isTestUser,
             "me",
-            TOKEN))
+            TOKEN,
+            Set.of()))
         .thenReturn(parameters);
     setupFhirSerializer(parameters, getMessageType(accept));
 
@@ -215,16 +217,12 @@ class NotificationControllerIntegrationTestRegression {
 
     final OperationOutcome exceptionOutcome = new OperationOutcome();
     when(processor.execute(
-            FHIR_NOTIFICATION, getMessageType(contentType), null, null, false, "", TOKEN))
+            FHIR_NOTIFICATION, getMessageType(contentType), null, null, false, "", TOKEN, Set.of()))
         .thenThrow(new NpsServiceException(ErrorCode.FHIR_VALIDATION_ERROR, exceptionOutcome));
 
     final OperationOutcome responseOutcome = new OperationOutcome();
     when(responseService.error(any(ErrorDTO.class), eq(exceptionOutcome)))
         .thenReturn(responseOutcome);
-
-    // Assume this test doesn't want to send a test notification
-    when(testUserConfiguration.isTestUser(any())).thenReturn(false);
-    when(testUserConfiguration.getReceiver(any())).thenReturn("");
 
     setupFhirSerializer(responseOutcome, getMessageType(accept));
 

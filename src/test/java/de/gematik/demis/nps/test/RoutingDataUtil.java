@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.routing;
+package de.gematik.demis.nps.test;
 
 /*-
  * #%L
@@ -27,25 +27,53 @@ package de.gematik.demis.nps.service.routing;
  */
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.service.notification.NotificationType;
-import de.gematik.demis.nps.service.processing.BundleAction;
+import de.gematik.demis.nps.service.routing.RoutingData;
 import java.util.List;
 import java.util.Map;
-import java.util.SequencedSet;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
-/**
- * Represents the data required to route a given notification. See {@link NRSRoutingResponse} for
- * the response part we receive from the NRS.
- */
-public record RoutingData(
-    @Nonnull NotificationType type,
-    @Nonnull NotificationCategory notificationCategory,
-    @Nonnull SequencedSet<BundleAction> bundleActions,
-    @Nonnull List<NotificationReceiver> routes,
-    @Nonnull Map<AddressOriginEnum, String> healthOffices,
-    @Nonnull String responsible,
-    @Nonnull Set<String> allowedRoles,
-    @CheckForNull String custodian) {}
+public class RoutingDataUtil {
+  private RoutingDataUtil() {}
+
+  /**
+   * Return an empty RoutingData model with the responsible data
+   *
+   * @param responsible
+   * @return
+   */
+  @Nonnull
+  public static RoutingData emptyFor(@Nonnull final String responsible) {
+    return emptyFor(responsible, null);
+  }
+
+  @Nonnull
+  public static RoutingData empty61For(@Nonnull final String responsible) {
+    return new RoutingData(
+        NotificationType.DISEASE,
+        NotificationCategory.P_6_1,
+        SequencedSets.of(),
+        List.of(),
+        Map.of(),
+        responsible,
+        Set.of(),
+        null);
+  }
+
+  @Nonnull
+  public static RoutingData emptyFor(
+      @Nonnull final String responsible, @CheckForNull final String custodian) {
+    return new RoutingData(
+        NotificationType.LABORATORY,
+        NotificationCategory.P_7_1,
+        SequencedSets.of(),
+        List.of(),
+        Map.of(),
+        responsible,
+        Set.of(),
+        custodian);
+  }
+}

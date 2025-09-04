@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.routing;
+package de.gematik.demis.nps.api;
 
 /*-
  * #%L
@@ -26,26 +26,12 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
-import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
-import de.gematik.demis.nps.service.notification.NotificationType;
-import de.gematik.demis.nps.service.processing.BundleAction;
-import java.util.List;
-import java.util.Map;
-import java.util.SequencedSet;
-import java.util.Set;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
 /**
- * Represents the data required to route a given notification. See {@link NRSRoutingResponse} for
- * the response part we receive from the NRS.
+ * Collects information related to test user settings
+ *
+ * @param isTestNotification
+ * @param testUserRecipient
  */
-public record RoutingData(
-    @Nonnull NotificationType type,
-    @Nonnull NotificationCategory notificationCategory,
-    @Nonnull SequencedSet<BundleAction> bundleActions,
-    @Nonnull List<NotificationReceiver> routes,
-    @Nonnull Map<AddressOriginEnum, String> healthOffices,
-    @Nonnull String responsible,
-    @Nonnull Set<String> allowedRoles,
-    @CheckForNull String custodian) {}
+public record TestUserProps(boolean isTestNotification, @Nonnull String testUserRecipient) {}

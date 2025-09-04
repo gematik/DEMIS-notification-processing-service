@@ -40,15 +40,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
-import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
-import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.service.notification.Notification;
-import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import de.gematik.demis.nps.service.routing.RoutingData;
+import de.gematik.demis.nps.test.RoutingDataUtil;
 import de.gematik.demis.nps.test.TestData;
-import java.util.List;
-import java.util.Map;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.r4.model.Provenance;
@@ -76,14 +72,7 @@ class ContextEnrichmentServiceTest {
 
   @BeforeEach
   void setUp() {
-    final RoutingData routingData =
-        new RoutingData(
-            NotificationType.DISEASE,
-            NotificationCategory.UNKNOWN,
-            SequencedSets.of(),
-            List.of(),
-            Map.of(),
-            "");
+    final RoutingData routingData = RoutingDataUtil.emptyFor("");
     bundle = diseaseBundle();
     notification = Notification.builder().bundle(bundle).routingData(routingData).build();
     underTest =

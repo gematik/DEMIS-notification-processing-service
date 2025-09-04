@@ -53,9 +53,9 @@ public class CodeMappingService {
   private final ReloadableCache<String, String> diseaseCodeCache;
 
   CodeMappingService(final FutsClient futsClient) {
-    laboratoryCodeCache =
+    this.laboratoryCodeCache =
         new ReloadableCache<>("laboratory", () -> futsClient.getConceptMap(CONCEPT_MAP_LABORATORY));
-    diseaseCodeCache =
+    this.diseaseCodeCache =
         new ReloadableCache<>("disease", () -> futsClient.getConceptMap(CONCEPT_MAP_DISEASE));
   }
 

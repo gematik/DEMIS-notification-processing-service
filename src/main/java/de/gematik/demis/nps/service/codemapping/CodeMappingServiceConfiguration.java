@@ -36,7 +36,6 @@ class CodeMappingServiceConfiguration {
 
   @Bean
   CodeMappingService codeMappingService(final FutsClient futsClient) {
-    log.info("NPS is profile free. Concept maps are loaded from FUTS.");
     return new CodeMappingService(futsClient);
   }
 }

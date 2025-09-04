@@ -39,10 +39,12 @@ import de.gematik.demis.nps.base.util.UuidGenerator;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.routing.RoutingData;
+import de.gematik.demis.nps.test.RoutingDataUtil;
 import de.gematik.demis.nps.test.TestData;
 import de.gematik.demis.nps.test.TestUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
@@ -85,7 +87,14 @@ class NotByNameServiceIntegrationTest {
     final Bundle bundle = TestData.getBundle(bundleResourceName);
     final RoutingData routingOutputDto =
         new RoutingData(
-            type, NotificationCategory.P_6_1, SequencedSets.of(), List.of(), Map.of(), "");
+            type,
+            NotificationCategory.P_6_1,
+            SequencedSets.of(),
+            List.of(),
+            Map.of(),
+            "",
+            Set.of(),
+            null);
     final Notification notification =
         Notification.builder().bundle(bundle).routingData(routingOutputDto).testUser(false).build();
     final Bundle result = underTest.createNotificationNotByName(notification);
@@ -112,14 +121,7 @@ class NotByNameServiceIntegrationTest {
 
   @Test
   void testuser() {
-    final RoutingData routingData =
-        new RoutingData(
-            NotificationType.LABORATORY,
-            NotificationCategory.P_6_1,
-            SequencedSets.of(),
-            List.of(),
-            Map.of(),
-            "");
+    final RoutingData routingData = RoutingDataUtil.emptyFor("");
     final Notification notification =
         Notification.builder()
             .bundle(TestData.laboratoryBundle())

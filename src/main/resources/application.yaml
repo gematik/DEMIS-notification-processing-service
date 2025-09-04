@@ -86,3 +86,5 @@ feature:
     relaxed_validation: false
     tuberculosis.routing.enabled: false
     new_api_endpoints: false
+    permission.check.enabled: false
+    custodian.enabled: false

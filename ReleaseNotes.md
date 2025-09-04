@@ -2,11 +2,20 @@
 
 # Release Notification Processing Service
 
+## Release 2.6.1
+- Adding extra header for requests to FUTS new APIs
+- forward x-sender header to validation service
+- add option to verify principal has required roles to send notification
+- add option to write a custodian to a receipt bundle for test notifications
+- Bump spring-parent to 2.12.13
+
 ## Release 2.6.0
 - add API_ENTRYPOINT configuration for new api endpoints
 
 ## Release 2.5.0
 - add feature flag FEATURE_FLAG_NEW_API_ENDPOINTS for header propagation of x-fhir-api-version and x-fhir-profile to validation-service
+
+## Release 2.4.3
 - fix issue with §7.4 notification and pdf creation
 
 ## Release 2.4.2

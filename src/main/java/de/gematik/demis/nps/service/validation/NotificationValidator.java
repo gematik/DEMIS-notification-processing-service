@@ -31,12 +31,12 @@ import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_FATAL;
 import static de.gematik.demis.nps.error.ErrorCode.LIFECYCLE_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.LVS;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
+import static de.gematik.demis.nps.service.validation.ValidationServiceClient.*;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
-import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
-import static java.util.Optional.ofNullable;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
+import com.google.common.collect.Maps;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -50,7 +50,12 @@ import feign.codec.StringDecoder;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +67,7 @@ import org.hl7.fhir.r4.model.Parameters;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
 @Service
 @RequiredArgsConstructor
@@ -79,13 +85,18 @@ public class NotificationValidator {
 
   private boolean lvDiseaseActivated;
   private boolean relaxedValidationActivated;
-  private boolean isVersionHeaderForwardEnabled;
+  private Set<String> headersToForward;
 
   @PostConstruct
   public void init() {
     lvDiseaseActivated = featureFlags.isEnabled("lv_disease");
     relaxedValidationActivated = featureFlags.isEnabled("relaxed_validation");
-    isVersionHeaderForwardEnabled = featureFlags.isEnabled("new_api_endpoints");
+    final boolean isVersionHeaderForwardEnabled = featureFlags.isEnabled("new_api_endpoints");
+
+    headersToForward = Set.of(HEADER_FHIR_API_VERSION, HEADER_SENDER);
+    if (isVersionHeaderForwardEnabled) {
+      headersToForward = Set.of(HEADER_FHIR_API_VERSION, HEADER_FHIR_PROFILE, HEADER_SENDER);
+    }
   }
 
   private static void reduceIssuesSeverityToWarn(final OperationOutcome operationOutcome) {
@@ -99,10 +110,6 @@ public class NotificationValidator {
 
   private static boolean isStatusSuccessful(final int status) {
     return status >= 200 && status < 300;
-  }
-
-  private List<String> headersFromRequestByName(@Nonnull String headerName) {
-    return ofNullable(httpServletRequest.getHeader(headerName)).map(List::of).orElse(null);
   }
 
   public InternalOperationOutcome validateFhir(
@@ -182,16 +189,30 @@ public class NotificationValidator {
 
   private Response callValidationService(
       final String fhirNotification, final MessageType contentType) {
-    // forward optional Fhir Version and Fhir Profile Headers
-    final HttpHeaders headers = new HttpHeaders();
-    headers.computeIfAbsent(HEADER_FHIR_API_VERSION, this::headersFromRequestByName);
-    if (isVersionHeaderForwardEnabled) {
-      headers.computeIfAbsent(HEADER_FHIR_PROFILE, this::headersFromRequestByName);
-    }
+    final Map<String, String> rawHeaders = getHeadersToForward();
+    final HttpHeaders additionalHeaders =
+        new HttpHeaders(MultiValueMap.fromSingleValue(rawHeaders));
+
     return switch (contentType) {
-      case JSON -> validationServiceClient.validateJsonBundle(headers, fhirNotification);
-      case XML -> validationServiceClient.validateXmlBundle(headers, fhirNotification);
+      case JSON -> validationServiceClient.validateJsonBundle(additionalHeaders, fhirNotification);
+      case XML -> validationServiceClient.validateXmlBundle(additionalHeaders, fhirNotification);
     };
+  }
+
+  @Nonnull
+  private Map<String, String> getHeadersToForward() {
+    return headersToForward.stream()
+        .map(this::fromRequest)
+        .flatMap(Optional::stream)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  /** Try and retrieve the first non-null header with the given name from the request. */
+  @Nonnull
+  private Optional<Map.Entry<String, String>> fromRequest(@Nonnull final String headerName) {
+    final Optional<String> first =
+        Stream.of(httpServletRequest.getHeader(headerName)).filter(Objects::nonNull).findFirst();
+    return first.map(value -> Maps.immutableEntry(headerName, value));
   }
 
   public void validateLifecycle(final Notification notification) {

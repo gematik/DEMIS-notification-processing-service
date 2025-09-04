@@ -53,15 +53,12 @@ import ca.uhn.fhir.parser.IParser;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
-import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
-import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.routing.RoutingData;
+import de.gematik.demis.nps.test.RoutingDataUtil;
 import de.gematik.demis.service.base.error.ServiceCallException;
-import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -260,14 +257,7 @@ class NotificationValidatorIntegrationTest {
     private Notification setupLaboratoryRequest() {
       final var bundle = new Bundle();
       bundle.setId("my-bundle");
-      final RoutingData routingData =
-          new RoutingData(
-              NotificationType.LABORATORY,
-              NotificationCategory.P_6_1,
-              SequencedSets.of(),
-              List.of(),
-              Map.of(),
-              "");
+      final RoutingData routingData = RoutingDataUtil.emptyFor("");
       final var notification =
           Notification.builder().bundle(bundle).routingData(routingData).build();
 
@@ -386,14 +376,7 @@ class NotificationValidatorIntegrationTest {
     private Notification setupDiseaseRequest() {
       final var bundle = new Bundle();
       bundle.setId("my-bundle");
-      final RoutingData routingData =
-          new RoutingData(
-              NotificationType.DISEASE,
-              NotificationCategory.P_6_1,
-              SequencedSets.of(),
-              List.of(),
-              Map.of(),
-              "");
+      final RoutingData routingData = RoutingDataUtil.empty61For("");
       final var notification =
           Notification.builder().bundle(bundle).routingData(routingData).build();
 

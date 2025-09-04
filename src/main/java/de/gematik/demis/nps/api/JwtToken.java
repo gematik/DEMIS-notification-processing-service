@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.routing;
+package de.gematik.demis.nps.api;
 
 /*-
  * #%L
@@ -26,26 +26,29 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
-import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
-import de.gematik.demis.nps.service.notification.NotificationType;
-import de.gematik.demis.nps.service.processing.BundleAction;
+import de.gematik.demis.service.base.security.jwt.Token;
 import java.util.List;
-import java.util.Map;
-import java.util.SequencedSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
 /**
- * Represents the data required to route a given notification. See {@link NRSRoutingResponse} for
- * the response part we receive from the NRS.
+ * A wrapper around {@link Token}. We don't want to use the original because it's interface is
+ * outdated and we really only need access to a set of roles.
  */
-public record RoutingData(
-    @Nonnull NotificationType type,
-    @Nonnull NotificationCategory notificationCategory,
-    @Nonnull SequencedSet<BundleAction> bundleActions,
-    @Nonnull List<NotificationReceiver> routes,
-    @Nonnull Map<AddressOriginEnum, String> healthOffices,
-    @Nonnull String responsible,
-    @Nonnull Set<String> allowedRoles,
-    @CheckForNull String custodian) {}
+public record JwtToken(@Nonnull Set<String> roles) {
+
+  /** A null-object instance to avoid null */
+  public static final JwtToken EMPTY = new JwtToken(Set.of());
+
+  @Nonnull
+  public static JwtToken from(@CheckForNull final Token token) {
+    if (token == null) {
+      return new JwtToken(Set.of());
+    }
+
+    final List<String> roles = Objects.requireNonNullElse(token.roles(), List.of());
+    return new JwtToken(Set.copyOf(roles));
+  }
+}

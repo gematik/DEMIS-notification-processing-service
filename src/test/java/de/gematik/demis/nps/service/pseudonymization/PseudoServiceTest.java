@@ -39,20 +39,17 @@ import de.gematik.demis.notification.builder.demis.fhir.notification.builder.inf
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.technicals.HumanNameDataBuilder;
-import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.base.profile.DemisExtensions;
-import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.notification.Notification;
-import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import de.gematik.demis.nps.service.routing.RoutingData;
+import de.gematik.demis.nps.test.RoutingDataUtil;
 import de.gematik.demis.nps.test.TestUtil;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.assertj.core.api.Assertions;
@@ -161,14 +158,7 @@ class PseudoServiceTest {
     final String healthOffice = "1.23.45.";
     final String birthDay = "23.05.1979";
 
-    final RoutingData routingData =
-        new RoutingData(
-            NotificationType.DISEASE,
-            NotificationCategory.UNKNOWN,
-            SequencedSets.of(),
-            List.of(),
-            Map.of(),
-            "");
+    final RoutingData routingData = RoutingDataUtil.emptyFor("");
     final var notifiedPerson = createPatient(birthDay, familyName, firstName);
     final var bundle = createBundle(notifiedPerson, bundleId, healthOffice);
     final var notification =
@@ -215,14 +205,7 @@ class PseudoServiceTest {
             notificationUpdateService,
             new ObjectMapper(),
             statistics);
-    final RoutingData routingData =
-        new RoutingData(
-            NotificationType.DISEASE,
-            NotificationCategory.UNKNOWN,
-            SequencedSets.of(),
-            List.of(),
-            Map.of(),
-            "");
+    final RoutingData routingData = RoutingDataUtil.empty61For("");
     final var notifiedPerson = createPatient("23.05.1980", "Mustermann", "Max");
     final var bundle = createBundle(notifiedPerson, "123", "xxx");
     final var notification =

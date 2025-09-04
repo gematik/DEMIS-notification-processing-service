@@ -32,6 +32,7 @@ import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,13 +63,16 @@ public class RoutingService {
     final Map<AddressOriginEnum, String> healthOffices =
         Objects.requireNonNull(response.healthOffices());
     final String responsible = Strings.nullToEmpty(response.responsible());
+    final Set<String> allowedRoles = Objects.requireNonNullElse(response.allowedRoles(), Set.of());
     return new RoutingData(
         response.type(),
         response.notificationCategory(),
         response.bundleActions(),
         response.routes(),
         healthOffices,
-        responsible);
+        responsible,
+        allowedRoles,
+        response.custodian());
   }
 
   @Nonnull

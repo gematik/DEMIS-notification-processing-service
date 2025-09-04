@@ -28,6 +28,7 @@ package de.gematik.demis.nps.service.codemapping;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import feign.Headers;
 import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,5 +40,6 @@ interface FutsClient {
   @GetMapping(
       value = "${nps.client.futs.context-path}conceptmap/{name}",
       produces = APPLICATION_JSON_VALUE)
+  @Headers("x-fhir-profile: fhir-profile-snapshots")
   Map<String, String> getConceptMap(@PathVariable String name);
 }

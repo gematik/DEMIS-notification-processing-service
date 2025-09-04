@@ -32,6 +32,7 @@ import de.gematik.demis.nps.service.processing.BundleAction;
 import java.util.List;
 import java.util.Map;
 import java.util.SequencedSet;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 
 /**
@@ -44,4 +45,6 @@ record NRSRoutingResponse(
     SequencedSet<BundleAction> bundleActions,
     List<NotificationReceiver> routes,
     @CheckForNull Map<AddressOriginEnum, String> healthOffices,
-    @CheckForNull String responsible) {}
+    @CheckForNull String responsible,
+    @CheckForNull Set<String> allowedRoles,
+    @CheckForNull String custodian) {}

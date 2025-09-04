@@ -31,6 +31,7 @@ import de.gematik.demis.nps.base.profile.DemisProfiles;
 import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.base.util.TimeProvider;
 import de.gematik.demis.nps.base.util.UuidGenerator;
+import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
@@ -150,6 +151,12 @@ class ReceiptBundleCreator {
 
       composition.addRelatesTo(component);
 
+      return this;
+    }
+
+    @Nonnull
+    public ReceiptBundleBuilder addCustodian(@Nonnull final Organization custodian) {
+      composition.setCustodian(addBundleResource(custodian));
       return this;
     }
 

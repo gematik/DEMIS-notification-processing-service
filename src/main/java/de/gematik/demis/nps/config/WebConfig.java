@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.routing;
+package de.gematik.demis.nps.config;
 
 /*-
  * #%L
@@ -26,26 +26,29 @@ package de.gematik.demis.nps.service.routing;
  * #L%
  */
 
-import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
-import de.gematik.demis.nps.service.notification.NotificationType;
-import de.gematik.demis.nps.service.processing.BundleAction;
+import de.gematik.demis.nps.api.JwtTokenValueResolver;
+import de.gematik.demis.nps.api.TestUserPropsValueResolver;
 import java.util.List;
-import java.util.Map;
-import java.util.SequencedSet;
-import java.util.Set;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * Represents the data required to route a given notification. See {@link NRSRoutingResponse} for
- * the response part we receive from the NRS.
- */
-public record RoutingData(
-    @Nonnull NotificationType type,
-    @Nonnull NotificationCategory notificationCategory,
-    @Nonnull SequencedSet<BundleAction> bundleActions,
-    @Nonnull List<NotificationReceiver> routes,
-    @Nonnull Map<AddressOriginEnum, String> healthOffices,
-    @Nonnull String responsible,
-    @Nonnull Set<String> allowedRoles,
-    @CheckForNull String custodian) {}
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+  private final JwtTokenValueResolver tokenValueResolver;
+  private final TestUserPropsValueResolver testUserPropsValueResolver;
+
+  public WebConfig(
+      final JwtTokenValueResolver tokenValueResolver,
+      final TestUserPropsValueResolver testUserPropsValueResolver) {
+    this.tokenValueResolver = tokenValueResolver;
+    this.testUserPropsValueResolver = testUserPropsValueResolver;
+  }
+
+  @Override
+  public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+    resolvers.add(tokenValueResolver);
+    resolvers.add(testUserPropsValueResolver);
+  }
+}

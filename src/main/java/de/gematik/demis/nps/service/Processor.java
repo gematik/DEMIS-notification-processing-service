@@ -34,6 +34,8 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.nps.error.ErrorCode;
+import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
@@ -50,10 +52,7 @@ import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -83,6 +82,7 @@ public class Processor {
   private final FhirParser fhirParser;
   private final boolean isProcessing73Enabled;
   private final BundleActionService bundleActionService;
+  private final boolean isPermissionCheckEnabled;
 
   public Processor(
       NotificationValidator notificationValidator,
@@ -98,7 +98,8 @@ public class Processor {
       final BundleActionService bundleActionService,
       final NotificationUpdateService notificationUpdateService,
       @Value("${feature.flag.notification_pre_check}") boolean notificationPreCheck,
-      @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled) {
+      @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
+      @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled) {
     this.notificationValidator = notificationValidator;
     this.notificationFhirService = notificationFhirService;
     this.routingService = routingService;
@@ -113,6 +114,7 @@ public class Processor {
     this.fhirParser = fhirParser;
     this.isProcessing73Enabled = isProcessing73Enabled;
     this.bundleActionService = bundleActionService;
+    this.isPermissionCheckEnabled = isPermissionCheckEnabled;
   }
 
   public Parameters execute(
@@ -122,7 +124,8 @@ public class Processor {
       final String sender,
       final boolean testUserFlag,
       @Nonnull final String testUserRecipient,
-      final String authorization) {
+      final String authorization,
+      final Set<String> roles) {
 
     final InternalOperationOutcome internalOperationOutcome =
         validateNotification(fhirNotification, contentType);
@@ -138,6 +141,22 @@ public class Processor {
       throw new UnsupportedOperationException(
           "7.3 notifications can't be processed due to disabled feature flag");
     }
+
+    if (isPermissionCheckEnabled) {
+      final Set<String> allowedRoles = notification.getRoutingData().allowedRoles();
+      // Assume that empty allowedRoles means no one is allowed to send
+      boolean isMissingRoles = Sets.intersection(roles, allowedRoles).isEmpty();
+      if (isMissingRoles) {
+        log.info(
+            "Principal '{}' needs at least one role of '{}', but only has '{}'",
+            sender,
+            allowedRoles,
+            roles);
+        throw new NpsServiceException(
+            ErrorCode.MISSING_ROLES, "You don't have the required roles to perform this request");
+      }
+    }
+
     notificationValidator.validateLifecycle(notification);
 
     // cleanup and add (overwrite) some data like timestamp, identifier and sender

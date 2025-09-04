@@ -28,8 +28,7 @@ package de.gematik.demis.nps.service.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +40,7 @@ import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -98,9 +98,44 @@ class RoutingServiceTest {
                 SequencedSets.of(),
                 VALID_RECEIVERS,
                 Map.of(),
-                "1."));
+                "1.",
+                Set.of(),
+                null));
 
     assertThat(routingService.getRoutingInformation(REQUEST)).isNotNull();
+  }
+
+  @Test
+  void thatServiceCanDealWithAbsentAllowedRolesField() {
+    when(mock.ruleBased(anyString(), anyBoolean(), anyString()))
+        .thenReturn(
+            new NRSRoutingResponse(
+                NotificationType.LABORATORY,
+                NotificationCategory.P_7_1,
+                SequencedSets.of(),
+                VALID_RECEIVERS,
+                Map.of(),
+                "1.",
+                null,
+                null));
+    assertThat(routingService.getRoutingInformation(REQUEST).allowedRoles()).isEmpty();
+  }
+
+  @Test
+  void thatServiceReturnsAllowedRoles() {
+    when(mock.ruleBased(anyString(), anyBoolean(), anyString()))
+        .thenReturn(
+            new NRSRoutingResponse(
+                NotificationType.LABORATORY,
+                NotificationCategory.P_7_1,
+                SequencedSets.of(),
+                VALID_RECEIVERS,
+                Map.of(),
+                "1.",
+                Set.of("a", "b"),
+                null));
+    assertThat(routingService.getRoutingInformation(REQUEST).allowedRoles())
+        .containsExactlyInAnyOrder("a", "b");
   }
 
   private static Stream<NRSRoutingResponse> invalidResponses() {
@@ -111,20 +146,26 @@ class RoutingServiceTest {
             SequencedSets.of(),
             VALID_RECEIVERS,
             Map.of(),
-            ""),
+            "",
+            Set.of(),
+            null),
         new NRSRoutingResponse(
             NotificationType.LABORATORY,
             NotificationCategory.P_7_1,
             SequencedSets.of(),
             VALID_RECEIVERS,
             null,
-            "1."),
+            "1.",
+            Set.of(),
+            null),
         new NRSRoutingResponse(
             NotificationType.LABORATORY,
             NotificationCategory.P_7_1,
             SequencedSets.of(),
             List.of(),
             Map.of(),
-            "1."));
+            "1.",
+            Set.of(),
+            null));
   }
 }

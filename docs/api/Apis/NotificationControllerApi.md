@@ -9,7 +9,7 @@ All URIs are relative to *http://localhost*
 
 <a name="processNotification"></a>
 # **processNotification**
-> Object processNotification(Content-Type, body, X-Request-ID, x-sender, x-testuser, x-testuser-recipient, Authorization)
+> Object processNotification(Content-Type, testUserProps, token, body, X-Request-ID, x-sender, Authorization)
 
 
 
@@ -18,11 +18,11 @@ All URIs are relative to *http://localhost*
 |Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **Content-Type** | [**MediaType**](../Models/.md)|  | [default to null] |
+| **testUserProps** | [**TestUserProps**](../Models/.md)|  | [default to null] |
+| **token** | [**JwtToken**](../Models/.md)|  | [default to null] |
 | **body** | **String**|  | |
 | **X-Request-ID** | **String**|  | [optional] [default to null] |
 | **x-sender** | **String**|  | [optional] [default to null] |
-| **x-testuser** | **Boolean**|  | [optional] [default to null] |
-| **x-testuser-recipient** | **String**|  | [optional] [default to null] |
 | **Authorization** | **String**|  | [optional] [default to null] |
 
 ### Return type

@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.error;
+package de.gematik.demis.nps.service.processing;
 
 /*-
  * #%L
@@ -26,14 +26,19 @@ package de.gematik.demis.nps.error;
  * #L%
  */
 
-@SuppressWarnings("java:S1214")
-public interface ServiceCallErrorCode {
-  String DLS = "DLS";
-  String VS = "VS";
-  String LVS = "LVS";
-  String NRS = "NRS";
-  String CES = "CES";
-  String PS = "PS";
-  String FSW = "FSW";
-  String PDF = "PDF";
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
+import de.gematik.demis.nps.error.ServiceCallErrorCode;
+import de.gematik.demis.service.base.feign.annotations.ErrorCode;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+
+@FeignClient(name = "dls-service", url = "${nps.client.dls}")
+public interface DlsServiceClient {
+  @PostMapping(
+      path = "/notification",
+      consumes = APPLICATION_JSON_VALUE,
+      produces = APPLICATION_JSON_VALUE)
+  @ErrorCode(ServiceCallErrorCode.DLS)
+  void store(DlsStoreRequest from);
 }

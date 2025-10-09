@@ -75,7 +75,7 @@ record PseudonymizationRequest(
 
     return new PseudonymizationRequest(
         notification.getBundleIdentifier(),
-        notification.getDiseaseCode(),
+        notification.getDiseaseCodeRoot(),
         familyName,
         firstName,
         formattedDateString);

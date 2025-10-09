@@ -7,7 +7,7 @@
   }],
   "routes": [
     {
-      "type": "test-user",
+      "type": "RESPONSIBLE_HEALTH_OFFICE",
       "specificReceiverId": "test-int",
       "optional": false,
       "actions": [

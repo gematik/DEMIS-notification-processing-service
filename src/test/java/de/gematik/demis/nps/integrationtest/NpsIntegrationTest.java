@@ -50,14 +50,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import de.gematik.demis.nps.api.NotificationController;
+import de.gematik.demis.nps.api.TestUserPropsValueResolver;
 import de.gematik.demis.nps.base.data.CertificateDataEntity;
 import de.gematik.demis.nps.base.data.CertificateRepository;
 import de.gematik.demis.nps.base.util.TimeProvider;
-import de.gematik.demis.nps.base.util.Uuid5Generator;
 import de.gematik.demis.nps.base.util.UuidGenerator;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.service.notification.NotificationType;
@@ -92,6 +90,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -119,6 +118,7 @@ class NpsIntegrationTest {
   private CounterVerifier counterVerifier;
 
   private boolean isTestUser = false;
+  private String testUser = null;
 
   private static String resource(final String name) {
     return readResourceAsString(RESOURCE_BASE + name);
@@ -174,8 +174,7 @@ class NpsIntegrationTest {
 
     executeTest(input, OK, resourceDir + "expected-response.json");
 
-    final String preProcessedNotification =
-        removePseudonymAndResponsibleTags(expectedNotificationForHealthOffice);
+    removePseudonymAndResponsibleTags(expectedNotificationForHealthOffice);
 
     // assert requests to the called services
 
@@ -239,24 +238,6 @@ class NpsIntegrationTest {
   private void assertPSGenCall(final String resourceName) {
     final BasicJsonTester jsonTester = new BasicJsonTester(this.getClass());
     assertThat(jsonTester.from(getRequestBody(PS))).isEqualToJson(resource(resourceName));
-  }
-
-  private void assertPSStoreCall() throws Exception {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    final JsonNode jsonNode = objectMapper.readTree(getRequestBody(PSS));
-
-    final String expectedNotificationId = Uuid5Generator.generateType5UUID(REQUEST_ID).toString();
-
-    assertThat(jsonNode.get("notificationBundleId"))
-        .isEqualTo(TextNode.valueOf(expectedNotificationId));
-
-    assertThat(jsonNode.get("pho")).isEqualTo(TextNode.valueOf("1.01.0.53."));
-
-    final JsonNode expectedPseudonym =
-        objectMapper
-            .readTree(readResourceAsString(STUBS_PATH + "ps-response-okay.json"))
-            .get("activePseudonym");
-    assertThat(jsonNode.get("pseudonym")).isEqualTo(expectedPseudonym);
   }
 
   private void assertFhirStorageRequest(
@@ -406,6 +387,7 @@ class NpsIntegrationTest {
   @Test
   void testUserTestInt() throws Exception {
     isTestUser = true;
+    testUser = "test-int";
     setupStub(VS, okJsonResource("vs-response-okay"));
     setupStub(LVS, ok());
     setupStub(NRS, okJsonResource("nrs-response-okay-laboratory-with-test-user"));
@@ -447,15 +429,21 @@ class NpsIntegrationTest {
 
   private String executeCall(final String fhirNotification, final HttpStatus expectedStatus)
       throws Exception {
+    final MockHttpServletRequestBuilder requestBuilder =
+        post(NPS_ENDPOINT)
+            .contentType(APPLICATION_JSON_VALUE)
+            .content(fhirNotification)
+            .header(HttpHeaders.ACCEPT, APPLICATION_JSON_VALUE)
+            .header("x-request-id", REQUEST_ID)
+            .header(NotificationController.HEADER_SENDER, USER_ID)
+            .header(TestUserPropsValueResolver.HEADER_IS_TEST_NOTIFICATION, isTestUser);
+    if (testUser != null) {
+      // MockHttpServletRequest will complain about Headers set to null
+      requestBuilder.header(TestUserPropsValueResolver.HEADER_TEST_USER_RECIPIENT, testUser);
+    }
+
     return mockMvc
-        .perform(
-            post(NPS_ENDPOINT)
-                .contentType(APPLICATION_JSON_VALUE)
-                .content(fhirNotification)
-                .header(HttpHeaders.ACCEPT, APPLICATION_JSON_VALUE)
-                .header("x-request-id", REQUEST_ID)
-                .header("x-sender", USER_ID)
-                .header("x-testuser", isTestUser))
+        .perform(requestBuilder)
         .andExpectAll(
             status().is(expectedStatus.value()),
             content().contentTypeCompatibleWith(APPLICATION_JSON_VALUE))

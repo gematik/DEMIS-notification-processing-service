@@ -58,7 +58,7 @@ public class Statistics {
                     TAG_USER,
                     nullsafe(notification.getSender()),
                     TAG_DISEASE_CODE,
-                    nullsafe(notification.getDiseaseCode()))
+                    nullsafe(notification.getDiseaseCodeRoot()))
                 .increment());
   }
 

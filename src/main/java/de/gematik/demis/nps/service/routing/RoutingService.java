@@ -49,9 +49,11 @@ public class RoutingService {
   public RoutingService(
       final NotificationRoutingServiceClient client,
       @Value("${feature.flag.tuberculosis.routing.enabled}")
-          final boolean isErrorRewritingEnabled) {
+          final boolean isTuberculosisRoutingEnabled,
+      @Value("${feature.flag.follow.up.notification}")
+          final boolean isFollowupNotificationEnabled) {
     this.client = client;
-    this.isErrorRewritingEnabled = isErrorRewritingEnabled;
+    this.isErrorRewritingEnabled = isTuberculosisRoutingEnabled || isFollowupNotificationEnabled;
   }
 
   @Nonnull

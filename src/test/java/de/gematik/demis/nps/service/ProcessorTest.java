@@ -58,6 +58,7 @@ import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import de.gematik.demis.nps.service.processing.BundleAction;
 import de.gematik.demis.nps.service.processing.BundleActionService;
+import de.gematik.demis.nps.service.processing.DlsService;
 import de.gematik.demis.nps.service.processing.ReceiverActionService;
 import de.gematik.demis.nps.service.pseudonymization.PseudoService;
 import de.gematik.demis.nps.service.receipt.ReceiptService;
@@ -113,6 +114,7 @@ class ProcessorTest {
   @Mock Statistics statistics;
   @Mock FhirParser fhirParser;
   @Mock NotificationUpdateService updateService;
+  @Mock DlsService dlsService;
 
   /** Help with checked issues on Collections: https://stackoverflow.com/a/5655702 */
   @Captor private ArgumentCaptor<Collection<? extends IBaseResource>> storageParameter;
@@ -124,7 +126,7 @@ class ProcessorTest {
         .sender(SENDER)
         .testUser(false)
         .testUserRecipient("")
-        .diseaseCode("xxx")
+        .diseaseCodeRoot("xxx")
         .originalNotificationAsJson(FHIR_NOTIFICATION)
         .routingData(routingData)
         .build();
@@ -181,7 +183,7 @@ class ProcessorTest {
         new InternalOperationOutcome(operationOutcome, "someBundleString");
     when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, MessageType.JSON)).thenReturn(bundle);
-    when(notificationFhirService.getDiseaseCode(bundle, DISEASE)).thenReturn("xxx");
+    when(notificationFhirService.getDiseaseCodeRoot(bundle, DISEASE)).thenReturn("xxx");
 
     if (contentType == MessageType.XML) {
       when(fhirParser.encodeToJson(any())).thenReturn(FHIR_NOTIFICATION);
@@ -234,6 +236,7 @@ class ProcessorTest {
         fhirParser,
         new BundleActionService(pseudoService),
         updateService,
+        dlsService,
         false,
         true,
         isPermissionCheckEnabled);
@@ -355,7 +358,7 @@ class ProcessorTest {
         new InternalOperationOutcome(operationOutcome, "someBundleString");
     when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, contentType)).thenReturn(bundle);
-    when(notificationFhirService.getDiseaseCode(bundle, DISEASE)).thenReturn("xxx");
+    when(notificationFhirService.getDiseaseCodeRoot(bundle, DISEASE)).thenReturn("xxx");
 
     // AND an encrypted Bundle for HEALTH_OFFICE_1 is created
     final Binary ho1Encrypted = new Binary();
@@ -410,7 +413,7 @@ class ProcessorTest {
     when(fhirParser.parseBundleOrParameter(any(), any(MessageType.class))).thenReturn(bundle);
     when(routingService.getRoutingInformation(any()))
         .thenReturn(getArbitraryRoutingResult(Set.of()));
-    when(notificationFhirService.getDiseaseCode(any(), any())).thenReturn("xxx");
+    when(notificationFhirService.getDiseaseCodeRoot(any(), any())).thenReturn("xxx");
 
     doAnswer(
             invocation -> {
@@ -436,7 +439,8 @@ class ProcessorTest {
             .findFirst();
 
     final String expectedLogLine =
-        "Notification: bundleId=my-new-generated-uuid, type=LABORATORY, diseaseCode=xxx, sender=Me, testUser=false";
+        "Notification: bundleId=my-new-generated-uuid, type=LABORATORY, diseaseCode=xxx, sender=Me,"
+            + " testUser=false";
     assertThat(logEntry)
         .isPresent()
         .get()

@@ -27,7 +27,6 @@ package de.gematik.demis.nps.service.pseudonymization;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
@@ -110,7 +109,7 @@ class PseudonymizationRequestTest {
     final Notification notification =
         Notification.builder()
             .bundle(bundle)
-            .diseaseCode(DISEASE_CODE)
+            .diseaseCodeRoot(DISEASE_CODE)
             .routingData(routingData)
             .build();
 

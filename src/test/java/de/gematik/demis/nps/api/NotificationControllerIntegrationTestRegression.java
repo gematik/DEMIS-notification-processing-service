@@ -41,7 +41,6 @@ import ca.uhn.fhir.parser.IParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.TimeProvider;
 import de.gematik.demis.nps.base.util.UuidGenerator;
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.Processor;
@@ -79,7 +78,6 @@ class NotificationControllerIntegrationTestRegression {
   @MockBean Processor processor;
   @MockBean FhirContext fhirContext;
   @MockBean FhirResponseService responseService;
-  @MockBean TestUserConfiguration testUserConfiguration;
   @MockBean Statistics statistics;
 
   @Autowired private MockMvc mockMvc;
@@ -156,50 +154,6 @@ class NotificationControllerIntegrationTestRegression {
                 .content(FHIR_NOTIFICATION)
                 .header(HttpHeaders.ACCEPT, "*/*"))
         .andExpect(status().isUnsupportedMediaType());
-  }
-
-  @Test
-  void additionalHeaders() throws Exception {
-    // json or xml, this does not matter for this test scenario
-    final String contentType = APPLICATION_JSON_VALUE;
-    final String accept = APPLICATION_JSON_VALUE;
-
-    final String requestId = "1234-5678";
-    final String sender = "me";
-    final boolean isTestUser = true;
-
-    when(testUserConfiguration.isTestUser(sender)).thenReturn(true);
-    when(testUserConfiguration.getReceiver(sender)).thenReturn(sender);
-
-    final Parameters parameters = new Parameters();
-    // Assume the test notification is supposed to be forwarded to the sender
-    when(processor.execute(
-            FHIR_NOTIFICATION,
-            getMessageType(contentType),
-            requestId,
-            sender,
-            isTestUser,
-            "me",
-            TOKEN,
-            Set.of()))
-        .thenReturn(parameters);
-    setupFhirSerializer(parameters, getMessageType(accept));
-
-    mockMvc
-        .perform(
-            post(ENDPOINT)
-                .contentType(contentType)
-                .content(FHIR_NOTIFICATION)
-                .header(HttpHeaders.ACCEPT, accept)
-                .header(HttpHeaders.AUTHORIZATION, TOKEN)
-                .header("x-request-id", requestId)
-                .header("x-sender", sender)
-                .header("x-testuser", isTestUser))
-        .andExpectAll(
-            status().isOk(),
-            content().contentTypeCompatibleWith(accept),
-            content().encoding(StandardCharsets.UTF_8),
-            content().string(Matchers.equalTo(RESULT_BODY)));
   }
 
   @ParameterizedTest

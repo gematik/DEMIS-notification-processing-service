@@ -58,6 +58,10 @@ public class Notification {
   /**
    * Use {@link NotificationBuilder} to create a new instance. The builder will ensure that a valid
    * Notification is created, so that other parts of the code can rely on that.
+   *
+   * @param diseaseCode The raw disease code as extracted from the underlying FHIR resource.
+   * @param diseaseCodeRoot The root of the disease code, e.g. cvd for cvdd/cvdp. {@link
+   *     NotificationFhirService#getDiseaseCodeRoot(Bundle, NotificationType)}
    */
   private Notification(
       final Bundle bundle,
@@ -66,6 +70,7 @@ public class Notification {
       final boolean testUser,
       @Nonnull final String testUserRecipient,
       final String diseaseCode,
+      final String diseaseCodeRoot,
       final String originalNotificationAsJson,
       @Nonnull final RoutingData routingData) {
     this.bundle = bundle;
@@ -74,6 +79,7 @@ public class Notification {
     this.testUser = testUser;
     this.testUserRecipient = testUserRecipient;
     this.diseaseCode = diseaseCode;
+    this.diseaseCodeRoot = diseaseCodeRoot;
     this.originalNotificationAsJson = originalNotificationAsJson;
     this.routingData = routingData;
     this.preEncryptedBundles = new HashMap<>();
@@ -93,6 +99,7 @@ public class Notification {
   @Nonnull private final String testUserRecipient;
 
   private final String diseaseCode;
+  private final String diseaseCodeRoot;
   private final String originalNotificationAsJson;
   @Nonnull private final RoutingData routingData;
 
@@ -136,6 +143,7 @@ public class Notification {
     @CheckForNull private String sender;
     @CheckForNull private String testUserRecipient;
     @CheckForNull private String diseaseCode;
+    @CheckForNull private String diseaseCodeRoot;
     @CheckForNull private RoutingData routingData;
     @CheckForNull private NotificationType type;
 
@@ -144,8 +152,14 @@ public class Notification {
       return this;
     }
 
+    @Nonnull
     public NotificationBuilder diseaseCode(@Nonnull final String diseaseCode) {
       this.diseaseCode = diseaseCode;
+      return this;
+    }
+
+    public NotificationBuilder diseaseCodeRoot(@Nonnull final String diseaseCodeRoot) {
+      this.diseaseCodeRoot = diseaseCodeRoot;
       return this;
     }
 
@@ -201,6 +215,7 @@ public class Notification {
           isTestUser,
           testUserRecipient,
           diseaseCode,
+          diseaseCodeRoot,
           json,
           routingData);
     }

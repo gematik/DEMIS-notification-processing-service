@@ -41,6 +41,7 @@ import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import de.gematik.demis.nps.service.processing.BundleActionService;
+import de.gematik.demis.nps.service.processing.DlsService;
 import de.gematik.demis.nps.service.processing.ReceiverActionService;
 import de.gematik.demis.nps.service.receipt.ReceiptService;
 import de.gematik.demis.nps.service.response.FhirResponseService;
@@ -83,6 +84,7 @@ public class Processor {
   private final boolean isProcessing73Enabled;
   private final BundleActionService bundleActionService;
   private final boolean isPermissionCheckEnabled;
+  private final DlsService dlsService;
 
   public Processor(
       NotificationValidator notificationValidator,
@@ -97,6 +99,7 @@ public class Processor {
       FhirParser fhirParser,
       final BundleActionService bundleActionService,
       final NotificationUpdateService notificationUpdateService,
+      final DlsService dlsService,
       @Value("${feature.flag.notification_pre_check}") boolean notificationPreCheck,
       @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
       @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled) {
@@ -115,6 +118,7 @@ public class Processor {
     this.isProcessing73Enabled = isProcessing73Enabled;
     this.bundleActionService = bundleActionService;
     this.isPermissionCheckEnabled = isPermissionCheckEnabled;
+    this.dlsService = dlsService;
   }
 
   public Parameters execute(
@@ -174,6 +178,7 @@ public class Processor {
     final List<? extends IBaseResource> processedNotifications =
         createModifiedNotifications(notification);
     notificationStorageService.storeNotifications(processedNotifications);
+    dlsService.store(notification);
 
     final Bundle receiptBundle = receiptService.generateReceipt(notification);
     final OperationOutcome validationOutcome = internalOperationOutcome.operationOutcome();
@@ -207,6 +212,8 @@ public class Processor {
         new NRSRoutingInput(validatedJSON, testUserFlag, testUserId);
     final RoutingData routingInformation = routingService.getRoutingInformation(routingInput);
 
+    final String diseaseCodeRoot =
+        notificationFhirService.getDiseaseCodeRoot(parsedBundle, routingInformation.type());
     final String diseaseCode =
         notificationFhirService.getDiseaseCode(parsedBundle, routingInformation.type());
     return Notification.builder()
@@ -214,6 +221,7 @@ public class Processor {
         .originalNotificationAsJson(originalNotificationJson)
         .sender(sender)
         .diseaseCode(diseaseCode)
+        .diseaseCodeRoot(diseaseCodeRoot)
         .testUser(testUserFlag)
         .testUserRecipient(testUserRecipient)
         .routingData(routingInformation)
@@ -246,7 +254,7 @@ public class Processor {
         "Notification: bundleId={}, type={}, diseaseCode={}, sender={}, testUser={}",
         notification.getBundleIdentifier(),
         notification.getType(),
-        notification.getDiseaseCode(),
+        notification.getDiseaseCodeRoot(),
         notification.getSender(),
         notification.isTestUser());
   }
@@ -259,7 +267,7 @@ public class Processor {
 
     Multimap<String, Optional<? extends IBaseResource>> resourceByReceiver =
         Multimaps.transformValues(
-            receiverById, (receiver) -> receiverActionService.transform(notification, receiver));
+            receiverById, receiver -> receiverActionService.transform(notification, receiver));
     resourceByReceiver = Multimaps.filterValues(resourceByReceiver, Optional::isPresent);
 
     // A receiver that should receive 3 bundles but only receives 2, will not show up here. But a

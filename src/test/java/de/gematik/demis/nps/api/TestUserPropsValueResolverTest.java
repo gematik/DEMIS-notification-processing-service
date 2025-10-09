@@ -32,12 +32,9 @@ import static de.gematik.demis.nps.api.TestUserPropsValueResolver.HEADER_TEST_US
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.NpsServiceException;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -48,12 +45,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 class TestUserPropsValueResolverTest {
 
   public static final MethodParameter MOCK = mock(MethodParameter.class);
-  // ensure that a "valid" test configuration is present in case we are not properly handling the
-  // feature flag
-  private final TestUserPropsValueResolver resolver =
-      new TestUserPropsValueResolver(
-          new TestUserConfiguration(List.of("any", "list", "is good"), "will-be-ignored", false),
-          true);
+  private final TestUserPropsValueResolver resolver = new TestUserPropsValueResolver();
 
   private static ServletWebRequest withHeaders(@Nonnull final Map<String, String> headers) {
     final MockHttpServletRequest mockHttpServletRequest = new MockHttpServletRequest();
@@ -163,72 +155,5 @@ class TestUserPropsValueResolverTest {
     final TestUserProps testUserProps = resolver.resolveArgument(MOCK, null, request, null);
     assertThat(testUserProps.isTestNotification()).isTrue();
     assertThat(testUserProps.testUserRecipient()).isEqualTo("recipient-to-use");
-  }
-
-  @Nested
-  class Regression {
-
-    @Test
-    void thatTestUserCanBeIdentifiedByConfigurationAlone() {
-      // GIVEN a configuration that recognizes test-user as test user
-      final TestUserConfiguration config =
-          new TestUserConfiguration(List.of("test-user"), "", true);
-      final TestUserPropsValueResolver service = new TestUserPropsValueResolver(config, false);
-
-      final ServletWebRequest request =
-          withHeaders(Map.of(HEADER_SENDER, "test-user", HEADER_IS_TEST_NOTIFICATION, "false"));
-      final TestUserProps testUserProps = service.resolveArgument(MOCK, null, request, null);
-      assertThat(testUserProps.isTestNotification()).isTrue();
-      assertThat(testUserProps.testUserRecipient()).isEqualTo("test-user");
-    }
-
-    @Test
-    void thatTestUserCanBeIdentifiedByConfigurationAloneAndStillUseFallback() {
-      // GIVEN a configuration that recognizes test-user as test user, but we can only forward to
-      // the fallback
-      final TestUserConfiguration config =
-          new TestUserConfiguration(List.of("test-user"), "fallback", false);
-      final TestUserPropsValueResolver service = new TestUserPropsValueResolver(config, false);
-
-      final ServletWebRequest request =
-          withHeaders(Map.of(HEADER_SENDER, "test-user", HEADER_IS_TEST_NOTIFICATION, "false"));
-      final TestUserProps testUserProps = service.resolveArgument(MOCK, null, request, null);
-      assertThat(testUserProps.isTestNotification()).isTrue();
-      assertThat(testUserProps.testUserRecipient()).isEqualTo("fallback");
-    }
-
-    @Test
-    void thatTestUserFallbackIsSetForTestMessageAndNoTestUser() {
-      // GIVEN a configuration with a fallback health-office
-      final TestUserConfiguration config =
-          new TestUserConfiguration(List.of("some-test-user"), "fallback", true);
-      final TestUserPropsValueResolver service = new TestUserPropsValueResolver(config, false);
-
-      final ServletWebRequest request =
-          withHeaders(
-              Map.of(
-                  HEADER_SENDER, "regular-user",
-                  HEADER_IS_TEST_NOTIFICATION, "true"));
-      final TestUserProps testUserProps = service.resolveArgument(MOCK, null, request, null);
-      assertThat(testUserProps.isTestNotification()).isTrue();
-      assertThat(testUserProps.testUserRecipient()).isEqualTo("fallback");
-    }
-
-    @Test
-    void thatTestUserConfigIsIgnoredWhenNotTestNotification() {
-      // GIVEN a configuration with a fallback health-office
-      final TestUserConfiguration config =
-          new TestUserConfiguration(List.of("some-test-user"), "fallback", true);
-      final TestUserPropsValueResolver service = new TestUserPropsValueResolver(config, false);
-
-      final ServletWebRequest request =
-          withHeaders(
-              Map.of(
-                  HEADER_SENDER, "regular-user",
-                  HEADER_IS_TEST_NOTIFICATION, "false"));
-      final TestUserProps testUserProps = service.resolveArgument(MOCK, null, request, null);
-      assertThat(testUserProps.isTestNotification()).isFalse();
-      assertThat(testUserProps.testUserRecipient()).isEmpty();
-    }
   }
 }

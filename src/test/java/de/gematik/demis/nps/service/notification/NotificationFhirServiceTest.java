@@ -149,7 +149,7 @@ class NotificationFhirServiceTest {
 
       assertThatExceptionOfType(NpsServiceException.class)
           .isThrownBy(
-              () -> underTest.getDiseaseCode(laboratoryBundle, NotificationType.LABORATORY));
+              () -> underTest.getDiseaseCodeRoot(laboratoryBundle, NotificationType.LABORATORY));
     }
 
     @Test
@@ -159,7 +159,7 @@ class NotificationFhirServiceTest {
       bundle.addEntry(new Bundle.BundleEntryComponent().setResource(condition));
 
       assertThatExceptionOfType(NpsServiceException.class)
-          .isThrownBy(() -> underTest.getDiseaseCode(bundle, NotificationType.DISEASE));
+          .isThrownBy(() -> underTest.getDiseaseCodeRoot(bundle, NotificationType.DISEASE));
     }
 
     @Test
@@ -171,7 +171,8 @@ class NotificationFhirServiceTest {
       final Bundle laboratoryBundle = new Bundle();
       laboratoryBundle.addEntry(new Bundle.BundleEntryComponent().setResource(diagnosticReport));
 
-      String diseaseCode = underTest.getDiseaseCode(laboratoryBundle, NotificationType.LABORATORY);
+      String diseaseCode =
+          underTest.getDiseaseCodeRoot(laboratoryBundle, NotificationType.LABORATORY);
       assertThat(diseaseCode).isEqualTo("hit");
     }
 
@@ -183,7 +184,7 @@ class NotificationFhirServiceTest {
       final Bundle bundle = new Bundle();
       bundle.addEntry(new Bundle.BundleEntryComponent().setResource(condition));
 
-      final String diseaseCode = underTest.getDiseaseCode(bundle, NotificationType.DISEASE);
+      final String diseaseCode = underTest.getDiseaseCodeRoot(bundle, NotificationType.DISEASE);
       assertThat(diseaseCode).isEqualTo("hit");
     }
   }

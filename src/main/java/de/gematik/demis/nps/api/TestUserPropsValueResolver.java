@@ -27,13 +27,10 @@ package de.gematik.demis.nps.api;
  */
 
 import com.google.common.base.Strings;
-import de.gematik.demis.nps.config.TestUserConfiguration;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
-import java.util.Objects;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -46,16 +43,6 @@ public class TestUserPropsValueResolver implements HandlerMethodArgumentResolver
 
   public static final String HEADER_TEST_USER_RECIPIENT = "x-testuser-recipient";
   public static final String HEADER_IS_TEST_NOTIFICATION = "x-testuser";
-
-  @Nonnull private final TestUserConfiguration testUserConfiguration;
-  private final boolean isNewTestRoutingEnabled;
-
-  public TestUserPropsValueResolver(
-      final TestUserConfiguration testUserConfiguration,
-      @Value("${feature.flag.test_routing_v2}") final boolean isNewTestRoutingEnabled) {
-    this.testUserConfiguration = testUserConfiguration;
-    this.isNewTestRoutingEnabled = isNewTestRoutingEnabled;
-  }
 
   @Nonnull
   private TestUserProps getTestUserProps(
@@ -86,20 +73,6 @@ public class TestUserPropsValueResolver implements HandlerMethodArgumentResolver
     return new TestUserProps(isTestNotification, testUserRecipient);
   }
 
-  @Nonnull
-  private TestUserProps getLegacyTestUserProps(
-      final boolean isTestUser,
-      @CheckForNull final String sender,
-      @Nonnull final TestUserConfiguration testUserConfiguration) {
-    // pre feature flag
-    final boolean isTestNotification = isTestUser || testUserConfiguration.isTestUser(sender);
-    String forwardTo = "";
-    if (isTestNotification) {
-      forwardTo = Objects.requireNonNullElse(testUserConfiguration.getReceiver(sender), "");
-    }
-    return new TestUserProps(isTestNotification, forwardTo);
-  }
-
   @Override
   public boolean supportsParameter(final MethodParameter parameter) {
     return TestUserProps.class.isAssignableFrom(parameter.getParameterType());
@@ -119,12 +92,6 @@ public class TestUserPropsValueResolver implements HandlerMethodArgumentResolver
     final String sender =
         Strings.nullToEmpty(webRequest.getHeader(NotificationController.HEADER_SENDER));
 
-    final TestUserProps testUserProps;
-    if (isNewTestRoutingEnabled) {
-      testUserProps = getTestUserProps(isTestNotification, testUserRecipient, sender);
-    } else {
-      testUserProps = getLegacyTestUserProps(isTestNotification, sender, testUserConfiguration);
-    }
-    return testUserProps;
+    return getTestUserProps(isTestNotification, testUserRecipient, sender);
   }
 }

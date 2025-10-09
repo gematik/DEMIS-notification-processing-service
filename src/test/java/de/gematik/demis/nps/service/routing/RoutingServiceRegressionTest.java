@@ -55,7 +55,7 @@ class RoutingServiceRegressionTest {
       List.of(new NotificationReceiver("", "", SequencedSets.of(), false));
   private final NotificationRoutingServiceClient mock =
       mock(NotificationRoutingServiceClient.class);
-  final RoutingService routingService = new RoutingService(mock, false);
+  final RoutingService routingService = new RoutingService(mock, false, false);
 
   @MethodSource("invalidResponses")
   @ParameterizedTest

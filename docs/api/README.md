@@ -7,7 +7,7 @@ All URIs are relative to *http://localhost*
 
 | Class | Method | HTTP request | Description |
 |------------ | ------------- | ------------- | -------------|
-| *NotificationControllerApi* | [**processNotification**](Apis/NotificationControllerApi.md#processnotification) | **POST** /fhir/$process-notification |  |
+| *NotificationControllerApi* | [**processNotification**](Apis/NotificationControllerApi.md#processNotification) | **POST** /fhir/$process-notification |  |
 
 
 <a name="documentation-for-models"></a>

@@ -34,7 +34,6 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.validation.annotation.Validated;
 
 @ConfigurationProperties(prefix = "nps")
@@ -42,7 +41,6 @@ import org.springframework.validation.annotation.Validated;
 @Builder
 @Slf4j
 public record NpsConfigProperties(
-    @Bean TestUserConfiguration testuser,
     Set<String> sormasCodes,
     @NotEmpty String certificateDir,
     @NotNull OperationOutcome.IssueSeverity outcomeIssueThreshold,

@@ -164,7 +164,7 @@ class PseudoServiceTest {
     final var notification =
         Notification.builder()
             .bundle(bundle)
-            .diseaseCode(DISEASE_CODE)
+            .diseaseCodeRoot(DISEASE_CODE)
             .routingData(routingData)
             .testUser(false)
             .build();
@@ -211,7 +211,7 @@ class PseudoServiceTest {
     final var notification =
         Notification.builder()
             .bundle(bundle)
-            .diseaseCode(DISEASE_CODE)
+            .diseaseCodeRoot(DISEASE_CODE)
             .routingData(routingData)
             .testUser(false)
             .build();

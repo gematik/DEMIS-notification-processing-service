@@ -40,6 +40,7 @@ info:
 
 nps:
   client:
+    dls: "http://destination-lookup-writer.demis.svc.cluster.local"
     validation: "http://validation-service.demis.svc.cluster.local"
     lifecycle-vs: "http://lifecycle-validation-service.demis.svc.cluster.local"
     routing: "http://notification-routing-service.demis.svc.cluster.local"
@@ -54,12 +55,6 @@ nps:
     context-enrichment-service: "http://context-enrichment-service.demis.svc.cluster.local"
   context-path: ${API_ENTRYPOINT:/fhir/}
   certificate-dir: ${NPS_CERTIFICATES_PATH:data/certificates}
-
-  testuser:
-    ids:
-      - test-int
-    health-office: test-int
-    sender-is-destination: false
 
   anonymized-allowed: true
 
@@ -82,9 +77,9 @@ feature:
     notification_pre_check: false
     lv_disease: false
     notifications.7_3: false
-    test_routing_v2: false
     relaxed_validation: false
     tuberculosis.routing.enabled: false
     new_api_endpoints: false
     permission.check.enabled: false
     custodian.enabled: false
+    follow.up.notification: false

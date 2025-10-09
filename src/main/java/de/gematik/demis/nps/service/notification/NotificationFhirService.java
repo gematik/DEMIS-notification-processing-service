@@ -87,7 +87,8 @@ public class NotificationFhirService {
   }
 
   @Nonnull
-  public String getDiseaseCode(@Nonnull final Bundle notification, final NotificationType type) {
+  public String getDiseaseCodeRoot(
+      @Nonnull final Bundle notification, final NotificationType type) {
     return switch (type) {
       case LABORATORY -> getDiseaseCodeFromLaboratoryNotification(notification);
       case DISEASE -> getDiseaseCodeFromDiseaseNotification(notification);
@@ -95,22 +96,39 @@ public class NotificationFhirService {
   }
 
   @Nonnull
-  private String getDiseaseCodeFromLaboratoryNotification(@Nonnull final Bundle bundle) {
+  public String getDiseaseCode(
+      @Nonnull final Bundle notification, @Nonnull final NotificationType type) {
+    return switch (type) {
+      case LABORATORY -> getDiseaseCodeFromDiagnosticReport(notification);
+      case DISEASE -> getDiseaseCodeFromCondition(notification);
+    };
+  }
+
+  private String getDiseaseCodeFromDiagnosticReport(@Nonnull final Bundle bundle) {
     return BundleQueries.findFirstResource(bundle, DiagnosticReport.class)
         .map(DiagnosticReport::getCode)
         .map(CodeableConcept::getCodingFirstRep)
         .map(Coding::getCode)
-        .map(codeMappingService::getMappedPathogenCode)
         .orElseThrow(CANT_PARSE_DISEASE_CODE_ERROR);
   }
 
-  @Nonnull
-  private String getDiseaseCodeFromDiseaseNotification(@Nonnull final Bundle bundle) {
+  private String getDiseaseCodeFromCondition(@Nonnull final Bundle bundle) {
     return BundleQueries.findFirstResource(bundle, Condition.class)
         .map(Condition::getCode)
         .map(CodeableConcept::getCodingFirstRep)
         .map(Coding::getCode)
-        .map(codeMappingService::getMappedDiseaseCode)
         .orElseThrow(CANT_PARSE_DISEASE_CODE_ERROR);
+  }
+
+  @Nonnull
+  private String getDiseaseCodeFromLaboratoryNotification(@Nonnull final Bundle bundle) {
+    final String code = getDiseaseCodeFromDiagnosticReport(bundle);
+    return codeMappingService.getMappedPathogenCode(code);
+  }
+
+  @Nonnull
+  private String getDiseaseCodeFromDiseaseNotification(@Nonnull final Bundle bundle) {
+    final String code = getDiseaseCodeFromCondition(bundle);
+    return codeMappingService.getMappedDiseaseCode(code);
   }
 }

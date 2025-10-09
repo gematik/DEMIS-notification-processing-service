@@ -145,7 +145,7 @@ class ReceiverActionServiceTest {
     final Bundle original = TestData.getBundle(path);
     return Notification.builder()
         .originalNotificationAsJson(TestData.readResourceAsString(path))
-        .diseaseCode("xxx")
+        .diseaseCodeRoot("xxx")
         .sender("Me")
         .bundle(original)
         .routingData(routingData)
@@ -289,7 +289,7 @@ class ReceiverActionServiceTest {
         // AND a 7.3 bundle with NotifiedPerson
         .originalNotificationAsJson(
             TestData.readResourceAsString("/bundles/7_3/laboratory-nonnominal-notifiedperson.json"))
-        .diseaseCode("xxx")
+        .diseaseCodeRoot("xxx")
         .sender("Me")
         .bundle(original)
         // AND a matching routing output
@@ -467,7 +467,7 @@ class ReceiverActionServiceTest {
     final String originalJSON = TestUtil.fhirResourceToJson(bundle);
     return Notification.builder()
         .originalNotificationAsJson(originalJSON)
-        .diseaseCode("xxx")
+        .diseaseCodeRoot("xxx")
         .sender("Me")
         .bundle(bundle)
         .routingData(ROUTING)

@@ -13,14 +13,19 @@
     {
       "severity": "error",
       "code": "processing",
+      "diagnostics": "L00X"
+    },
+    {
+      "severity": "error",
+      "code": "processing",
       "details": {
         "coding": [
           {
-            "code": "MISSING_RESPONSIBLE"
+            "code": "LIFECYCLE_VALIDATION_ERROR"
           }
         ]
       },
-      "diagnostics": "no health office is responsible (fee6005e-5686-4b7b-b6ee-98b0e98a9d42)"
+      "diagnostics": "Laboratory Lifecycle of notification validation failed. (fee6005e-5686-4b7b-b6ee-98b0e98a9d42)"
     }
   ]
 }

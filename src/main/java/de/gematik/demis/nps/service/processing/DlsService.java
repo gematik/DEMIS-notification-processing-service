@@ -26,6 +26,7 @@ package de.gematik.demis.nps.service.processing;
  * #L%
  */
 
+import de.gematik.demis.nps.base.util.UUIDValidator;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import javax.annotation.Nonnull;
@@ -49,7 +50,8 @@ public class DlsService {
 
   /** Write the responsible receiver for the given notification id to the DLS. Fail silently. */
   public void store(@Nonnull final Notification original) {
-    if (!isFollowUpEnabled) {
+    final String notificationId = original.getComposition().getIdentifier().getValue();
+    if (!isFollowUpEnabled || !UUIDValidator.isValidUUID(notificationId)) {
       return;
     }
 

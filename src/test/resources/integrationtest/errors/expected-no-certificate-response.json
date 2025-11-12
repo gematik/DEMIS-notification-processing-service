@@ -20,10 +20,7 @@
           }
         ]
       },
-      "diagnostics": "no certificate found for health office 1.01.0.52.",
-      "location": [
-        "fee6005e-5686-4b7b-b6ee-98b0e98a9d42"
-      ]
+      "diagnostics": "no certificate found for health office 1.01.0.52. (fee6005e-5686-4b7b-b6ee-98b0e98a9d42)"
     }
   ]
 }

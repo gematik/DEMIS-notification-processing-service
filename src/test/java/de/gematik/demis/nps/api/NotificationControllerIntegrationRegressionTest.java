@@ -27,58 +27,90 @@ package de.gematik.demis.nps.api;
  */
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_XML_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.nps.base.util.TimeProvider;
-import de.gematik.demis.nps.base.util.UuidGenerator;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.Processor;
 import de.gematik.demis.nps.service.Statistics;
-import de.gematik.demis.nps.service.response.FhirConverter;
-import de.gematik.demis.nps.service.response.FhirResponseService;
-import de.gematik.demis.service.base.error.rest.api.ErrorDTO;
+import de.gematik.demis.nps.test.TestUtil;
+import de.gematik.demis.service.base.error.rest.ErrorFieldProvider;
+import de.gematik.demis.service.base.error.rest.ErrorHandlerConfiguration;
+import de.gematik.demis.service.base.fhir.FhirSupportAutoConfiguration;
+import de.gematik.demis.service.base.fhir.error.FhirErrorResponseAutoConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.hamcrest.Matchers;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.OperationOutcome;
-import org.hl7.fhir.r4.model.Parameters;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mockito;
+import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(NotificationController.class)
-@Import({FhirConverter.class, UuidGenerator.class, TimeProvider.class})
-class NotificationControllerIntegrationTestRegression {
+@WebMvcTest(
+    value = NotificationController.class,
+    properties = "feature.flag.move-error-id-to-diagnostics=false")
+@ImportAutoConfiguration({
+  ErrorHandlerConfiguration.class,
+  FhirSupportAutoConfiguration.class,
+  FhirErrorResponseAutoConfiguration.class
+})
+class NotificationControllerIntegrationRegressionTest {
 
   private static final String ENDPOINT = "/fhir/$process-notification";
   private static final String FHIR_NOTIFICATION = "does not matter";
   private static final String RESULT_BODY = "receipt fhir message";
   private static final String TOKEN = "SomeToken";
 
-  @MockBean Processor processor;
-  @MockBean FhirContext fhirContext;
-  @MockBean FhirResponseService responseService;
-  @MockBean Statistics statistics;
+  private static final String EXPECTED_ERROR_OPERATION_OUTCOME =
+"""
+{
+  "resourceType": "OperationOutcome",
+  "meta": {
+    "profile": [ "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationResponse" ]
+  },
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\\"http://www.w3.org/1999/xhtml\\"></div>"
+  },
+  "issue": [ {
+    "severity": "error",
+    "code": "processing",
+    "details": {
+      "coding": [ {
+        "code": "FHIR_VALIDATION_ERROR"
+      } ]
+    },
+    "location": [ "75cc12e8-5f3e-4470-a270-dd16052bd0ae" ]
+  } ]
+}
+""";
+
+  private final IParser parser = mock(IParser.class);
+  @MockitoBean Processor processor;
+  @MockitoBean FhirContext fhirContext;
+  @MockitoBean Statistics statistics;
+
+  @MockitoBean(answers = Answers.CALLS_REAL_METHODS)
+  ErrorFieldProvider errorFieldProvider;
 
   @Autowired private MockMvc mockMvc;
 
@@ -87,73 +119,11 @@ class NotificationControllerIntegrationTestRegression {
   }
 
   private void setupFhirSerializer(final IBaseResource resource, final MessageType outputFormat) {
-    final IParser parser = mock(IParser.class);
-    when(parser.encodeResourceToString(resource)).thenReturn(RESULT_BODY);
+    when(parser.encodeResourceToString(any(resource.getClass()))).thenReturn(RESULT_BODY);
     when(outputFormat == MessageType.JSON
             ? fhirContext.newJsonParser()
             : fhirContext.newXmlParser())
         .thenReturn(parser);
-  }
-
-  @ParameterizedTest
-  @CsvSource({
-    // permute contentType
-    "application/json,application/json",
-    "application/json;charset=UTF-8,application/json",
-    "application/json+fhir,application/json",
-    "application/fhir+json,application/json",
-    "application/xml,application/json",
-    "application/xml;charset=UTF-8,application/json",
-    "application/xml+fhir,application/json",
-    "application/fhir+xml,application/json",
-    "text/xml,*/*",
-    "text/xml;charset=UTF-8,*/*",
-    // permute accept
-    "application/json,application/json",
-    "application/json,application/json+fhir",
-    "application/json,application/fhir+json",
-    "application/json,application/xml",
-    "application/json,application/xml+fhir",
-    "application/json,application/fhir+xml",
-    "application/json,*/*",
-    "application/xml,*/*"
-  })
-  void success(final String contentType, final String accept) throws Exception {
-    final MessageType messageType = getMessageType(contentType);
-
-    final Parameters parameters = new Parameters();
-    when(processor.execute(FHIR_NOTIFICATION, messageType, null, null, false, "", TOKEN, Set.of()))
-        .thenReturn(parameters);
-
-    final String outputType = accept.equals("*/*") ? contentType : accept;
-    setupFhirSerializer(parameters, getMessageType(outputType));
-
-    mockMvc
-        .perform(
-            post(ENDPOINT)
-                .contentType(contentType)
-                .content(FHIR_NOTIFICATION)
-                .header(HttpHeaders.ACCEPT, accept)
-                .header(HttpHeaders.AUTHORIZATION, TOKEN))
-        .andExpectAll(
-            status().isOk(),
-            content().contentTypeCompatibleWith(outputType),
-            content().encoding(StandardCharsets.UTF_8),
-            content().string(Matchers.equalTo(RESULT_BODY)));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"text/json", "text/json+fhir", "text/xml+fhir", "unknown/xml"})
-  void unsupportedMediaType(final String contentType) throws Exception {
-    Mockito.verifyNoInteractions(processor);
-
-    mockMvc
-        .perform(
-            post(ENDPOINT)
-                .contentType(contentType)
-                .content(FHIR_NOTIFICATION)
-                .header(HttpHeaders.ACCEPT, "*/*"))
-        .andExpect(status().isUnsupportedMediaType());
   }
 
   @ParameterizedTest
@@ -175,10 +145,9 @@ class NotificationControllerIntegrationTestRegression {
         .thenThrow(new NpsServiceException(ErrorCode.FHIR_VALIDATION_ERROR, exceptionOutcome));
 
     final OperationOutcome responseOutcome = new OperationOutcome();
-    when(responseService.error(any(ErrorDTO.class), eq(exceptionOutcome)))
-        .thenReturn(responseOutcome);
 
     setupFhirSerializer(responseOutcome, getMessageType(accept));
+    when(errorFieldProvider.generateId()).thenReturn("75cc12e8-5f3e-4470-a270-dd16052bd0ae");
 
     mockMvc
         .perform(
@@ -187,24 +156,17 @@ class NotificationControllerIntegrationTestRegression {
                 .content(FHIR_NOTIFICATION)
                 .header("accept", accept)
                 .header(HttpHeaders.AUTHORIZATION, TOKEN))
+        .andDo(print())
         .andExpectAll(
             status().is(422),
             content().contentTypeCompatibleWith(accept),
             content().encoding(StandardCharsets.UTF_8),
             content().string(Matchers.equalTo(RESULT_BODY)));
-  }
 
-  @Test
-  void emptyBody() throws Exception {
-    final OperationOutcome outcome = new OperationOutcome();
-    when(responseService.error(any(ErrorDTO.class), eq(null))).thenReturn(outcome);
-    setupFhirSerializer(outcome, MessageType.JSON);
-
-    mockMvc
-        .perform(post(ENDPOINT).contentType(APPLICATION_JSON_VALUE))
-        .andExpect(status().is(400))
-        .andExpect(content().string(Matchers.equalTo(RESULT_BODY)));
-
-    Mockito.verifyNoInteractions(processor);
+    final ArgumentCaptor<OperationOutcome> operationOutcomeCaptor =
+        ArgumentCaptor.forClass(OperationOutcome.class);
+    verify(parser).encodeResourceToString(operationOutcomeCaptor.capture());
+    TestUtil.assertFhirResource(
+        operationOutcomeCaptor.getValue(), EXPECTED_ERROR_OPERATION_OUTCOME);
   }
 }

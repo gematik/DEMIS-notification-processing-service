@@ -105,11 +105,7 @@ class NotificationValidationRelaxedModeTest {
             Map.of("relaxed_validation", true, "new_api_endpoints", true));
     underTest =
         new NotificationValidator(
-            validationServiceClient,
-            lifecycleValidationServiceClient,
-            fhirContext,
-            featureFlags,
-            httpServletRequest);
+            validationServiceClient, fhirContext, featureFlags, httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();
     lenient().when(httpServletRequest.getHeader(eq(HEADER_FHIR_API_VERSION))).thenReturn("v1");

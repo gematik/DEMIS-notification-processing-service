@@ -27,11 +27,12 @@ package de.gematik.demis.nps.error;
  */
 
 import de.gematik.demis.service.base.error.ServiceException;
+import de.gematik.demis.service.base.fhir.error.OperationOutcomeCarrier;
 import lombok.Getter;
 import org.hl7.fhir.r4.model.OperationOutcome;
 
 @Getter
-public class NpsServiceException extends ServiceException {
+public class NpsServiceException extends ServiceException implements OperationOutcomeCarrier {
 
   private final OperationOutcome operationOutcome;
 
@@ -49,5 +50,11 @@ public class NpsServiceException extends ServiceException {
       final ErrorCode errorCode, final String message, final Throwable cause) {
     super(errorCode.getHttpStatus(), errorCode.getCode(), message, cause);
     operationOutcome = null;
+  }
+
+  public NpsServiceException(
+      ErrorCode errorCode, OperationOutcome operationOutcome, String details) {
+    super(errorCode.getHttpStatus(), errorCode.getCode(), details);
+    this.operationOutcome = operationOutcome;
   }
 }

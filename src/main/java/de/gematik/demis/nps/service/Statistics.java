@@ -27,7 +27,10 @@ package de.gematik.demis.nps.service;
  */
 
 import de.gematik.demis.nps.service.notification.Notification;
+import de.gematik.demis.service.base.error.rest.ErrorCounter;
+import de.gematik.demis.service.base.error.rest.api.ErrorDTO;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,7 +38,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class Statistics {
+public class Statistics implements ErrorCounter {
   private static final String COUNTER_NOTIFICATION_SUCCESS = "notification_success";
   private static final String COUNTER_NOTIFICATION_ERROR = "notification_error";
   private static final String COUNTER_NOTIFICATION_IGNORED_ERROR = "notification_ignored_error";
@@ -60,6 +63,11 @@ public class Statistics {
                     TAG_DISEASE_CODE,
                     nullsafe(notification.getDiseaseCodeRoot()))
                 .increment());
+  }
+
+  @Override
+  public void errorOccurred(final ErrorDTO error, @Nullable final String sender) {
+    incErrorCounter(sender, error.errorCode());
   }
 
   public void incErrorCounter(final String user, final String errorCode) {

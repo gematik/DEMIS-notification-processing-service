@@ -30,17 +30,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static de.gematik.demis.nps.error.ErrorCode.LIFECYCLE_VALIDATION_ERROR;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity.FATAL;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpHeaders.ACCEPT;
@@ -55,20 +51,12 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
-import de.gematik.demis.nps.service.notification.Notification;
-import de.gematik.demis.nps.service.routing.RoutingData;
-import de.gematik.demis.nps.test.RoutingDataUtil;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Map;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
-import org.hl7.fhir.r4.model.OperationOutcome.IssueType;
-import org.hl7.fhir.r4.model.OperationOutcome.OperationOutcomeIssueComponent;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -236,154 +224,6 @@ class NotificationValidatorIntegrationTest {
       setupVS(APPLICATION_JSON_VALUE, serverError());
       assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
           .isExactlyInstanceOf(ServiceCallException.class);
-    }
-  }
-
-  @Nested
-  @DisplayName("Lifecycle validation for laboratory")
-  class LaboratoryLifecycleValidationTest {
-
-    private static final String ENDPOINT_LVS_LABORATORY = "/LVS/laboratory/$validate";
-
-    private static void setupLabLVS(final ResponseDefinitionBuilder responseDefBuilder) {
-      stubFor(
-          post(ENDPOINT_LVS_LABORATORY)
-              .withHeader(CONTENT_TYPE, equalTo(APPLICATION_JSON_VALUE))
-              .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
-              .withRequestBody(equalTo(REQUEST_BODY))
-              .willReturn(responseDefBuilder));
-    }
-
-    private Notification setupLaboratoryRequest() {
-      final var bundle = new Bundle();
-      bundle.setId("my-bundle");
-      final RoutingData routingData = RoutingDataUtil.emptyFor("");
-      final var notification =
-          Notification.builder().bundle(bundle).routingData(routingData).build();
-
-      final var parser = setupFhirJsonParserMock();
-      when(parser.encodeResourceToString(bundle)).thenReturn(REQUEST_BODY);
-
-      return notification;
-    }
-
-    @BeforeEach
-    void beforeEach() {
-      underTest.init();
-    }
-
-    @Test
-    void lifeCycleValidationForLaboratoryOkay() {
-      final Notification notification = setupLaboratoryRequest();
-      setupLabLVS(okJson(RESPONSE_BODY));
-
-      Assertions.assertDoesNotThrow(() -> underTest.validateLifecycle(notification));
-      WireMock.verify(postRequestedFor(urlEqualTo(ENDPOINT_LVS_LABORATORY)));
-    }
-
-    @Test
-    void lifeCycleValidationForLaboratoryError() {
-      final Notification notification = setupLaboratoryRequest();
-      setupLabLVS(status(422).withBody(RESPONSE_BODY));
-
-      final var exception =
-          catchThrowableOfType(
-              () -> underTest.validateLifecycle(notification), NpsServiceException.class);
-
-      assertThat(exception)
-          .isNotNull()
-          .returns(LIFECYCLE_VALIDATION_ERROR.name(), NpsServiceException::getErrorCode)
-          .returns(
-              LIFECYCLE_VALIDATION_ERROR.getHttpStatus(), NpsServiceException::getResponseStatus);
-      assertThat(exception.getOperationOutcome()).isNotNull();
-      assertThat(exception.getOperationOutcome().getIssue())
-          .hasSize(1)
-          .first()
-          .returns(IssueSeverity.ERROR, OperationOutcomeIssueComponent::getSeverity)
-          .returns(IssueType.PROCESSING, OperationOutcomeIssueComponent::getCode)
-          .returns(RESPONSE_BODY, OperationOutcomeIssueComponent::getDiagnostics);
-    }
-
-    @Test
-    void lifecycleValidationCallException() {
-      final Notification notification = setupLaboratoryRequest();
-      setupLabLVS(serverError());
-      assertThatThrownBy(() -> underTest.validateLifecycle(notification))
-          .isExactlyInstanceOf(ServiceCallException.class);
-    }
-  }
-
-  @Nested
-  @DisplayName("Lifecycle validation for disease")
-  class DiseaseLifecycleValidationTest {
-
-    private static final String ENDPOINT_LVS_DISEASE = "/LVS/disease/$validate";
-
-    private static void setupDiseaseLVS(final ResponseDefinitionBuilder responseDefBuilder) {
-      stubFor(
-          post(ENDPOINT_LVS_DISEASE)
-              .withHeader(CONTENT_TYPE, equalTo(APPLICATION_JSON_VALUE))
-              .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
-              .withRequestBody(equalTo(REQUEST_BODY))
-              .willReturn(responseDefBuilder));
-    }
-
-    @BeforeEach
-    void beforeEach() {
-      underTest.init();
-    }
-
-    @Test
-    void lifeCycleValidationForDiseaseOkay() {
-      final Notification notification = setupDiseaseRequest();
-      setupDiseaseLVS(okJson(RESPONSE_BODY));
-
-      Assertions.assertDoesNotThrow(() -> underTest.validateLifecycle(notification));
-      WireMock.verify(postRequestedFor(urlEqualTo(ENDPOINT_LVS_DISEASE)));
-    }
-
-    @Test
-    void lifeCycleValidationForDiseaseError() {
-      final Notification notification = setupDiseaseRequest();
-      setupDiseaseLVS(status(422).withBody(RESPONSE_BODY));
-
-      final var exception =
-          catchThrowableOfType(
-              () -> underTest.validateLifecycle(notification), NpsServiceException.class);
-
-      assertThat(exception)
-          .isNotNull()
-          .returns(LIFECYCLE_VALIDATION_ERROR.name(), NpsServiceException::getErrorCode)
-          .returns(
-              LIFECYCLE_VALIDATION_ERROR.getHttpStatus(), NpsServiceException::getResponseStatus);
-      assertThat(exception.getOperationOutcome()).isNotNull();
-      assertThat(exception.getOperationOutcome().getIssue())
-          .hasSize(1)
-          .first()
-          .returns(IssueSeverity.ERROR, OperationOutcomeIssueComponent::getSeverity)
-          .returns(IssueType.PROCESSING, OperationOutcomeIssueComponent::getCode)
-          .returns(RESPONSE_BODY, OperationOutcomeIssueComponent::getDiagnostics);
-    }
-
-    @Test
-    void lifecycleValidationCallException() {
-      final Notification notification = setupDiseaseRequest();
-      setupDiseaseLVS(serverError());
-      assertThatThrownBy(() -> underTest.validateLifecycle(notification))
-          .isExactlyInstanceOf(ServiceCallException.class);
-    }
-
-    private Notification setupDiseaseRequest() {
-      final var bundle = new Bundle();
-      bundle.setId("my-bundle");
-      final RoutingData routingData = RoutingDataUtil.empty61For("");
-      final var notification =
-          Notification.builder().bundle(bundle).routingData(routingData).build();
-
-      final var parser = setupFhirJsonParserMock();
-      when(parser.encodeResourceToString(bundle)).thenReturn(REQUEST_BODY);
-
-      return notification;
     }
   }
 }

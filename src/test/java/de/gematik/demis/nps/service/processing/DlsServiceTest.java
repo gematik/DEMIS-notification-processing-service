@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -54,10 +55,14 @@ import org.springframework.http.HttpStatus;
 class DlsServiceTest {
 
   private static final Composition composition = new Composition();
+  private static final Composition compositionInvalidUUID = new Composition();
 
   static {
     composition.setId("composition");
     composition.setIdentifier(new Identifier().setValue("b96224fe-e388-4965-844e-5b43267dda2a"));
+
+    compositionInvalidUUID.setId("composition");
+    compositionInvalidUUID.setIdentifier(new Identifier().setValue("12345"));
   }
 
   private static final Notification NOTIFICATION =
@@ -65,6 +70,15 @@ class DlsServiceTest {
           .bundle(
               new NotificationBundleLaboratoryAnonymousDataBuilder()
                   .setNotificationLaboratory(composition)
+                  .build())
+          .routingData(RoutingDataUtil.emptyFor("1.", "custodian"))
+          .build();
+
+  private static final Notification NOTIFICATION_INVALID_UUID =
+      Notification.builder()
+          .bundle(
+              new NotificationBundleLaboratoryAnonymousDataBuilder()
+                  .setNotificationLaboratory(compositionInvalidUUID)
                   .build())
           .routingData(RoutingDataUtil.emptyFor("1.", "custodian"))
           .build();
@@ -82,6 +96,12 @@ class DlsServiceTest {
   void thatClientIsCalled() {
     assertThatNoException().isThrownBy(() -> service.store(NOTIFICATION));
     verify(DLS_SERVICE_CLIENT).store(any());
+  }
+
+  @Test
+  void thatClientIsNotCalledIfInvalidUUID() {
+    assertThatNoException().isThrownBy(() -> service.store(NOTIFICATION_INVALID_UUID));
+    verify(DLS_SERVICE_CLIENT, never()).store(any());
   }
 
   @Nested

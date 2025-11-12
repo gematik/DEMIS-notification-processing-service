@@ -52,6 +52,7 @@ import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
+import de.gematik.demis.nps.service.validation.LifecycleValidationService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -68,6 +69,7 @@ import org.springframework.stereotype.Service;
 public class Processor {
 
   private final NotificationValidator notificationValidator;
+  private final LifecycleValidationService lifecycleValidationService;
   private final NotificationFhirService notificationFhirService;
   private final RoutingService routingService;
   private final NotificationStorageService notificationStorageService;
@@ -88,6 +90,7 @@ public class Processor {
 
   public Processor(
       NotificationValidator notificationValidator,
+      LifecycleValidationService lifecycleValidationService,
       NotificationFhirService notificationFhirService,
       RoutingService routingService,
       NotificationStorageService notificationStorageService,
@@ -104,6 +107,7 @@ public class Processor {
       @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
       @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled) {
     this.notificationValidator = notificationValidator;
+    this.lifecycleValidationService = lifecycleValidationService;
     this.notificationFhirService = notificationFhirService;
     this.routingService = routingService;
     this.notificationStorageService = notificationStorageService;
@@ -161,7 +165,7 @@ public class Processor {
       }
     }
 
-    notificationValidator.validateLifecycle(notification);
+    lifecycleValidationService.validateLifecycle(notification);
 
     // cleanup and add (overwrite) some data like timestamp, identifier and sender
     notificationFhirService.cleanAndEnrichNotification(notification, requestId);

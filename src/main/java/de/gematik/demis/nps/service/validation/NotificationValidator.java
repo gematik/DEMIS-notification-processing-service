@@ -28,8 +28,6 @@ package de.gematik.demis.nps.service.validation;
 
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_FATAL;
-import static de.gematik.demis.nps.error.ErrorCode.LIFECYCLE_VALIDATION_ERROR;
-import static de.gematik.demis.nps.error.ServiceCallErrorCode.LVS;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.*;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
@@ -41,8 +39,6 @@ import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
-import de.gematik.demis.nps.service.notification.Notification;
-import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import feign.Response;
 import feign.codec.Decoder;
@@ -60,7 +56,6 @@ import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.instance.model.api.IBaseResource;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.Parameters;
@@ -74,7 +69,6 @@ import org.springframework.util.MultiValueMap;
 @Slf4j
 public class NotificationValidator {
   private final ValidationServiceClient validationServiceClient;
-  private final LifecycleValidationServiceClient lifecycleValidationServiceClient;
 
   private final FhirContext fhirContext;
   private final FeatureFlagsConfigProperties featureFlags;
@@ -83,13 +77,11 @@ public class NotificationValidator {
 
   private final Decoder decoder = new StringDecoder();
 
-  private boolean lvDiseaseActivated;
   private boolean relaxedValidationActivated;
   private Set<String> headersToForward;
 
   @PostConstruct
   public void init() {
-    lvDiseaseActivated = featureFlags.isEnabled("lv_disease");
     relaxedValidationActivated = featureFlags.isEnabled("relaxed_validation");
     final boolean isVersionHeaderForwardEnabled = featureFlags.isEnabled("new_api_endpoints");
 
@@ -215,56 +207,8 @@ public class NotificationValidator {
     return first.map(value -> Maps.immutableEntry(headerName, value));
   }
 
-  public void validateLifecycle(final Notification notification) {
-    if (notification.getType() == NotificationType.LABORATORY) {
-      validateLaboratoryLifecycle(notification.getBundle());
-    }
-    if (notification.getType() == NotificationType.DISEASE) {
-      validateDiseaseLifecycle(notification.getBundle());
-    }
-  }
-
-  private void validateDiseaseLifecycle(Bundle bundle) {
-    if (lvDiseaseActivated) {
-      final String fhirAsJson = fhirResourceToJson(bundle);
-      try (final Response response = lifecycleValidationServiceClient.validateDisease(fhirAsJson)) {
-        if (isStatusSuccessful(response.status())) {
-          log.debug("Disease Lifecycle of notification successfully validated.");
-        } else {
-          handleNotSuccessfulStatus(response);
-        }
-      }
-    }
-  }
-
-  private void handleNotSuccessfulStatus(Response response) {
-    if (response.status() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
-      final String message = readResponse(response);
-      final var outcome = new OperationOutcome();
-      outcome
-          .addIssue()
-          .setSeverity(IssueSeverity.ERROR)
-          .setCode(OperationOutcome.IssueType.PROCESSING)
-          .setDiagnostics(message);
-      throw new NpsServiceException(LIFECYCLE_VALIDATION_ERROR, outcome);
-    } else {
-      throw new ServiceCallException(
-          "service response: " + readResponse(response), LVS, response.status(), null);
-    }
-  }
-
   private String fhirResourceToJson(final IBaseResource bundle) {
     final IParser fhirJsonParser = fhirContext.newJsonParser();
     return fhirJsonParser.encodeResourceToString(bundle);
-  }
-
-  private void validateLaboratoryLifecycle(final Bundle bundle) {
-    final String fhirAsJson = fhirResourceToJson(bundle);
-    try (final Response response =
-        lifecycleValidationServiceClient.validateLaboratory(fhirAsJson)) {
-      if (isStatusSuccessful(response.status())) {
-        log.debug("Laboratory Lifecycle of notification successfully validated.");
-      } else handleNotSuccessfulStatus(response);
-    }
   }
 }

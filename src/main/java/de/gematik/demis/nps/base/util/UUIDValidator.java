@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.response;
+package de.gematik.demis.nps.base.util;
 
 /*-
  * #%L
@@ -26,31 +26,15 @@ package de.gematik.demis.nps.service.response;
  * #L%
  */
 
-import java.util.Comparator;
-import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
+import java.util.UUID;
 
-/**
- * Comparator for IssueSeverity. (e.g. {@code IssueSeverity.WARNING > IssueSeverity.INFORMATION})
- */
-class SeverityComparator implements Comparator<IssueSeverity> {
-
-  private static int getOrderValue(final IssueSeverity is) {
-    if (is == null) {
-      return -1;
+public class UUIDValidator {
+  public static boolean isValidUUID(final String notificationId) {
+    try {
+      UUID.fromString(notificationId);
+      return true;
+    } catch (IllegalArgumentException e) {
+      return false;
     }
-
-    return switch (is) {
-      case FATAL -> 4;
-      case ERROR -> 3;
-      case WARNING -> 2;
-      case INFORMATION -> 1;
-      case NULL -> 0;
-      default -> -1;
-    };
-  }
-
-  @Override
-  public int compare(final IssueSeverity o1, final IssueSeverity o2) {
-    return Integer.compare(getOrderValue(o1), getOrderValue(o2));
   }
 }

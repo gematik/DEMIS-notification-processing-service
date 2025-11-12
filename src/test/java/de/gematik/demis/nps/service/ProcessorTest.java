@@ -69,6 +69,7 @@ import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
 import de.gematik.demis.nps.service.validation.InternalOperationOutcome;
+import de.gematik.demis.nps.service.validation.LifecycleValidationService;
 import de.gematik.demis.nps.service.validation.NotificationValidator;
 import java.util.*;
 import org.assertj.core.api.ThrowableAssertAlternative;
@@ -101,6 +102,7 @@ class ProcessorTest {
 
   @Mock NpsConfigProperties configProperties;
   @Mock NotificationValidator notificationValidator;
+  @Mock LifecycleValidationService lifecycleValidationService;
   @Mock NotificationFhirService notificationFhirService;
   @Mock RoutingService routingService;
   @Mock PseudoService pseudoService;
@@ -210,7 +212,7 @@ class ProcessorTest {
     service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN, Set.of());
 
     // THEN
-    verify(notificationValidator).validateLifecycle(notification);
+    verify(lifecycleValidationService).validateLifecycle(notification);
     verify(pseudoService).createAndStorePseudonymAndAddToNotification(notification);
     verify(contextEnrichmentService).enrichBundleWithContextInformation(notification, TOKEN);
     verify(notificationStorageService)
@@ -225,6 +227,7 @@ class ProcessorTest {
   private Processor createProcessor(final boolean isPermissionCheckEnabled) {
     return new Processor(
         notificationValidator,
+        lifecycleValidationService,
         notificationFhirService,
         routingService,
         notificationStorageService,
@@ -382,7 +385,7 @@ class ProcessorTest {
     service.execute(FHIR_NOTIFICATION, contentType, REQUEST_ID, SENDER, false, "", TOKEN, Set.of());
 
     // THEN
-    verify(notificationValidator).validateLifecycle(notification);
+    verify(lifecycleValidationService).validateLifecycle(notification);
     verify(pseudoService).createAndStorePseudonymAndAddToNotification(notification);
     verify(contextEnrichmentService).enrichBundleWithContextInformation(notification, TOKEN);
     verify(notificationStorageService)

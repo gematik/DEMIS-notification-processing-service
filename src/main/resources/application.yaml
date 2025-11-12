@@ -22,7 +22,7 @@ spring:
 # set base properties
 base:
   errorhandler:
-    enabled: false
+    enabled: true
   feign:
     extension:
       enabled: true
@@ -32,6 +32,17 @@ base:
   meter:
     aspect:
       enabled: true
+  fhir:
+    enabled: true
+    error-as-operation-outcome: true
+    operation-outcome:
+      profile: "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationResponse"
+      issue-threshold: ${nps.outcome-issue-threshold}
+    response:
+      content-type-value-legacy-logic: true
+  error:
+    sender:
+      log: true
 
 info:
   app:

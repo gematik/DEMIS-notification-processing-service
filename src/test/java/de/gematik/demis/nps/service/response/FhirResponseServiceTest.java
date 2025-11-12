@@ -27,45 +27,25 @@ package de.gematik.demis.nps.service.response;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
-import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.test.TestUtil;
-import de.gematik.demis.service.base.error.rest.api.ErrorDTO;
-import java.time.LocalDateTime;
+import de.gematik.demis.service.base.fhir.FhirSupportAutoConfiguration;
+import de.gematik.demis.service.base.fhir.outcome.FhirOperationOutcomeProperties;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueType;
 import org.hl7.fhir.r4.model.Parameters;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
+@SpringBootTest(classes = FhirResponseService.class)
+@ImportAutoConfiguration(FhirSupportAutoConfiguration.class)
 class FhirResponseServiceTest {
-
-  private static final String EXPECTED_ERROR_RESPONSE =
-"""
-{
-  "resourceType" : "OperationOutcome",
-  "meta" : {
-    "profile" : [ "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationResponse" ]
-  },
-  "text" : {
-    "status" : "generated",
-    "div" : "<div xmlns=\\"http://www.w3.org/1999/xhtml\\"></div>"
-  },
-  "issue" : [ {
-    "severity" : "error",
-    "code" : "processing",
-    "details" : {
-      "coding" : [ {
-        "code" : "VAL"
-      } ]
-    },
-    "diagnostics" : "Detail text",
-    "location" : [ "my-id" ]
-  } ]
-}
-""";
 
   private static final String EXPECTED_SUCCESS_RESPONSE =
 """
@@ -107,49 +87,11 @@ class FhirResponseServiceTest {
 }
 """;
 
-  private FhirResponseService underTest;
-
-  private void setup(final IssueSeverity outcomeIssueThreshold) {
-    final NpsConfigProperties config =
-        NpsConfigProperties.builder().outcomeIssueThreshold(outcomeIssueThreshold).build();
-    underTest = new FhirResponseService(config);
-  }
-
-  @Test
-  void responseForError() {
-    final LocalDateTime timestamp = LocalDateTime.of(2023, 12, 28, 8, 59);
-    final ErrorDTO errorDTO = new ErrorDTO("my-id", 422, timestamp, "VAL", "Detail text", null);
-
-    setup(IssueSeverity.WARNING);
-    final OperationOutcome result = underTest.error(errorDTO, null);
-
-    assertThat(result).isNotNull();
-    assertThat(TestUtil.fhirResourceToJson(result))
-        .isEqualToIgnoringWhitespace(EXPECTED_ERROR_RESPONSE);
-  }
-
-  @Test
-  void responseForErrorWithOutcome() {
-    final LocalDateTime timestamp = LocalDateTime.of(2023, 12, 28, 8, 59);
-    final ErrorDTO errorDTO = new ErrorDTO("my-id", 422, timestamp, "VAL", "Detail text", null);
-
-    final var outcome = new OperationOutcome();
-    outcome.addIssue().setSeverity(IssueSeverity.WARNING);
-    outcome.addIssue().setSeverity(IssueSeverity.ERROR);
-
-    setup(IssueSeverity.ERROR);
-    final OperationOutcome result = underTest.error(errorDTO, outcome);
-
-    assertThat(result).isNotNull();
-    assertThat(result.getIssue())
-        .isNotNull()
-        .hasSize(2)
-        .allMatch(issue -> issue.getSeverity() == IssueSeverity.ERROR);
-  }
+  @Autowired private FhirResponseService underTest;
+  @MockitoSpyBean FhirOperationOutcomeProperties operationOutcomeProperties;
 
   @Test
   void responseForSuccess() {
-    setup(IssueSeverity.WARNING);
     final Parameters result = executeSuccessResponse();
 
     assertThat(result).isNotNull();
@@ -158,8 +100,8 @@ class FhirResponseServiceTest {
   }
 
   @Test
-  void responseForSuccess_IssueThreshold() {
-    setup(IssueSeverity.ERROR);
+  void responseForSuccess_IssueThreshold_Error() {
+    when(operationOutcomeProperties.issueThreshold()).thenReturn(IssueSeverity.ERROR);
     final Parameters result = executeSuccessResponse();
 
     assertThat(result).isNotNull();

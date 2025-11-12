@@ -33,13 +33,13 @@ import static org.springframework.http.MediaType.APPLICATION_XML_VALUE;
 
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.service.Processor;
-import de.gematik.demis.nps.service.response.FhirConverter;
+import de.gematik.demis.service.base.fhir.response.FhirResponseConverter;
 import jakarta.validation.constraints.NotBlank;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Parameters;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,19 +50,14 @@ import org.springframework.web.context.request.WebRequest;
 
 @RestController
 @Slf4j
+@RequiredArgsConstructor
 public class NotificationController {
 
   public static final String HEADER_REQUEST_ID = "X-Request-ID";
   public static final String HEADER_SENDER = "x-sender";
 
   private final Processor processor;
-  private final FhirConverter fhirConverter;
-
-  @Autowired
-  public NotificationController(final Processor processor, final FhirConverter fhirConverter) {
-    this.processor = processor;
-    this.fhirConverter = fhirConverter;
-  }
+  private final FhirResponseConverter fhirConverter;
 
   @PostMapping(
       path = "${nps.context-path}$process-notification",
@@ -107,6 +102,6 @@ public class NotificationController {
             testUserProps.testUserRecipient(),
             authorization,
             token.roles());
-    return fhirConverter.setResponseContent(ResponseEntity.ok(), response, request);
+    return fhirConverter.buildResponse(ResponseEntity.ok(), response, request);
   }
 }

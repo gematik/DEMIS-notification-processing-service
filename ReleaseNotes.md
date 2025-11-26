@@ -1,10 +1,14 @@
-<img align="right" width="250" height="47" src="media/Gematik_Logo_Flag.png" alt="gematik GmbH Logo"/> <br/> 
+<div style="text-align:right"><img src="media/Gematik_Logo_Flag_small.png" alt="gematik GmbH Logo"/> <br/> </div>
 
 # Release Notification Processing Service
 
+## 2.7.2
+- remove feature flag FEATURE_FLAG_LV_DISEASE
+- add http://fhir.de/StructureDefinition/gender-amtlich-de to whitelist for notification cleaning
+
 ## 2.7.1
 - bump spring parent to 2.14.2
-- add additional info to error message for an validation error in lvs processing
+- add additional info to error message for a validation error in lvs processing
 - error id in operation-outcome moved from location to diagnostics (FEATURE_FLAG_MOVE_ERROR_ID_TO_DIAGNOSTICS)
 - add validation of notificationId to be UUID, before sending request to store notification to DLS, skip storing if invalid
 
@@ -83,7 +87,7 @@
 
 - lift test user configuration up to controller
 - prepare new test user configuration mechanism based on HTTP headers
-- setting new ressources in helm chart
+- setting new resources in helm chart
 - setting new timeouts and retries in helm chart
 
 ## 2.0.1
@@ -108,7 +112,7 @@
 
 - First official GitHub-Release
 - Connecting NPS and Certificate-Update-Service (CUS)
-- Activation of Context-Enrichtment-Service
+- Activation of Context-Enrichment-Service
 - Enabling of §7.4 notifications
 - Dependency-Updates (CVEs et al.)
 - Update Base-Image to OSADL

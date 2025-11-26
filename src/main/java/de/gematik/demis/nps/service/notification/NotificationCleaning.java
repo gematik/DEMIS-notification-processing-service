@@ -69,7 +69,8 @@ class NotificationCleaning {
           EXTENSION_URL_HUMANNAME_OWN_PREFIX,
           EXTENSION_URL_HUMANNAME_PREFIX,
           EXTENSION_URL_HOSPITALIZATION_NOTE,
-          EXTENSION_URL_HOSPITALIZATION_REGION);
+          EXTENSION_URL_HOSPITALIZATION_REGION,
+          EXTENSION_URL_GENDER);
   private final NotificationUpdateService updateService;
 
   /**

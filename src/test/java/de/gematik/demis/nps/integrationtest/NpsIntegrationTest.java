@@ -101,7 +101,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     useMainMethod = UseMainMethod.ALWAYS,
     properties = {
       "feature.flag.notification_pre_check=true",
-      "feature.flag.lv_disease=true",
       "feature.flag.move-error-id-to-diagnostics=true"
     })
 @AutoConfigureWireMock(port = 0)

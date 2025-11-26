@@ -28,7 +28,10 @@ package de.gematik.demis.nps.base.util;
 
 import java.util.UUID;
 
-public class UUIDValidator {
+public final class UUIDValidator {
+
+  private UUIDValidator() {}
+
   public static boolean isValidUUID(final String notificationId) {
     try {
       UUID.fromString(notificationId);

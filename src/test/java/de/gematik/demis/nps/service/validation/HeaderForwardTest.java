@@ -67,7 +67,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
-      "feature.flag.lv_disease=true",
       "feature.flag.new_api_endpoints=true"
     })
 @AutoConfigureWireMock(port = 0)

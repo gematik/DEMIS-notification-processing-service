@@ -39,7 +39,6 @@ deploymentLabels: {}
 # Environment Variables to be defined
 customEnvVars:
   FEATURE_FLAG_NOTIFICATION_PRE_CHECK: "false"
-  FEATURE_FLAG_LV_DISEASE: "false"
   FEATURE_FLAG_RELAXED_VALIDATION: "false"
   FEATURE_FLAG_NOTIFICATIONS_7_3: "false"
   FEATURE_FLAG_TUBERCULOSIS_ROUTING_ENABLED: "false"

@@ -39,10 +39,10 @@ import de.gematik.demis.service.base.error.ServiceCallException;
 import feign.Response;
 import feign.codec.Decoder;
 import feign.codec.StringDecoder;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.jena.sparql.function.library.leviathan.log;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -57,7 +57,6 @@ public class LifecycleValidationService {
   private final Decoder decoder = new StringDecoder();
   private final FhirContext fhirContext;
   private final FeatureFlagsConfigProperties featureFlags;
-  private boolean lvDiseaseActivated;
 
   public void validateLifecycle(final Notification notification) {
     if (notification.getType() == NotificationType.LABORATORY) {
@@ -68,21 +67,13 @@ public class LifecycleValidationService {
     }
   }
 
-  @PostConstruct
-  public void init() {
-    lvDiseaseActivated = featureFlags.isEnabled("lv_disease");
-  }
-
   private void validateDiseaseLifecycle(Bundle bundle) {
-    if (lvDiseaseActivated) {
-      final String fhirAsJson = fhirResourceToJson(bundle);
-      try (final Response response = lifecycleValidationServiceClient.validateDisease(fhirAsJson)) {
-        if (isStatusSuccessful(response.status())) {
-          log.debug("Disease Lifecycle of notification successfully validated.");
-        } else {
-          handleNotSuccessfulStatus(
-              response, "Disease Lifecycle of notification validation failed.");
-        }
+    final String fhirAsJson = fhirResourceToJson(bundle);
+    try (final Response response = lifecycleValidationServiceClient.validateDisease(fhirAsJson)) {
+      if (isStatusSuccessful(response.status())) {
+        log.debug("Disease Lifecycle of notification successfully validated.");
+      } else {
+        handleNotSuccessfulStatus(response, "Disease Lifecycle of notification validation failed.");
       }
     }
   }

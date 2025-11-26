@@ -86,7 +86,6 @@ nps:
 feature:
   flag:
     notification_pre_check: false
-    lv_disease: false
     notifications.7_3: false
     relaxed_validation: false
     tuberculosis.routing.enabled: false

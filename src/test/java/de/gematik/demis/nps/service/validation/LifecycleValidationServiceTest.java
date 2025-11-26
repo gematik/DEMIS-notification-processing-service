@@ -55,7 +55,6 @@ import de.gematik.demis.service.base.error.ServiceCallException;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -70,7 +69,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
-      "feature.flag.lv_disease=true",
       "feature.flag.new_api_endpoints=false"
     })
 @AutoConfigureWireMock(port = 0)
@@ -118,11 +116,6 @@ class LifecycleValidationServiceTest {
   @Nested
   @DisplayName("Lifecycle validation for laboratory")
   class LaboratoryLifecycleValidationTest {
-
-    @BeforeEach
-    void beforeEach() {
-      underTest.init();
-    }
 
     @Test
     void lifeCycleValidationForLaboratoryOkay() {
@@ -183,11 +176,6 @@ class LifecycleValidationServiceTest {
   @Nested
   @DisplayName("Lifecycle validation for disease")
   class DiseaseLifecycleValidationTest {
-
-    @BeforeEach
-    void beforeEach() {
-      underTest.init();
-    }
 
     @Test
     void lifeCycleValidationForDiseaseOkay() {

@@ -96,4 +96,7 @@ public class DemisExtensions {
 
   public static final String EXTENSION_URL_HUMANNAME_PREFIX =
       "http://hl7.org/fhir/StructureDefinition/iso21090-EN-qualifier";
+
+  public static final String EXTENSION_URL_GENDER =
+      "http://fhir.de/StructureDefinition/gender-amtlich-de";
 }

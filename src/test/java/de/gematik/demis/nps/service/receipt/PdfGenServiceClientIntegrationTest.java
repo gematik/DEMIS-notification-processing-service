@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service.receipt;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -33,9 +34,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
-import static org.springframework.http.HttpHeaders.ACCEPT;
-import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import de.gematik.demis.nps.error.ServiceCallErrorCode;
@@ -46,7 +45,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpHeaders;
 
-@SpringBootTest(properties = "nps.client.pdfgen=http://localhost:${wiremock.server.port}")
+@SpringBootTest(
+    properties = {
+      "nps.client.pdfgen=http://localhost:${wiremock.server.port}",
+      "feature.flag.nbl.for.notByName.enabled=true"
+    })
 @AutoConfigureWireMock(port = 0)
 class PdfGenServiceClientIntegrationTest {
   private static final String ENDPOINT_LABORATORY = "/laboratoryReport";
@@ -65,8 +68,8 @@ class PdfGenServiceClientIntegrationTest {
       final String endpoint, final ResponseDefinitionBuilder responseDefBuilder) {
     stubFor(
         post(endpoint)
-            .withHeader(CONTENT_TYPE, equalTo("application/json"))
-            .withHeader(ACCEPT, equalTo("application/pdf"))
+            .withHeader(HttpHeaders.CONTENT_TYPE, equalTo("application/json"))
+            .withHeader(HttpHeaders.ACCEPT, equalTo("application/pdf"))
             .withRequestBody(equalToJson(REQUEST_BODY))
             .willReturn(responseDefBuilder));
   }
@@ -93,27 +96,19 @@ class PdfGenServiceClientIntegrationTest {
   void error_laboratory() {
     setupRemoteService(ENDPOINT_LABORATORY, serverError());
 
-    final ServiceCallException ex =
-        catchThrowableOfType(
-            () -> underTest.createLaboratoryPdfFromJson(REQUEST_BODY), ServiceCallException.class);
-
-    assertThat(ex)
-        .isNotNull()
-        .returns(500, ServiceCallException::getHttpStatus)
-        .returns(ServiceCallErrorCode.PDF, ServiceCallException::getErrorCode);
+    assertThatThrownBy(() -> underTest.createLaboratoryPdfFromJson(REQUEST_BODY))
+        .isInstanceOf(ServiceCallException.class)
+        .hasFieldOrPropertyWithValue("httpStatus", 500)
+        .hasFieldOrPropertyWithValue("errorCode", ServiceCallErrorCode.PDF);
   }
 
   @Test
   void error_disease() {
     setupRemoteService(ENDPOINT_DISEASE, serverError());
 
-    final ServiceCallException ex =
-        catchThrowableOfType(
-            () -> underTest.createDiseasePdfFromJson(REQUEST_BODY), ServiceCallException.class);
-
-    assertThat(ex)
-        .isNotNull()
-        .returns(500, ServiceCallException::getHttpStatus)
-        .returns(ServiceCallErrorCode.PDF, ServiceCallException::getErrorCode);
+    assertThatThrownBy(() -> underTest.createDiseasePdfFromJson(REQUEST_BODY))
+        .isInstanceOf(ServiceCallException.class)
+        .hasFieldOrPropertyWithValue("httpStatus", 500)
+        .hasFieldOrPropertyWithValue("errorCode", ServiceCallErrorCode.PDF);
   }
 }

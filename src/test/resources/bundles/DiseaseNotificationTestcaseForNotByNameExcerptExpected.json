@@ -11,7 +11,7 @@
   },
   "identifier": {
     "system": "https://demis.rki.de/fhir/NamingSystem/NotificationBundleId",
-    "value": "u4-a1234-b9876"
+    "value": "53"
   },
   "type": "document",
   "timestamp": "2022-03-10T14:57:51.377+01:00",
@@ -43,7 +43,7 @@
         } ]
       } ],
       "subject": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "date": "2022-03-10T14:57:52+01:00",
       "author": [ {
@@ -89,69 +89,18 @@
       } ]
     }
   }, {
-    "fullUrl": "https://demis.rki.de/fhir/Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e",
+    "fullUrl": "https://demis.rki.de/fhir/Patient/50",
     "resource": {
       "resourceType": "Patient",
-      "id": "458a9cb4-1e94-424e-bfd2-64cbd3efa41e",
+      "id": "50",
       "meta": {
         "profile": [ "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonNotByName" ]
       },
       "gender": "female",
-      "birthDate": "1999-06-01",
+      "birthDate": "1999-06",
       "address": [ {
         "postalCode": "123",
         "country": "20422"
-      } ]
-    }
-  }, {
-    "fullUrl": "https://demis.rki.de/fhir/Organization/0ec30241-eabc-4529-9060-2a93f2732cd0",
-    "resource": {
-      "resourceType": "Organization",
-      "id": "0ec30241-eabc-4529-9060-2a93f2732cd0",
-      "meta": {
-        "profile": [ "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonFacility" ]
-      },
-      "identifier": [ {
-        "system": "https://fhir.kbv.de/NamingSystem/KBV_NS_Base_BSNR",
-        "value": "123456789"
-      } ],
-      "type": [ {
-        "coding": [ {
-          "system": "https://demis.rki.de/fhir/CodeSystem/organizationType",
-          "code": "hospital",
-          "display": "Krankenhaus"
-        } ]
-      } ],
-      "name": "TEST Organisation",
-      "telecom": [ {
-        "system": "phone",
-        "value": "01234567"
-      }, {
-        "system": "email",
-        "value": "anna@ansprechpartner.de"
-      } ],
-      "address": [ {
-        "line": [ "Krankenhausstraße 1" ],
-        "_line": [ {
-          "extension": [ {
-            "url": "http://hl7.org/fhir/StructureDefinition/iso21090-ADXP-streetName",
-            "valueString": "Krankenhausstraße"
-          }, {
-            "url": "http://hl7.org/fhir/StructureDefinition/iso21090-ADXP-houseNumber",
-            "valueString": "1"
-          } ]
-        } ],
-        "city": "Buchhorst",
-        "postalCode": "21481",
-        "country": "20422"
-      } ],
-      "contact": [ {
-        "name": {
-          "text": "Frau Dr. Anna Beate Carolin Ansprechpartner",
-          "family": "Ansprechpartner",
-          "given": [ "Anna", "Beate", "Carolin" ],
-          "prefix": [ "Dr." ]
-        }
       } ]
     }
   }, {
@@ -176,7 +125,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "onsetDateTime": "2022-01-01",
       "recordedDate": "2022-01-02",
@@ -460,7 +409,7 @@
         "display": "inpatient encounter"
       },
       "subject": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "period": {
         "start": "2022-01-05T00:00:00+01:00"
@@ -491,7 +440,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "period": {
         "start": "2022-01-07T00:00:00+01:00"
@@ -511,7 +460,7 @@
       "questionnaire": "https://demis.rki.de/fhir/Questionnaire/DiseaseQuestionsCommon",
       "status": "completed",
       "subject": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "item": [ {
         "linkId": "isDead",
@@ -693,7 +642,7 @@
         } ]
       },
       "patient": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "occurrenceDateTime": "2021",
       "note": [ {
@@ -717,7 +666,7 @@
         } ]
       },
       "patient": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "occurrenceDateTime": "2021-07",
       "note": [ {
@@ -741,7 +690,7 @@
         } ]
       },
       "patient": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "occurrenceDateTime": "2021-11-30",
       "note": [ {
@@ -765,7 +714,7 @@
         } ]
       },
       "patient": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "occurrenceDateTime": "2021-12-25",
       "note": [ {
@@ -783,7 +732,7 @@
       "questionnaire": "https://demis.rki.de/fhir/Questionnaire/DiseaseQuestionsCVDD",
       "status": "completed",
       "subject": {
-        "reference": "Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e"
+        "reference": "Patient/50"
       },
       "item": [ {
         "linkId": "infectionSource",

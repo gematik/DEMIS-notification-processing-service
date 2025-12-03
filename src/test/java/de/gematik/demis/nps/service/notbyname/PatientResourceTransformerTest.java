@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service.notbyname;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -30,7 +31,7 @@ import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static de.gematik.demis.nps.test.TestUtil.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonNominalDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.technicals.HumanNameDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.technicals.TelecomDataBuilder;
 import java.time.LocalDate;
@@ -38,6 +39,7 @@ import java.util.List;
 import org.hl7.fhir.r4.model.Address;
 import org.hl7.fhir.r4.model.Address.AddressUse;
 import org.hl7.fhir.r4.model.BooleanType;
+import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.Enumerations;
 import org.hl7.fhir.r4.model.Patient;
 import org.junit.jupiter.api.Test;
@@ -77,9 +79,9 @@ class PatientResourceTransformerTest {
   void transformNotifiedPerson() {
     final Address address = createAddress();
     final Patient patient =
-        new NotifiedPersonDataBuilder()
+        new NotifiedPersonNominalDataBuilder()
             .setGender(Enumerations.AdministrativeGender.MALE)
-            .setBirthdate(toDate(LocalDate.of(1979, 5, 23)))
+            .setBirthdate(new DateType(toDate(LocalDate.of(1979, 5, 23))))
             .setHumanName(
                 new HumanNameDataBuilder()
                     .setFamilyName("Mustermann")

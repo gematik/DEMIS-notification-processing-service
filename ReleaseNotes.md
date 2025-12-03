@@ -5,6 +5,9 @@
 ## 2.7.2
 - remove feature flag FEATURE_FLAG_LV_DISEASE
 - add http://fhir.de/StructureDefinition/gender-amtlich-de to whitelist for notification cleaning
+- add new excerpt creation through notification builder library.
+- bump spring parent to 2.14.7
+- add feature flag FEATURE_FLAG_NBL_FOR_NOTBYNAME_ENABLED
 
 ## 2.7.1
 - bump spring parent to 2.14.2

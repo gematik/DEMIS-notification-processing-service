@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service.validation;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -57,8 +58,6 @@ public class RKIBundleValidator {
       return VALID_RESULT;
     }
 
-    // After DEMIS-2803
-    //    final Optional<Patient> patient = Bundles.subjectFrom(bundle);
     final Optional<Patient> patient = BundleQueries.findFirstResource(bundle, Patient.class);
     if (patient.isEmpty()) {
       return VALID_RESULT;

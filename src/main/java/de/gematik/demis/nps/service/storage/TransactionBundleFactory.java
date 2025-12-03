@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service.storage;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -40,30 +41,6 @@ class TransactionBundleFactory {
 
   public static final String BINARY = "Binary";
   public static final String BUNDLE = "Bundle";
-
-  /**
-   * Creates a transaction bundle, adding the resources as parameters
-   *
-   * @param encryptedBinaryNotification the full encrypted notification for the health office
-   *     (Gesundheitsamt)
-   * @param encryptedSubsidiaryNotification the full encrypted notification for the health office
-   *     subsidiary (Gesundheitsamt Nebenstelle)
-   * @param anonymizedNotification anonymized notification
-   * @return transaction bundle, wrapping {@code encryptedBinaryNotification}, {@code
-   *     encryptedSubsidiaryNotification} and {@code anonymizedNotification}.
-   */
-  @Deprecated
-  public Bundle createTransactionBundle(
-      final Binary encryptedBinaryNotification,
-      final Binary encryptedSubsidiaryNotification,
-      final Bundle anonymizedNotification) {
-    final Bundle transactionBundle = new Bundle();
-    transactionBundle.setType(Bundle.BundleType.TRANSACTION);
-    addEntry(transactionBundle, anonymizedNotification, BUNDLE);
-    addEntry(transactionBundle, encryptedBinaryNotification, BINARY);
-    addEntry(transactionBundle, encryptedSubsidiaryNotification, BINARY);
-    return transactionBundle;
-  }
 
   /**
    * creates a transaction bundle, adding the resources as parameters

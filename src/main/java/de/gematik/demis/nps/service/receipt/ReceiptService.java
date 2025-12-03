@@ -13,7 +13,8 @@ package de.gematik.demis.nps.service.receipt;
  * You find a copy of the Licence in the "Licence" file or at
  * https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the Licence is distributed on an "AS IS" basis,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
  * In case of changes by gematik find details in the "Readme" file.
  *
@@ -21,7 +22,8 @@ package de.gematik.demis.nps.service.receipt;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 

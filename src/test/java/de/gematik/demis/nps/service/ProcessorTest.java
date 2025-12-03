@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -50,7 +51,7 @@ import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
-import de.gematik.demis.nps.service.notbyname.NotByNameService;
+import de.gematik.demis.nps.service.notbyname.NotByNameRegressionService;
 import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
@@ -106,7 +107,7 @@ class ProcessorTest {
   @Mock NotificationFhirService notificationFhirService;
   @Mock RoutingService routingService;
   @Mock PseudoService pseudoService;
-  @Mock NotByNameService notByNameCreator;
+  @Mock NotByNameRegressionService notByNameCreator;
   @Mock EncryptionService encryptionService;
   @Mock NotificationStorageService notificationStorageService;
   @Mock ReceiptService receiptService;

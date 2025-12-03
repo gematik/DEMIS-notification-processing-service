@@ -22,7 +22,8 @@ package de.gematik.demis.nps.base.util;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -38,6 +39,8 @@ import java.util.Set;
  * Collections#unmodifiableSequencedSet(SequencedSet)};
  */
 public class SequencedSets {
+
+  private SequencedSets() {}
 
   public static <E> SequencedSet<E> of() {
     return Collections.emptyNavigableSet();

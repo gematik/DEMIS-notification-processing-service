@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service.notbyname;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -48,7 +49,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class NotByNameService {
+public class NotByNameRegressionService {
 
   private static final String NOT_BY_NAME_NOTIFICATION_TITLE_POSTFIX = " (nichtnamentlich)";
 

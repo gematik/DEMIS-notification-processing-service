@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.base.util;
+package de.gematik.demis.nps.service.notbyname;
 
 /*-
  * #%L
@@ -27,12 +27,24 @@ package de.gematik.demis.nps.base.util;
  * #L%
  */
 
-import java.util.Date;
-import org.springframework.stereotype.Service;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.disease.NotificationBundleDiseaseDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
+import de.gematik.demis.nps.service.notification.Notification;
+import lombok.extern.slf4j.Slf4j;
+import org.hl7.fhir.r4.model.Bundle;
 
-@Service
-public class TimeProvider {
-  public Date now() {
-    return new Date();
+@Slf4j
+public class NotByNameCreator {
+
+  private NotByNameCreator() {}
+
+  public static Bundle createNotByNameBundle(final Notification notification) {
+    return switch (notification.getType()) {
+      case LABORATORY ->
+          NotificationBundleLaboratoryDataBuilder.createNonNominalExcerpt(notification.getBundle());
+
+      case DISEASE ->
+          NotificationBundleDiseaseDataBuilder.createNonNominalExcerpt(notification.getBundle());
+    };
   }
 }

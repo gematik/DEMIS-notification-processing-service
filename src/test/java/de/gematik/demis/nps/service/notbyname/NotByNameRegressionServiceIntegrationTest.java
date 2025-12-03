@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service.notbyname;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -31,6 +32,7 @@ import static de.gematik.demis.nps.test.TestData.DISEASE_BUNDLE_RESOURCE;
 import static de.gematik.demis.nps.test.TestData.LABORATORY_BUNDLE_NOTBYNAME_RESOURCE;
 import static de.gematik.demis.nps.test.TestData.LABORATORY_BUNDLE_RESOURCE;
 import static de.gematik.demis.nps.test.TestData.readResourceAsString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import ca.uhn.fhir.context.FhirContext;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
@@ -46,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.groups.Tuple;
 import org.hl7.fhir.r4.model.Bundle;
@@ -58,16 +59,20 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
-    classes = {NotByNameService.class, PatientResourceTransformer.class, FhirContext.class},
+    classes = {
+      NotByNameRegressionService.class,
+      PatientResourceTransformer.class,
+      FhirContext.class
+    },
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
-class NotByNameServiceIntegrationTest {
+class NotByNameRegressionServiceIntegrationTest {
 
-  @MockBean UuidGenerator uuidGenerator;
+  @MockitoBean UuidGenerator uuidGenerator;
 
-  @Autowired NotByNameService underTest;
+  @Autowired NotByNameRegressionService underTest;
 
   static Stream<Arguments> inputParams() {
     return Stream.of(
@@ -131,7 +136,7 @@ class NotByNameServiceIntegrationTest {
             .build();
     final Bundle result = underTest.createNotificationNotByName(notification);
 
-    Assertions.assertThat(result.getMeta().getTag())
+    assertThat(result.getMeta().getTag())
         .extracting(Coding::getSystem, Coding::getCode)
         .contains(Tuple.tuple("https://demis.rki.de/fhir/CodeSystem/TestUser", "testuser"));
   }

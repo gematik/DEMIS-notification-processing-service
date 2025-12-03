@@ -22,7 +22,8 @@ package de.gematik.demis.nps.service.processing;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
@@ -37,7 +38,8 @@ import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
-import de.gematik.demis.nps.service.notbyname.NotByNameService;
+import de.gematik.demis.nps.service.notbyname.NotByNameCreator;
+import de.gematik.demis.nps.service.notbyname.NotByNameRegressionService;
 import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
@@ -66,20 +68,24 @@ public class ReceiverActionService {
   private final RKIBundleValidator rkiBundleValidator;
   private final NpsConfigProperties configProperties;
   private final EncryptionService encryptionService;
-  private final NotByNameService notByNameService;
+  private final NotByNameRegressionService notByNameRegressionService;
   private final boolean isProcessing73Enabled;
+  private final boolean isNblForNotByNameCreationEnabled;
 
   public ReceiverActionService(
       final RKIBundleValidator rkiBundleValidator,
       final NpsConfigProperties configProperties,
       final EncryptionService encryptionService,
-      final NotByNameService notByNameService,
-      @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled) {
+      final NotByNameRegressionService notByNameRegressionService,
+      @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
+      @Value("${feature.flag.nbl.for.notByName.enabled}")
+          boolean isNblForNotByNameCreationEnabled) {
     this.rkiBundleValidator = rkiBundleValidator;
     this.configProperties = configProperties;
     this.encryptionService = encryptionService;
-    this.notByNameService = notByNameService;
+    this.notByNameRegressionService = notByNameRegressionService;
     this.isProcessing73Enabled = isProcessing73Enabled;
+    this.isNblForNotByNameCreationEnabled = isNblForNotByNameCreationEnabled;
   }
 
   /** Attempt to cast the given Resource to {@link Bundle} or return null if that fails */
@@ -243,12 +249,19 @@ public class ReceiverActionService {
           yield Optional.empty();
         }
 
-        yield Optional.of(notByNameService.createNotificationNotByName(notification));
+        yield Optional.ofNullable(switchBetweenNotByNameCreators(notification));
       }
       default ->
           throw new NpsServiceException(
               ErrorCode.NRS_PROCESSING_ERROR, "Unexpected notification category");
     };
+  }
+
+  private Bundle switchBetweenNotByNameCreators(Notification notification) {
+    if (isNblForNotByNameCreationEnabled) {
+      return NotByNameCreator.createNotByNameBundle(notification);
+    }
+    return notByNameRegressionService.createNotificationNotByName(notification);
   }
 
   /**

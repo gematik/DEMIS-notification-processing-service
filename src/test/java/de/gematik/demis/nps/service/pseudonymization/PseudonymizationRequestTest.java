@@ -22,13 +22,14 @@ package de.gematik.demis.nps.service.pseudonymization;
  *
  * *******
  *
- * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ * For additional notes and disclaimer from gematik and in case of changes by gematik,
+ * find details in the "Readme" file.
  * #L%
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonDataBuilder;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonNominalDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.technicals.HumanNameDataBuilder;
@@ -38,6 +39,7 @@ import de.gematik.demis.nps.test.RoutingDataUtil;
 import java.util.List;
 import java.util.stream.Stream;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Patient;
@@ -55,32 +57,35 @@ class PseudonymizationRequestTest {
     return Stream.of(
         Arguments.of(
             // Only birthday is set
-            new NotifiedPersonDataBuilder().setDefaults().setBirthdate("01.01.1994").build()),
+            new NotifiedPersonNominalDataBuilder()
+                .setDefault()
+                .setBirthdate(new DateType(1994, 0, 1))
+                .build()),
         // Human name but nothing relevant is set
         Arguments.of(
-            new NotifiedPersonDataBuilder()
-                .setDefaults()
+            new NotifiedPersonNominalDataBuilder()
+                .setDefault()
                 .setHumanName(new HumanNameDataBuilder().setText("Some irrelevant text").build())
                 .build()),
         // Only firstname is set
         Arguments.of(
-            new NotifiedPersonDataBuilder()
-                .setDefaults()
+            new NotifiedPersonNominalDataBuilder()
+                .setDefault()
                 .setHumanName(new HumanNameDataBuilder().addGivenName("FirstName").build())
                 .build()),
         // Only lastname is set
         Arguments.of(
-            new NotifiedPersonDataBuilder()
-                .setDefaults()
+            new NotifiedPersonNominalDataBuilder()
+                .setDefault()
                 .setHumanName(new HumanNameDataBuilder().setFamilyName("FamilyName").build())
                 .build()),
         // Nothing is set
-        Arguments.of(new NotifiedPersonDataBuilder().setDefaults().build()),
+        Arguments.of(new NotifiedPersonNominalDataBuilder().setDefault().build()),
         // Only lastname & birthday
         Arguments.of(
-            new NotifiedPersonDataBuilder()
-                .setDefaults()
-                .setBirthdate("01.01.1994")
+            new NotifiedPersonNominalDataBuilder()
+                .setDefault()
+                .setBirthdate(new DateType(1994, 0, 1))
                 .setHumanName(new HumanNameDataBuilder().setFamilyName("FamilyName").build())
                 .build()));
   }

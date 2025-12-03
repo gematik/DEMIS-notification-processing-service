@@ -93,3 +93,4 @@ feature:
     permission.check.enabled: false
     custodian.enabled: false
     follow.up.notification: false
+    nbl.for.notByName.enabled: false

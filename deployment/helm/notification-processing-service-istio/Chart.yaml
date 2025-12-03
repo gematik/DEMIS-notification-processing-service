@@ -2,5 +2,5 @@ apiVersion: v2
 name: notification-processing-service-istio
 description: DEMIS notification-processing-service Istio Configuration
 type: application
-version: 2.7.1
-appVersion: "2.7.1"
+version: 2.7.2
+appVersion: "2.7.2"

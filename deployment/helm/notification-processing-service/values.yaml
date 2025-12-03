@@ -31,10 +31,10 @@ config:
 # E.g.
 # customLabels:
 #   my-label: my-label-value
-customLabels: {}
+customLabels: { }
 
 # Extra labels for deployments
-deploymentLabels: {}
+deploymentLabels: { }
 
 # Environment Variables to be defined
 customEnvVars:
@@ -47,6 +47,7 @@ customEnvVars:
   FEATURE_FLAG_CUSTODIAN_ENABLED: "false"
   FEATURE_FLAG_FOLLOW_UP_NOTIFICATION: "false"
   FEATURE_FLAG_MOVE_ERROR_ID_TO_DIAGNOSTICS: "false"
+  FEATURE_FLAG_NBL_FOR_NOTBYNAME_ENABLED: "false"
   REDIS_HOST: "redis-cus.demis.svc.cluster.local"
   REDIS_PORT: "6379"
   REDIS_USER: "reader"
@@ -54,13 +55,13 @@ customEnvVars:
 # Define custom Container Entrypoint and Arguments (e.g. JVM Tuning)
 # If not given, the Entrypoint defined in Dockerfile will be used
 application:
-  entrypoint: ["java"]
-  parameters: ["-XX:ActiveProcessorCount=2", "-XX:MaxRAMPercentage=80.0", "-XX:+TieredCompilation", "-XX:+UseSerialGC", "-jar", "/app.jar"]
+  entrypoint: [ "java" ]
+  parameters: [ "-XX:ActiveProcessorCount=2", "-XX:MaxRAMPercentage=80.0", "-XX:+TieredCompilation", "-XX:+UseSerialGC", "-jar", "/app.jar" ]
 
 # The Pull Policy for the Image
 imagePullPolicy: IfNotPresent
 # Define Image Pull Secrets if using private registry
-imagePullSecrets: []
+imagePullSecrets: [ ]
 nameOverride: "notification-processing-service"
 fullnameOverride: "notification-processing-service"
 
@@ -68,13 +69,13 @@ serviceAccount:
   # Specifies whether a service account should be created
   create: true
   # Annotations to add to the service account
-  annotations: {}
+  annotations: { }
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
 # Annotations for Workload
-annotations: {}
+annotations: { }
 
 # Annotations for Pods
 podAnnotations:
@@ -117,7 +118,7 @@ securityContext:
   #Ability to remove and /or add Linux Capabilities
   capabilities:
     drop:
-    - all
+      - all
 
 service:
   type: ClusterIP
@@ -139,9 +140,9 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
-nodeSelector: {}
+nodeSelector: { }
 
-tolerations: []
+tolerations: [ ]
 
 istio:
   enable: false

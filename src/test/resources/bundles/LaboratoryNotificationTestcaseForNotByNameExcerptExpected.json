@@ -94,12 +94,36 @@
       "gender": "male",
       "birthDate": "2000-01",
       "address": [ {
+        "extension": [ {
+          "url": "https://demis.rki.de/fhir/StructureDefinition/AddressUse",
+          "valueCoding": {
+            "system": "https://demis.rki.de/fhir/CodeSystem/addressUse",
+            "code": "current",
+            "display": "Derzeitiger Aufenthaltsort"
+          }
+        } ],
         "postalCode": "225",
         "country": "DE"
       }, {
+        "extension": [ {
+          "url": "https://demis.rki.de/fhir/StructureDefinition/AddressUse",
+          "valueCoding": {
+            "system": "https://demis.rki.de/fhir/CodeSystem/addressUse",
+            "code": "ordinary",
+            "display": "Gewöhnlicher Aufenthaltsort"
+          }
+        } ],
         "postalCode": "371",
         "country": "DE"
       }, {
+        "extension": [ {
+          "url": "https://demis.rki.de/fhir/StructureDefinition/AddressUse",
+          "valueCoding": {
+            "system": "https://demis.rki.de/fhir/CodeSystem/addressUse",
+            "code": "primary",
+            "display": "Hauptwohnsitz"
+          }
+        } ],
         "postalCode": "214",
         "country": "DE"
       } ]

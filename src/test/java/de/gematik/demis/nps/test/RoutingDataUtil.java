@@ -4,7 +4,7 @@ package de.gematik.demis.nps.test;
  * #%L
  * notification-processing-service
  * %%
- * Copyright (C) 2025 gematik GmbH
+ * Copyright (C) 2025 - 2026 gematik GmbH
  * %%
  * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
  * European Commission – subsequent versions of the EUPL (the "Licence").
@@ -40,12 +40,7 @@ import javax.annotation.Nonnull;
 public class RoutingDataUtil {
   private RoutingDataUtil() {}
 
-  /**
-   * Return an empty RoutingData model with the responsible data
-   *
-   * @param responsible
-   * @return
-   */
+  /** Return an empty RoutingData model with the responsible data */
   @Nonnull
   public static RoutingData emptyFor(@Nonnull final String responsible) {
     return emptyFor(responsible, null);
@@ -76,5 +71,31 @@ public class RoutingDataUtil {
         responsible,
         Set.of(),
         custodian);
+  }
+
+  @Nonnull
+  public static RoutingData laboratoryExample() {
+    return new RoutingData(
+        NotificationType.LABORATORY,
+        NotificationCategory.P_7_1,
+        SequencedSets.of(),
+        List.of(),
+        Map.of(),
+        "1.",
+        Set.of(),
+        "custodian");
+  }
+
+  @Nonnull
+  public static RoutingData diseaseExample() {
+    return new RoutingData(
+        NotificationType.DISEASE,
+        NotificationCategory.P_6_1,
+        SequencedSets.of(),
+        List.of(),
+        Map.of(),
+        "1.",
+        Set.of(),
+        "custodian");
   }
 }

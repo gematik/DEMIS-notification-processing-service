@@ -4,7 +4,7 @@ package de.gematik.demis.nps.service.notbyname;
  * #%L
  * notification-processing-service
  * %%
- * Copyright (C) 2025 gematik GmbH
+ * Copyright (C) 2025 - 2026 gematik GmbH
  * %%
  * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
  * European Commission – subsequent versions of the EUPL (the "Licence").
@@ -29,6 +29,7 @@ package de.gematik.demis.nps.service.notbyname;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.disease.NotificationBundleDiseaseDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
+import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.service.notification.Notification;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Bundle;
@@ -39,6 +40,19 @@ public class NotByNameCreator {
   private NotByNameCreator() {}
 
   public static Bundle createNotByNameBundle(final Notification notification) {
+    Bundle excerptBundle = createExcerptBundle(notification);
+    // Add a tag, if the notification is sent by a test user
+    if (notification.isTestUser()) {
+      excerptBundle
+          .getMeta()
+          .addTag()
+          .setSystem(DemisSystems.TEST_USER_CODING_SYSTEM)
+          .setCode(DemisSystems.TEST_USER_CODE);
+    }
+    return excerptBundle;
+  }
+
+  private static Bundle createExcerptBundle(Notification notification) {
     return switch (notification.getType()) {
       case LABORATORY ->
           NotificationBundleLaboratoryDataBuilder.createNonNominalExcerpt(notification.getBundle());

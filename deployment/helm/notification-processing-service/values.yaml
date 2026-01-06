@@ -128,10 +128,10 @@ service:
 # Resources
 resources:
   limits:
-    memory: "650Mi"
+    memory: "1Gi"
   requests:
     cpu: "300m"
-    memory: "650Mi"
+    memory: "1Gi"
 
 autoscaling:
   enabled: false

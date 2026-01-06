@@ -4,7 +4,7 @@ package de.gematik.demis.nps.service.notbyname;
  * #%L
  * notification-processing-service
  * %%
- * Copyright (C) 2025 gematik GmbH
+ * Copyright (C) 2025 - 2026 gematik GmbH
  * %%
  * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
  * European Commission – subsequent versions of the EUPL (the "Licence").
@@ -29,9 +29,9 @@ package de.gematik.demis.nps.service.notbyname;
 
 import static org.apache.commons.lang3.StringUtils.truncate;
 
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.DemisConstants;
 import de.gematik.demis.nps.base.profile.DemisExtensions;
 import de.gematik.demis.nps.base.profile.DemisProfiles;
-import de.gematik.demis.nps.base.profile.DemisSystems;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -94,7 +94,7 @@ public class PatientResourceTransformer {
 
     newAddress.setCountry(oldAddress.getCountry());
 
-    var addressUse = oldAddress.getExtensionByUrl(DemisSystems.ADDRESS_USE_SYSTEM);
+    var addressUse = oldAddress.getExtensionByUrl(DemisConstants.STRUCTURE_DEFINITION_ADDRESS_USE);
     if (addressUse != null) {
       newAddress.addExtension(addressUse.copy());
     }

@@ -4,7 +4,7 @@ package de.gematik.demis.nps.service.processing;
  * #%L
  * notification-processing-service
  * %%
- * Copyright (C) 2025 gematik GmbH
+ * Copyright (C) 2025 - 2026 gematik GmbH
  * %%
  * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
  * European Commission – subsequent versions of the EUPL (the "Licence").
@@ -1043,6 +1043,20 @@ class ReceiverActionServiceTest {
       // since the old implementation does some things not that great we replace some parts of the
       // string as negotiated with RKI
       String excerptJson = iParser.encodeResourceToString(excerpt.get());
+      excerptJson =
+          excerptJson.replace(
+"""
+, {
+        "extension": [ {
+          "url": "https://demis.rki.de/fhir/StructureDefinition/AddressUse",
+          "valueCoding": {
+            "system": "https://demis.rki.de/fhir/CodeSystem/addressUse",
+            "code": "current",
+            "display": "Derzeitiger Aufenthaltsort"
+          }
+        } ]
+      }""",
+              "");
       String excerptRegressionJson = iParser.encodeResourceToString(excerptRegression.get());
       excerptRegressionJson =
           excerptRegressionJson

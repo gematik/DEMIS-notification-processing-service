@@ -99,6 +99,14 @@
       "gender": "female",
       "birthDate": "1999-06-01",
       "address": [ {
+        "extension": [ {
+          "url": "https://demis.rki.de/fhir/StructureDefinition/AddressUse",
+          "valueCoding": {
+            "system": "https://demis.rki.de/fhir/CodeSystem/addressUse",
+            "code": "primary",
+            "display": "Hauptwohnsitz"
+          }
+        } ],
         "postalCode": "123",
         "country": "20422"
       } ]

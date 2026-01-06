@@ -2,12 +2,24 @@
 
 # Release Notification Processing Service
 
-## 2.7.2
-- remove feature flag FEATURE_FLAG_LV_DISEASE
-- add http://fhir.de/StructureDefinition/gender-amtlich-de to whitelist for notification cleaning
+## 2.8.0
+- bumped spring parent to 2.14.10
+- added test user tag handling to new excerpt creation
+- increased standard memory resources to 1Gi in helm chart
+
+## 2.7.3
 - add new excerpt creation through notification builder library.
 - bump spring parent to 2.14.7
 - add feature flag FEATURE_FLAG_NBL_FOR_NOTBYNAME_ENABLED
+- corrected release notes
+
+## 2.7.2
+- remove feature flag FEATURE_FLAG_LV_DISEASE
+- add http://fhir.de/StructureDefinition/gender-amtlich-de to whitelist for notification cleaning
+
+## 2.7.2
+- remove feature flag FEATURE_FLAG_LV_DISEASE
+- add http://fhir.de/StructureDefinition/gender-amtlich-de to whitelist for notification cleaning
 
 ## 2.7.1
 - bump spring parent to 2.14.2

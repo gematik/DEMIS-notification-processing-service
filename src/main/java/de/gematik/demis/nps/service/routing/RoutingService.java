@@ -36,7 +36,6 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -45,16 +44,9 @@ import org.springframework.stereotype.Service;
 public class RoutingService {
 
   private final NotificationRoutingServiceClient client;
-  private final boolean isErrorRewritingEnabled;
 
-  public RoutingService(
-      final NotificationRoutingServiceClient client,
-      @Value("${feature.flag.tuberculosis.routing.enabled}")
-          final boolean isTuberculosisRoutingEnabled,
-      @Value("${feature.flag.follow.up.notification}")
-          final boolean isFollowupNotificationEnabled) {
+  public RoutingService(final NotificationRoutingServiceClient client) {
     this.client = client;
-    this.isErrorRewritingEnabled = isTuberculosisRoutingEnabled || isFollowupNotificationEnabled;
   }
 
   @Nonnull
@@ -84,7 +76,7 @@ public class RoutingService {
       return client.ruleBased(
           request.originalNotificationAsJSON(), request.isTestUser(), request.testUserId());
     } catch (final ServiceCallException e) {
-      if (isErrorRewritingEnabled && e.getHttpStatus() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
+      if (e.getHttpStatus() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
         throw new NpsServiceException(
             ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
       }

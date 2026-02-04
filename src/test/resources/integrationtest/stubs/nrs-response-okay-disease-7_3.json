@@ -1,0 +1,29 @@
+{
+  "type": "disease",
+  "notificationCategory": "7.3",
+  "bundleActions": [{
+    "type": "create_pseudonym_record",
+    "optional": false
+  }],
+  "routes": [
+    {
+      "type": "specific_receiver",
+      "specificReceiverId": "1.",
+      "actions": [
+        "pseudo_copy"
+      ],
+      "optional": false
+    },
+    {
+      "type": "specific_receiver",
+      "specificReceiverId": "1.",
+      "actions": [
+        "reproduce",
+        "encrypt"
+      ],
+      "optional": false
+    }
+  ],
+  "healthOffices": {},
+  "responsible": "1."
+}

@@ -44,13 +44,66 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class NotByNameCreatorTest {
+class ExcerptCreatorTest {
 
   private IParser fhirParser;
 
   @BeforeEach
   void setUp() {
     fhirParser = FhirContext.forR4Cached().newJsonParser();
+  }
+
+  @Test
+  @DisplayName("createAnonymousBundle adds Test-User tag when Notification is a test user")
+  void createAnonymousBundleAddsTestUserTagWhenTestUser() throws IOException {
+    String json =
+        Files.readString(Path.of("src/test/resources/bundles/7_3/laboratory-anonymous.json"));
+    Bundle bundle = fhirParser.parseResource(Bundle.class, json);
+
+    Notification notification =
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(true)
+            .type(NotificationType.LABORATORY)
+            .testUserRecipient("foobar")
+            .routingData(RoutingDataUtil.laboratoryExample())
+            .build();
+
+    Bundle result = ExcerptCreator.createAnonymousBundle(notification);
+
+    assertThat(result.getMeta().getTag()).isNotEmpty();
+    assertThat(result.getMeta().getTag()).hasSize(2);
+    assertThat(result.getMeta().getTag())
+        .extracting("system")
+        .containsExactlyInAnyOrder(
+            DemisSystems.TEST_USER_CODING_SYSTEM,
+            DemisConstants.RELATED_NOTIFICATION_CODING_SYSTEM);
+  }
+
+  @Test
+  @DisplayName(
+      "createAnonymousBundle does not add Test-User tag when Notification is not a test user")
+  void createAnonymousBundleDoesNotAddTestUserTagWhenNotTestUser() throws IOException {
+    String json =
+        Files.readString(
+            Path.of("src/test/resources/bundles/7_3/disease-nonnominal-notbyname.json"));
+    Bundle bundle = fhirParser.parseResource(Bundle.class, json);
+
+    Notification notification =
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(false)
+            .type(NotificationType.DISEASE)
+            .routingData(RoutingDataUtil.diseaseExample())
+            .build();
+
+    Bundle result = ExcerptCreator.createAnonymousBundle(notification);
+
+    assertThat(result.getMeta().getTag()).isNotEmpty();
+    assertThat(result.getMeta().getTag()).hasSize(1);
+    assertThat(result.getMeta().getTag())
+        .extracting("system")
+        .containsOnly(DemisConstants.RELATED_NOTIFICATION_CODING_SYSTEM);
   }
 
   @Test
@@ -69,7 +122,7 @@ class NotByNameCreatorTest {
             .routingData(RoutingDataUtil.laboratoryExample())
             .build();
 
-    Bundle result = NotByNameCreator.createNotByNameBundle(notification);
+    Bundle result = ExcerptCreator.createNotByNameBundle(notification);
 
     assertThat(result.getMeta().getTag()).isNotEmpty();
     assertThat(result.getMeta().getTag()).hasSize(2);
@@ -95,7 +148,7 @@ class NotByNameCreatorTest {
             .routingData(RoutingDataUtil.diseaseExample())
             .build();
 
-    Bundle result = NotByNameCreator.createNotByNameBundle(notification);
+    Bundle result = ExcerptCreator.createNotByNameBundle(notification);
 
     assertThat(result.getMeta().getTag()).isNotEmpty();
     assertThat(result.getMeta().getTag()).hasSize(1);

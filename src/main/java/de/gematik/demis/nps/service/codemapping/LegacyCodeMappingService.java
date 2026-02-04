@@ -44,7 +44,7 @@ import org.springframework.scheduling.annotation.Scheduled;
  * load the mapping. If not successfully, we retry on first request.
  */
 @Slf4j
-public class CodeMappingService {
+public class LegacyCodeMappingService {
 
   private static final String CONCEPT_MAP_LABORATORY = "NotificationCategoryToTransmissionCategory";
   private static final String CONCEPT_MAP_DISEASE =
@@ -53,7 +53,7 @@ public class CodeMappingService {
   private final ReloadableCache<String, String> laboratoryCodeCache;
   private final ReloadableCache<String, String> diseaseCodeCache;
 
-  CodeMappingService(final FutsClient futsClient) {
+  LegacyCodeMappingService(final FutsClient futsClient) {
     this.laboratoryCodeCache =
         new ReloadableCache<>("laboratory", () -> futsClient.getConceptMap(CONCEPT_MAP_LABORATORY));
     this.diseaseCodeCache =

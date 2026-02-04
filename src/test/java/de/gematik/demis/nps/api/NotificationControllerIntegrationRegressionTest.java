@@ -41,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.Processor;
@@ -106,6 +107,7 @@ class NotificationControllerIntegrationRegressionTest {
 """;
 
   private final IParser parser = mock(IParser.class);
+  @MockitoBean RequestNotificationProperties mockRequestNotificationProperties;
   @MockitoBean Processor processor;
   @MockitoBean FhirContext fhirContext;
   @MockitoBean Statistics statistics;

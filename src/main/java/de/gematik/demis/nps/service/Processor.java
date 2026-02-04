@@ -35,6 +35,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
@@ -76,7 +77,6 @@ public class Processor {
   private final NotificationStorageService notificationStorageService;
   private final ReceiptService receiptService;
   private final FhirResponseService responseService;
-  private final Statistics statistics;
   private final ContextEnrichmentService contextEnrichmentService;
   private final ReceiverActionService receiverActionService;
 
@@ -89,6 +89,8 @@ public class Processor {
   private final boolean isPermissionCheckEnabled;
   private final DlsService dlsService;
 
+  private final RequestNotificationProperties requestNotificationProperties;
+
   public Processor(
       NotificationValidator notificationValidator,
       LifecycleValidationService lifecycleValidationService,
@@ -97,7 +99,6 @@ public class Processor {
       NotificationStorageService notificationStorageService,
       ReceiptService receiptService,
       FhirResponseService responseService,
-      Statistics statistics,
       ContextEnrichmentService contextEnrichmentService,
       final ReceiverActionService receiverActionService,
       FhirParser fhirParser,
@@ -106,7 +107,8 @@ public class Processor {
       final DlsService dlsService,
       @Value("${feature.flag.notification_pre_check}") boolean notificationPreCheck,
       @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
-      @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled) {
+      @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled,
+      final RequestNotificationProperties requestNotificationProperties) {
     this.notificationValidator = notificationValidator;
     this.lifecycleValidationService = lifecycleValidationService;
     this.notificationFhirService = notificationFhirService;
@@ -114,7 +116,6 @@ public class Processor {
     this.notificationStorageService = notificationStorageService;
     this.receiptService = receiptService;
     this.responseService = responseService;
-    this.statistics = statistics;
     this.contextEnrichmentService = contextEnrichmentService;
     this.receiverActionService = receiverActionService;
     this.updateService = notificationUpdateService;
@@ -124,6 +125,7 @@ public class Processor {
     this.bundleActionService = bundleActionService;
     this.isPermissionCheckEnabled = isPermissionCheckEnabled;
     this.dlsService = dlsService;
+    this.requestNotificationProperties = requestNotificationProperties;
   }
 
   public Parameters execute(
@@ -145,6 +147,7 @@ public class Processor {
             testUserFlag,
             testUserRecipient,
             internalOperationOutcome);
+    setRequestNotificationProperties(notification);
     if (!isProcessing73Enabled
         && Objects.equals(notification.getRoutingData().notificationCategory(), P_7_3)) {
       throw new UnsupportedOperationException(
@@ -187,10 +190,7 @@ public class Processor {
 
     final Bundle receiptBundle = receiptService.generateReceipt(notification);
     final OperationOutcome validationOutcome = internalOperationOutcome.operationOutcome();
-    final Parameters result = responseService.success(receiptBundle, validationOutcome);
-
-    statistics.incSuccessCounter(notification);
-    return result;
+    return responseService.success(receiptBundle, validationOutcome);
   }
 
   @Nonnull
@@ -231,6 +231,12 @@ public class Processor {
         .testUserRecipient(testUserRecipient)
         .routingData(routingInformation)
         .build();
+  }
+
+  private void setRequestNotificationProperties(@Nonnull final Notification notification) {
+    requestNotificationProperties.setNotificationId(
+        notification.getCompositionIdentifier().orElse(null));
+    requestNotificationProperties.setSubmissionCategory(notification.getDiseaseCode());
   }
 
   @Nonnull

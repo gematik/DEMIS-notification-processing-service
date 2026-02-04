@@ -27,11 +27,13 @@ package de.gematik.demis.nps.service;
  * #L%
  */
 
-import de.gematik.demis.nps.service.notification.Notification;
+import de.gematik.demis.nps.base.util.NotificationLogger;
+import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.service.base.error.rest.ErrorCounter;
 import de.gematik.demis.service.base.error.rest.api.ErrorDTO;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nullable;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,48 +42,28 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class Statistics implements ErrorCounter {
+  private final RequestNotificationProperties requestNotificationProperties;
   private static final String COUNTER_NOTIFICATION_SUCCESS = "notification_success";
   private static final String COUNTER_NOTIFICATION_ERROR = "notification_error";
   private static final String COUNTER_NOTIFICATION_IGNORED_ERROR = "notification_ignored_error";
 
-  private static final String TAG_USER = "user";
-  private static final String TAG_TYPE = "type";
   private static final String TAG_ERROR_CODE = "error_code";
-  private static final String TAG_DISEASE_CODE = "disease_code";
 
   private final MeterRegistry meterRegistry;
 
-  public void incSuccessCounter(final Notification notification) {
-    catchException(
-        () ->
-            meterRegistry
-                .counter(
-                    COUNTER_NOTIFICATION_SUCCESS,
-                    TAG_TYPE,
-                    notification.getType().name(),
-                    TAG_USER,
-                    nullsafe(notification.getSender()),
-                    TAG_DISEASE_CODE,
-                    nullsafe(notification.getDiseaseCodeRoot()))
-                .increment());
+  public void incSuccessCounter() {
+    catchException(() -> meterRegistry.counter(COUNTER_NOTIFICATION_SUCCESS).increment());
   }
 
   @Override
   public void errorOccurred(final ErrorDTO error, @Nullable final String sender) {
-    incErrorCounter(sender, error.errorCode());
+    incErrorCounter();
+    NotificationLogger.logUnsuccessfulNotification(
+        requestNotificationProperties, error.errorCode());
   }
 
-  public void incErrorCounter(final String user, final String errorCode) {
-    catchException(
-        () ->
-            meterRegistry
-                .counter(
-                    COUNTER_NOTIFICATION_ERROR,
-                    TAG_USER,
-                    nullsafe(user),
-                    TAG_ERROR_CODE,
-                    nullsafe(errorCode))
-                .increment());
+  public void incErrorCounter() {
+    catchException(() -> meterRegistry.counter(COUNTER_NOTIFICATION_ERROR).increment());
   }
 
   public void incIgnoredErrorCounter(final String errorType) {
@@ -90,6 +72,18 @@ public class Statistics implements ErrorCounter {
             meterRegistry
                 .counter(COUNTER_NOTIFICATION_IGNORED_ERROR, TAG_ERROR_CODE, nullsafe(errorType))
                 .increment());
+  }
+
+  public void incNotificationEndpointCounter(
+      final String apiVersion, final String submissionType, final String requestOrigin) {
+    String counterName;
+    final String version = Optional.ofNullable(apiVersion).orElse("legacy");
+    if (version.equals("legacy")) {
+      counterName = "nps_notifications_legacy_api";
+    } else {
+      counterName = "nps_notifications_" + requestOrigin + "_" + submissionType + "_api_" + version;
+    }
+    catchException(() -> meterRegistry.counter(counterName).increment());
   }
 
   private void catchException(final Runnable runnable) {

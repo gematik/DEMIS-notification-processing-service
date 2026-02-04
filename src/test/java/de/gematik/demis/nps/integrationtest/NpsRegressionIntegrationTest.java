@@ -31,7 +31,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static de.gematik.demis.nps.integrationtest.BundleModifier.*;
 import static de.gematik.demis.nps.integrationtest.Stubs.*;
-import static de.gematik.demis.nps.test.DecryptionUtil.USER_1;
 import static de.gematik.demis.nps.test.DecryptionUtil.USER_1_01_0_53;
 import static de.gematik.demis.nps.test.DecryptionUtil.USER_TEST_INT;
 import static de.gematik.demis.nps.test.DecryptionUtil.decryptData;
@@ -42,9 +41,6 @@ import static de.gematik.demis.nps.test.TestUtil.getJsonParser;
 import static de.gematik.demis.nps.test.TestUtil.getXmlParser;
 import static de.gematik.demis.nps.test.TestUtil.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -55,16 +51,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Utils;
 import de.gematik.demis.nps.api.NotificationController;
 import de.gematik.demis.nps.api.TestUserPropsValueResolver;
 import de.gematik.demis.nps.base.data.CertificateDataEntity;
 import de.gematik.demis.nps.base.data.CertificateRepository;
-import de.gematik.demis.nps.base.util.NotificationLogger;
 import de.gematik.demis.nps.base.util.TimeProvider;
 import de.gematik.demis.nps.base.util.UuidGenerator;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -76,13 +67,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
@@ -91,16 +79,10 @@ import org.hl7.fhir.r4.model.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -121,21 +103,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     properties = {
       "feature.flag.notification_pre_check=true",
       "feature.flag.move-error-id-to-diagnostics=true",
-      "feature.flag.notifications.7_3=true",
-      "feature.flag.move-error-id-to-diagnostics=true",
-      "demis.codemapping.enabled=true",
-      "demis.codemapping.client.base-url=http://localhost:${wiremock.server.port}",
-      "demis.codemapping.client.context-path=/FUTS/fhir-ui-data-model-translation/",
-      "demis.codemapping.laboratory.concept-maps=NotificationCategoryToTransmissionCategory",
-      "demis.codemapping.disease.concept-maps=NotificationDiseaseCategoryToTransmissionCategory",
-      "demis.codemapping.cache-reload-cron=0 0 0 * * ?"
+      "demis.codemapping.enabled=false"
     })
 @AutoConfigureWireMock(port = 0)
 @ActiveProfiles("integrationtest")
 @AutoConfigureMockMvc
-@ExtendWith(MockitoExtension.class)
 @Slf4j
-class NpsIntegrationTest {
+class NpsRegressionIntegrationTest {
   // Resource paths
   private static final String RESOURCE_BASE = "/integrationtest/";
   private static final String LABORATORY_DIR = "laboratory/";
@@ -144,18 +118,14 @@ class NpsIntegrationTest {
 
   // Test resources
   private static final String INPUT_NOTIFICATION_JSON = "input-notification.json";
-  private static final String INPUT_NOTIFICATION_7_3_JSON = "input-notification-7_3.json";
   private static final String INPUT_NOTIFICATION_7_4_JSON = "input-notification-7_4.json";
   private static final String INPUT_UNSUPPORTED_REPORT_JSON = "input-unsupported-report.json";
   private static final String EXPECTED_RESPONSE_JSON = "expected-response.json";
-  private static final String EXPECTED_RESPONSE_7_3_JSON = "expected-response-7_3.json";
   private static final String EXPECTED_RESPONSE_7_4_JSON = "expected-response-7_4.json";
   private static final String EXPECTED_RESPONSE_TESTUSER_JSON = "expected-response-testuser.json";
   private static final String EXPECTED_GA_JSON = "expected-ga.json";
   private static final String EXPECTED_GA_TEST_USER_JSON = "expected-ga-test-user.json";
   private static final String EXPECTED_RKI_JSON = "expected-rki.json";
-  private static final String EXPECTED_RKI_7_3_JSON = "expected-rki-7_3.json";
-  private static final String EXPECTED_EXCERPT_RKI_7_3_JSON = "expected-excerpt-rki-7_3.json";
   private static final String EXPECTED_RKI_7_4_JSON = "expected-rki-7_4.json";
   private static final String EXPECTED_PS_REQUEST_JSON = "expected-ps-request.json";
 
@@ -163,12 +133,10 @@ class NpsIntegrationTest {
   private static final String VS_RESPONSE_OKAY = "vs-response-okay";
   private static final String VS_RESPONSE_422 = "vs-response-422";
   private static final String NRS_RESPONSE_OKAY_LABORATORY = "nrs-response-okay-laboratory";
-  private static final String NRS_RESPONSE_OKAY_LABORATORY_7_3 = "nrs-response-okay-laboratory-7_3";
   private static final String NRS_RESPONSE_OKAY_LABORATORY_7_4 = "nrs-response-okay-laboratory-7_4";
   private static final String NRS_RESPONSE_OKAY_LABORATORY_WITH_TEST_USER =
       "nrs-response-okay-laboratory-with-test-user";
   private static final String NRS_RESPONSE_OKAY_DISEASE = "nrs-response-okay-disease";
-  private static final String NRS_RESPONSE_OKAY_DISEASE_7_3 = "nrs-response-okay-disease-7_3";
   private static final String NRS_RESPONSE_NO_HEALTHOFFICE = "nrs-response-no-healthoffice";
   private static final String NRS_RESPONSE_HEALTHOFFICE_WITHOUT_CERTIFICATE =
       "nrs-response-healthoffice-without-certificate";
@@ -244,18 +212,16 @@ class NpsIntegrationTest {
   void setup() {
     WireMock.reset();
 
-    // FUTS stubs must be set after reset()
+    mockRedisRepository(List.of(USER_1_01_0_53, USER_TEST_INT));
+    mockUuid();
+    mockErrorUuid();
+    meterRegistry.clear();
     setupStubForGetRequest(
         FUTS,
         FUTS_CONCEPTMAP_NOTIFICATION_CATEGORY_ENDPOINT,
         okJsonResource(FUTS_CONCEPTMAP_LABORATORY));
     setupStubForGetRequest(
         FUTS, FUTS_CONCEPTMAP_DISEASE_CATEGORY_ENDPOINT, okJsonResource(FUTS_CONCEPTMAP_DISEASE));
-
-    mockRedisRepository(List.of(USER_1_01_0_53, USER_TEST_INT, USER_1));
-    mockUuid();
-    mockErrorUuid();
-    meterRegistry.clear();
   }
 
   @ParameterizedTest
@@ -342,64 +308,6 @@ class NpsIntegrationTest {
     assertThat(fswBundle.getEntry()).hasSize(1);
 
     counterVerifier.assertSuccessCounter(NotificationType.LABORATORY, DISEASE_CODE);
-  }
-
-  static Stream<Arguments> notificationArgs() {
-    return Stream.of(
-        Arguments.of(NRS_RESPONSE_OKAY_LABORATORY_7_3, LABORATORY_DIR, NotificationType.LABORATORY),
-        Arguments.of(NRS_RESPONSE_OKAY_DISEASE_7_3, DISEASE_DIR, NotificationType.DISEASE));
-  }
-
-  @ParameterizedTest
-  @MethodSource("notificationArgs")
-  void process7_3Notification(
-      final String nrsResponseOkay, final String dir, final NotificationType notificationType)
-      throws Exception {
-    int[] idHelper = {50};
-    try (MockedStatic<Utils> utilities = mockStatic(Utils.class)) {
-      utilities
-          .when(Utils::getCurrentDate)
-          .thenReturn(Date.from(OffsetDateTime.parse("2021-03-04T20:16:01.000+01:00").toInstant()));
-      utilities.when(Utils::generateUuid).thenCallRealMethod();
-      utilities
-          .when(Utils::generateUuidString)
-          .thenAnswer(invocation -> Integer.toString(idHelper[0]++));
-      utilities.when(() -> Utils.getShortReferenceOrUrnUuid(any())).thenCallRealMethod();
-      utilities.when(Utils::getCurrentDateTime).thenCallRealMethod();
-      utilities.when(() -> Utils.hasFhirType(any())).thenCallRealMethod();
-
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, ok());
-
-      setupStub(NRS, okJsonResource(nrsResponseOkay));
-      setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
-      setupStub(FSW, ok());
-      setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
-
-      final String input = resource(dir + INPUT_NOTIFICATION_7_3_JSON);
-      final String expectedNotificationForRKI = resource(dir + EXPECTED_RKI_7_3_JSON);
-
-      executeTest(input, OK, dir + EXPECTED_RESPONSE_7_3_JSON);
-
-      // assert requests to the called services
-
-      assertThat(getRequestBody(VS)).isEqualTo(input);
-
-      assertThat(getRequestBody(LVS)).isEqualToIgnoringWhitespace(input);
-
-      assertThat(getRequestBody(NRS)).isEqualToIgnoringWhitespace(input);
-
-      // pdf service becomes exactly the notification, which is stored for the health office
-      assertThat(getRequestBody(PDF)).isEqualToIgnoringWhitespace(expectedNotificationForRKI);
-
-      assertFhirStorageRequest(
-          rkiBundleExcerpt ->
-              assertFhirResource(rkiBundleExcerpt, resource(dir + EXPECTED_EXCERPT_RKI_7_3_JSON)),
-          rkiBundle -> assertFhirResource(rkiBundle, expectedNotificationForRKI),
-          USER_1);
-      counterVerifier.assertSuccessCounter(notificationType, "hiv");
-    }
   }
 
   private void assertPSGenCall(final String resourceName) {
@@ -606,284 +514,6 @@ class NpsIntegrationTest {
     }
   }
 
-  @Nested
-  class NotificationMetricsCounterTest {
-
-    @Test
-    void counterWithApiVersionIfHeaderIsSet() throws Exception {
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, ok());
-      setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
-      setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
-      setupStub(FSW, status(500));
-
-      executeTestWithHeaders(
-          BAD_GATEWAY, ERRORS_DIR + EXPECTED_STORAGE_ERROR_RESPONSE, "v6", "pathogen", "external");
-      counterVerifier.assertEndpointCounter("nps_notifications_external_pathogen_api_v6");
-    }
-
-    @Test
-    void counterLegacyIfHeaderIsNotSet() throws Exception {
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, ok());
-      setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
-      setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
-      setupStub(FSW, status(500));
-
-      executeTest(BAD_GATEWAY, ERRORS_DIR + EXPECTED_STORAGE_ERROR_RESPONSE);
-      counterVerifier.assertEndpointCounter("nps_notifications_legacy_api");
-    }
-  }
-
-  @Nested
-  class NotificationLoggerTest {
-
-    @ParameterizedTest
-    @EnumSource(NotificationType.class)
-    void success_callsNotificationLogger(final NotificationType type) throws Exception {
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, ok());
-
-      final String resourceName =
-          switch (type) {
-            case LABORATORY -> NRS_RESPONSE_OKAY_LABORATORY;
-            case DISEASE -> NRS_RESPONSE_OKAY_DISEASE;
-          };
-      setupStub(NRS, okJsonResource(resourceName));
-      setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
-      setupStub(FSW, ok());
-      setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
-
-      final String resourceDir =
-          switch (type) {
-            case LABORATORY -> LABORATORY_DIR;
-            case DISEASE -> DISEASE_DIR;
-          };
-
-      final String input = resource(resourceDir + INPUT_NOTIFICATION_JSON);
-
-      try (var mocked = mockStatic(NotificationLogger.class)) {
-
-        executeTest(input, OK, resourceDir + EXPECTED_RESPONSE_JSON);
-
-        mocked.verify(() -> NotificationLogger.logSuccessfulNotification(any()), times(1));
-        mocked.verify(
-            () ->
-                NotificationLogger.logUnsuccessfulNotification(
-                    any(), org.mockito.ArgumentMatchers.anyString()),
-            times(0));
-      }
-    }
-
-    @Test
-    void validationServiceReturnsUnprocessableEntity_shouldCallLoggerWithFhirValidationError()
-        throws Exception {
-      setupStub(VS, statusJsonResource(422, VS_RESPONSE_422));
-      try (var mocked = mockStatic(NotificationLogger.class)) {
-        executeTest(UNPROCESSABLE_ENTITY, ERRORS_DIR + EXPECTED_FHIR_VALIDATION_ERROR_RESPONSE);
-
-        mocked.verify(() -> NotificationLogger.logSuccessfulNotification(any()), times(0));
-        mocked.verify(
-            () ->
-                NotificationLogger.logUnsuccessfulNotification(
-                    any(), org.mockito.ArgumentMatchers.anyString()),
-            times(1));
-      }
-    }
-
-    @Test
-    void
-        laboratoryLifecycleValidationServiceReturnsError_shouldCallLoggerWithLifecycleValidationError()
-            throws Exception {
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, status(422).withBody(LIFECYCLE_VALIDATION_ERROR_BODY));
-      setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
-
-      String laboratoryInput =
-          Files.readString(Path.of("src/test/resources/bundles/laboratory_cvdp_bundle.json"));
-      try (var mocked = mockStatic(NotificationLogger.class)) {
-        executeTest(
-            laboratoryInput,
-            UNPROCESSABLE_ENTITY,
-            ERRORS_DIR + EXPECTED_LABORATORY_LIFECYCLE_VALIDATION_ERROR_RESPONSE);
-
-        mocked.verify(() -> NotificationLogger.logSuccessfulNotification(any()), times(0));
-        mocked.verify(
-            () ->
-                NotificationLogger.logUnsuccessfulNotification(
-                    any(), org.mockito.ArgumentMatchers.anyString()),
-            times(1));
-      }
-    }
-  }
-
-  @Nested
-  class NotificationLoggerContentTest {
-    private ListAppender<ILoggingEvent> listAppender;
-
-    @BeforeEach
-    void setUp() {
-      Logger logger = (Logger) LoggerFactory.getLogger("notification-logger");
-      listAppender = new ListAppender<>();
-      listAppender.start();
-      logger.detachAndStopAllAppenders();
-      logger.addAppender(listAppender);
-    }
-
-    @ParameterizedTest
-    @EnumSource(NotificationType.class)
-    void success_isSuccessfulLog(final NotificationType type) throws Exception {
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, ok());
-
-      final String resourceName =
-          switch (type) {
-            case LABORATORY -> NRS_RESPONSE_OKAY_LABORATORY;
-            case DISEASE -> NRS_RESPONSE_OKAY_DISEASE;
-          };
-      setupStub(NRS, okJsonResource(resourceName));
-      setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
-      setupStub(FSW, ok());
-      setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
-
-      final String resourceDir =
-          switch (type) {
-            case LABORATORY -> LABORATORY_DIR;
-            case DISEASE -> DISEASE_DIR;
-          };
-
-      final String submissionType =
-          switch (type) {
-            case LABORATORY -> "pathogen";
-            case DISEASE -> "disease";
-          };
-
-      final String input = resource(resourceDir + INPUT_NOTIFICATION_JSON);
-      executeTestWithHeaders(
-          input, OK, resourceDir + EXPECTED_RESPONSE_JSON, "v6", submissionType, "external");
-
-      assertThat(listAppender.list).hasSize(1);
-      String actualLog = listAppender.list.getFirst().getFormattedMessage();
-
-      String expectedCode =
-          switch (type) {
-            case LABORATORY -> "cvdp";
-            case DISEASE -> "cvdd";
-          };
-      String expectedNotificationId =
-          switch (type) {
-            case LABORATORY -> "e8d8cc43-32c2-4f93-8eaf-b2f3e6deb2a9";
-            case DISEASE -> "7f562b87-f2c2-4e9d-b3fc-37f6b5dca3a5";
-          };
-
-      String expectedJson =
-          "{\"notificationId\":\""
-              + expectedNotificationId
-              + "\",\"submissionType\":\""
-              + submissionType
-              + "\",\"submissionCategory\":\""
-              + expectedCode
-              + "\",\"apiVersion\":\"v6\",\"sender\":\"LABOR-12345\",\"validationStatus\":\"SUCCESS\"}";
-      assertThat(actualLog).isEqualTo(expectedJson);
-    }
-
-    @Test
-    void validationServiceReturnsUnprocessableEntity_isUnsuccessfulLog_containsFhirValidationError()
-        throws Exception {
-      setupStub(VS, statusJsonResource(422, VS_RESPONSE_422));
-      executeTestWithHeaders(
-          UNPROCESSABLE_ENTITY,
-          ERRORS_DIR + EXPECTED_FHIR_VALIDATION_ERROR_RESPONSE,
-          "v6",
-          "pathogen",
-          "external");
-
-      assertThat(listAppender.list).hasSize(1);
-      String actualLog = listAppender.list.getFirst().getFormattedMessage();
-
-      String expectedJson =
-          "{\"submissionType\":\"pathogen\",\"apiVersion\":\"v6\",\"sender\":\"LABOR-12345\",\"validationStatus\":\"FAILURE\",\"error\":\"FHIR_VALIDATION_ERROR\"}";
-      assertThat(actualLog).isEqualTo(expectedJson);
-    }
-
-    @Test
-    void
-        laboratoryLifecycleValidationServiceReturnsError_isUnsuccessfulLog_containsLifecycleValidationError()
-            throws Exception {
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, status(422).withBody(LIFECYCLE_VALIDATION_ERROR_BODY));
-      setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
-
-      String laboratoryInput =
-          Files.readString(Path.of("src/test/resources/bundles/laboratory_cvdp_bundle.json"));
-      executeTestWithHeaders(
-          laboratoryInput,
-          UNPROCESSABLE_ENTITY,
-          ERRORS_DIR + EXPECTED_LABORATORY_LIFECYCLE_VALIDATION_ERROR_RESPONSE,
-          "v6",
-          "pathogen",
-          "external");
-
-      assertThat(listAppender.list).hasSize(1);
-      String actualLog = listAppender.list.getFirst().getFormattedMessage();
-
-      String expectedJson =
-          "{\"notificationId\":\"e8d8cc43-32c2-4f93-8eaf-b2f3e6deb2a9\",\"submissionType\":\"pathogen\",\"submissionCategory\":\"cvdp\",\"apiVersion\":\"v6\",\"sender\":\"LABOR-12345\",\"validationStatus\":\"FAILURE\",\"error\":\"LIFECYCLE_VALIDATION_ERROR\"}";
-      assertThat(actualLog).isEqualTo(expectedJson);
-    }
-  }
-
-  private String executeTestWithHeaders(
-      final HttpStatus expectedStatus,
-      final String expectedResponseResource,
-      final String apiVersionHeader,
-      final String submissionTypeHeader,
-      final String requestOriginHeader)
-      throws Exception {
-    if (expectedStatus == OK) {
-      mockTime();
-    }
-
-    final String resourcePath =
-        (submissionTypeHeader.equals("pathogen") ? LABORATORY_DIR : DISEASE_DIR)
-            + INPUT_NOTIFICATION_JSON;
-    final String response =
-        executeCallWithHeaders(
-            resource(resourcePath),
-            expectedStatus,
-            apiVersionHeader,
-            submissionTypeHeader,
-            requestOriginHeader);
-
-    assertThat(response).isEqualToIgnoringWhitespace(resource(expectedResponseResource));
-
-    return response;
-  }
-
-  private String executeTestWithHeaders(
-      final String input,
-      final HttpStatus expectedStatus,
-      final String expectedResponseResource,
-      final String apiVersionHeader,
-      final String submissionTypeHeader,
-      final String requestOriginHeader)
-      throws Exception {
-    if (expectedStatus == OK) {
-      mockTime();
-    }
-    final String response =
-        executeCallWithHeaders(
-            input, expectedStatus, apiVersionHeader, submissionTypeHeader, requestOriginHeader);
-
-    assertThat(response).isEqualToIgnoringWhitespace(resource(expectedResponseResource));
-
-    return response;
-  }
-
   private String executeTest(final HttpStatus expectedStatus, final String expectedResponseResource)
       throws Exception {
     return executeTest(
@@ -916,41 +546,6 @@ class NpsIntegrationTest {
             .header("x-request-id", REQUEST_ID)
             .header(NotificationController.HEADER_SENDER, USER_ID)
             .header(TestUserPropsValueResolver.HEADER_IS_TEST_NOTIFICATION, isTestUser);
-    if (testUser != null) {
-      // MockHttpServletRequest will complain about Headers set to null
-      requestBuilder.header(TestUserPropsValueResolver.HEADER_TEST_USER_RECIPIENT, testUser);
-    }
-
-    return mockMvc
-        .perform(requestBuilder)
-        .andExpectAll(
-            status().is(expectedStatus.value()),
-            content().contentTypeCompatibleWith(APPLICATION_JSON_VALUE))
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-  }
-
-  private String executeCallWithHeaders(
-      final String fhirNotification,
-      final HttpStatus expectedStatus,
-      final String apiVersionHeader,
-      final String submissionTypeHeader,
-      final String requestOriginHeader)
-      throws Exception {
-    final MockHttpServletRequestBuilder requestBuilder =
-        post(NPS_ENDPOINT)
-            .contentType(APPLICATION_JSON_VALUE)
-            .content(fhirNotification)
-            .header(HttpHeaders.ACCEPT, APPLICATION_JSON_VALUE)
-            .header("x-request-id", REQUEST_ID)
-            .header(NotificationController.HEADER_SENDER, USER_ID)
-            .header(TestUserPropsValueResolver.HEADER_IS_TEST_NOTIFICATION, isTestUser)
-            .header("x-fhir-api-submission-type", submissionTypeHeader)
-            .header("x-fhir-api-request-origin", requestOriginHeader);
-    if (apiVersionHeader != null) {
-      requestBuilder.header("x-fhir-api-version", apiVersionHeader);
-    }
     if (testUser != null) {
       // MockHttpServletRequest will complain about Headers set to null
       requestBuilder.header(TestUserPropsValueResolver.HEADER_TEST_USER_RECIPIENT, testUser);

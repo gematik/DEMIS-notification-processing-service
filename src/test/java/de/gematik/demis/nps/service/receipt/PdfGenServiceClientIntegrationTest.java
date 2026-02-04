@@ -44,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(
     properties = {
@@ -51,6 +52,14 @@ import org.springframework.http.HttpHeaders;
       "feature.flag.nbl.for.notByName.enabled=true"
     })
 @AutoConfigureWireMock(port = 0)
+@TestPropertySource(
+    properties = {
+      "demis.codemapping.client.base-url=http://dummy",
+      "demis.codemapping.client.context-path=/dummy",
+      "demis.codemapping.disease.concept-maps[0]=dummy-disease",
+      "demis.codemapping.laboratory.concept-maps[0]=dummy-lab",
+      "demis.codemapping.cache-reload-cron=0 0 0 * * ?"
+    })
 class PdfGenServiceClientIntegrationTest {
   private static final String ENDPOINT_LABORATORY = "/laboratoryReport";
   private static final String ENDPOINT_DISEASE = "/diseaseNotification";

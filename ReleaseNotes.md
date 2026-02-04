@@ -2,6 +2,16 @@
 
 # Release Notification Processing Service
 
+## 2.9.0
+- removed high cardinality metrics
+- added endpoint metrics counters including api version, submission type and request origin
+- added logging for processing outcome for successful and failed notifications
+- added anonymous excerpt creation for 7.3 notifications through notification builder library
+- added use of service base client for code mapping connection
+- added new feature flag FEATURE_FLAG_CODEMAPPING_SERVICE_BASE
+- updated spring parent to 2.14.19
+- removed feature flag FEATURE_FLAG_TUBERCULOSIS_ROUTING_ENABLED
+
 ## 2.8.0
 - bumped spring parent to 2.14.10
 - added test user tag handling to new excerpt creation

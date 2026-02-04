@@ -36,7 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class CodeMappingServiceTest {
+class LegacyCodeMappingServiceTest {
 
   private static final String LAB_CODE_KEY = "cvdp";
   private static final String LAB_CODE_VALUE = "cvd";
@@ -46,7 +46,7 @@ class CodeMappingServiceTest {
   private static final String DIS_CODE_VALUE = "covid";
 
   private final FutsClient futsClientMock = Mockito.mock(FutsClient.class);
-  private CodeMappingService underTest;
+  private LegacyCodeMappingService underTest;
 
   @BeforeEach
   void setup() {
@@ -57,7 +57,7 @@ class CodeMappingServiceTest {
         .thenReturn(Map.of(DIS_CODE_KEY, DIS_CODE_VALUE, "xxx", "yyy"))
         .thenThrow(FeignException.class);
 
-    underTest = new CodeMappingService(futsClientMock);
+    underTest = new LegacyCodeMappingService(futsClientMock);
     underTest.loadConceptMaps();
   }
 

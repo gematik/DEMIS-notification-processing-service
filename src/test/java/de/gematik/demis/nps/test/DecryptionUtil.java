@@ -46,6 +46,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class DecryptionUtil {
   public static final String USER_1_01_0_53 = "1.01.0.53.";
   public static final String USER_TEST_INT = "test-int";
+  public static final String USER_1 = "1.";
   private static final String PUBLIC_CERTIFICATE_RESOURCE = "/certificates/%s.der";
   private static final String PRIVATE_CERTIFICATE_RESOURCE = "/certificates/%s.p12";
   private static final char[] KS_PASSWORD = "QV5BMIMP3L".toCharArray();

@@ -38,7 +38,7 @@ import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
-import de.gematik.demis.nps.service.notbyname.NotByNameCreator;
+import de.gematik.demis.nps.service.notbyname.ExcerptCreator;
 import de.gematik.demis.nps.service.notbyname.NotByNameRegressionService;
 import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
@@ -251,6 +251,7 @@ public class ReceiverActionService {
 
         yield Optional.ofNullable(switchBetweenNotByNameCreators(notification));
       }
+      case P_7_3 -> Optional.ofNullable(ExcerptCreator.createAnonymousBundle(notification));
       default ->
           throw new NpsServiceException(
               ErrorCode.NRS_PROCESSING_ERROR, "Unexpected notification category");
@@ -259,7 +260,7 @@ public class ReceiverActionService {
 
   private Bundle switchBetweenNotByNameCreators(Notification notification) {
     if (isNblForNotByNameCreationEnabled) {
-      return NotByNameCreator.createNotByNameBundle(notification);
+      return ExcerptCreator.createNotByNameBundle(notification);
     }
     return notByNameRegressionService.createNotificationNotByName(notification);
   }

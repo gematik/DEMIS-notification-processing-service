@@ -36,7 +36,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 @ConfigurationPropertiesScan
-@EnableFeignClients
+@EnableFeignClients(
+    basePackages = {"de.gematik.demis.nps", "de.gematik.demis.service.base.clients"})
 @EnableScheduling
 public class NotificationProcessingApplication {
 

@@ -45,6 +45,7 @@ import ch.qos.logback.core.read.ListAppender;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -114,7 +115,6 @@ class ProcessorTest {
   @Mock FhirResponseService responseService;
   @Mock ContextEnrichmentService contextEnrichmentService;
   @Mock ReceiverActionService receiverActionService;
-  @Mock Statistics statistics;
   @Mock FhirParser fhirParser;
   @Mock NotificationUpdateService updateService;
   @Mock DlsService dlsService;
@@ -234,7 +234,6 @@ class ProcessorTest {
         notificationStorageService,
         receiptService,
         responseService,
-        statistics,
         contextEnrichmentService,
         receiverActionService,
         fhirParser,
@@ -243,7 +242,8 @@ class ProcessorTest {
         dlsService,
         false,
         true,
-        isPermissionCheckEnabled);
+        isPermissionCheckEnabled,
+        new RequestNotificationProperties());
   }
 
   @Test

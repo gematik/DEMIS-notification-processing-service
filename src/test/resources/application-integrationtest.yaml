@@ -29,3 +29,8 @@ nps:
     sender-is-destination: false
     ids:
       - irrelevant
+
+demis:
+  codemapping:
+    cache-reload-cron: "0 0 0 * * ?"
+

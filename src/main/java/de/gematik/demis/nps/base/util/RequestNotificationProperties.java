@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.codemapping;
+package de.gematik.demis.nps.base.util;
 
 /*-
  * #%L
@@ -27,29 +27,19 @@ package de.gematik.demis.nps.service.codemapping;
  * #L%
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.RequestScope;
 
-import de.gematik.demis.service.base.clients.mapping.CodeMappingClient;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
-class CodeMappingServiceConfigurationTest {
-
-  @Nested
-  @SpringBootTest(
-      classes = CodeMappingServiceConfiguration.class,
-      properties = "feature.flag.codemapping.service.base=false")
-  class FeatureFlagOn {
-    @MockitoBean FutsClient futsClientMock;
-    @MockitoBean CodeMappingClient codeMappingClientMock;
-    @Autowired SwitchingCodeMappingService underTest;
-
-    @Test
-    void legacyImplementationIsUsedByDefault() {
-      assertThat(underTest.getMappedDiseaseCode("code")).isNull();
-    }
-  }
+@Getter
+@Setter
+@Component
+@RequestScope
+public class RequestNotificationProperties {
+  private String sender;
+  private String notificationId;
+  private String submissionType;
+  private String submissionCategory;
+  private String apiVersion;
 }

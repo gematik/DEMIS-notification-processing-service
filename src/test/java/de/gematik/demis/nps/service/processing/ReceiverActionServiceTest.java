@@ -80,6 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Binary;
@@ -92,6 +93,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -102,6 +105,8 @@ class ReceiverActionServiceTest {
 
   private static final NotificationReceiver RKI_RECEIVER =
       new NotificationReceiver("specific_receiver", "1.", SequencedSets.of(PSEUDO_ORIGINAL), false);
+  private static final NotificationReceiver RKI_RECEIVER_EXCERPT =
+      new NotificationReceiver("specific_receiver", "1.", SequencedSets.of(PSEUDO_COPY), false);
   private static final NotificationReceiver GA_RECEIVER =
       new NotificationReceiver(
           "responsible_health_office", "1.2.3.4", SequencedSets.of(ENCRYPTION), false);
@@ -109,9 +114,19 @@ class ReceiverActionServiceTest {
       new NotificationReceiver(
           "responsible_health_office_sormas", "2.2.3.4", SequencedSets.of(ENCRYPTION), true);
 
-  private static final RoutingData P73_ROUTING =
+  private static final RoutingData P73_ROUTING_LABORATORY =
       new RoutingData(
           NotificationType.LABORATORY,
+          NotificationCategory.P_7_3,
+          SequencedSets.of(),
+          List.of(),
+          Map.of(),
+          "no one",
+          Set.of(),
+          null);
+  private static final RoutingData P73_ROUTING_DISEASE =
+      new RoutingData(
+          NotificationType.DISEASE,
           NotificationCategory.P_7_3,
           SequencedSets.of(),
           List.of(),
@@ -156,6 +171,13 @@ class ReceiverActionServiceTest {
 
   private ReceiverActionService receiverActionService;
 
+  static Stream<Arguments> notificationArgs() {
+    return Stream.of(
+        Arguments.of(
+            "/bundles/7_3/laboratory-nonnominal-notifiedperson.json", P73_ROUTING_LABORATORY),
+        Arguments.of("/bundles/7_3/disease-nonnominal-notifiedperson.json", P73_ROUTING_DISEASE));
+  }
+
   @Nested
   @DisplayName("regression version for creating notByName Excerpts")
   class RegressionVersionForCreation {
@@ -187,7 +209,8 @@ class ReceiverActionServiceTest {
     void thatDisabled73FeatureFlagCausesExceptions() {
       // GIVEN a 7.3 bundle
       final Notification notification =
-          fromJSON("/bundles/7_3/laboratory-nonnominal-notifiedperson.json", P73_ROUTING);
+          fromJSON(
+              "/bundles/7_3/laboratory-nonnominal-notifiedperson.json", P73_ROUTING_LABORATORY);
       // AND the feature toggle is disabled
       final ReceiverActionService withDisabledToggle =
           new ReceiverActionService(
@@ -215,7 +238,9 @@ class ReceiverActionServiceTest {
     void thatNotifiedPersonFor73IsReplacedWithNotByNameUrnUuid() {
       // GIVEN a 7.3 bundle
       final Notification notification =
-          fromJSON("/bundles/7_3/laboratory-nonnominal-notifiedperson-urn-uuid.json", P73_ROUTING);
+          fromJSON(
+              "/bundles/7_3/laboratory-nonnominal-notifiedperson-urn-uuid.json",
+              P73_ROUTING_LABORATORY);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(
@@ -234,15 +259,13 @@ class ReceiverActionServiceTest {
           .allSatisfy(e -> assertThat(e.getFullUrl()).startsWith("urn:uuid:"));
     }
 
-    @ValueSource(
-        strings = {
-          "/bundles/7_3/laboratory-nonnominal-notifiedperson.json",
-          "/bundles/7_3/disease-nonnominal-notifiedperson.json"
-        })
     @ParameterizedTest
-    void thatNotifiedPersonFor73IsReplacedWithNotByName(@Nonnull final String bundlePath) {
+    @MethodSource(
+        "de.gematik.demis.nps.service.processing.ReceiverActionServiceTest#notificationArgs")
+    void thatNotifiedPersonFor73IsReplacedWithNotByName(
+        @Nonnull final String bundlePath, @Nonnull final RoutingData routingData) {
       // GIVEN a 7.3 bundle
-      final Notification notification = fromJSON(bundlePath, P73_ROUTING);
+      final Notification notification = fromJSON(bundlePath, routingData);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(
@@ -254,6 +277,24 @@ class ReceiverActionServiceTest {
       assertThat(patient).isNotEmpty();
       final Set<String> strings = Metas.profilesFrom(patient.orElseThrow());
       assertThat(strings).containsExactly(DemisConstants.PROFILE_NOTIFIED_PERSON_NOT_BY_NAME);
+    }
+
+    @ParameterizedTest
+    @MethodSource(
+        "de.gematik.demis.nps.service.processing.ReceiverActionServiceTest#notificationArgs")
+    void thatNotifiedPersonFor73IsReplacedWithAnonymous(
+        @Nonnull final String bundlePath, @Nonnull final RoutingData routingData) {
+      // GIVEN a 7.3 bundle
+      final Notification notification = fromJSON(bundlePath, routingData);
+      // WHEN bundle is processed
+      final Optional<? extends IBaseResource> transform =
+          receiverActionService.transform(notification, RKI_RECEIVER_EXCERPT);
+      // THEN
+      assertThat(transform).containsInstanceOf(Bundle.class);
+      final Optional<Patient> patient = Patients.subjectFrom((Bundle) transform.orElseThrow());
+      assertThat(patient).isNotEmpty();
+      final Set<String> strings = Metas.profilesFrom(patient.orElseThrow());
+      assertThat(strings).containsExactly(DemisConstants.PROFILE_NOTIFIED_PERSON_ANONYMOUS);
     }
 
     @Test
@@ -387,7 +428,7 @@ class ReceiverActionServiceTest {
     void thatPseudoOriginalCopiesBundleFor73ForRegulatoryReasons(@Nonnull final String bundlePath) {
       // GIVEN a 7.3 bundle that in theory doesn't have to be transformed, because all Resources are
       // correct
-      final Notification notification = fromJSON(bundlePath, P73_ROUTING);
+      final Notification notification = fromJSON(bundlePath, P73_ROUTING_LABORATORY);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(
@@ -406,7 +447,7 @@ class ReceiverActionServiceTest {
         })
     void thatPreEncryptedBundlesAreAdded(@Nonnull final String bundlePath) {
       when(encryptionService.encryptFor(any(), eq("1."))).thenReturn(new Binary());
-      final Notification notification = fromJSON(bundlePath, P73_ROUTING);
+      final Notification notification = fromJSON(bundlePath, P73_ROUTING_LABORATORY);
       receiverActionService.transform(
           notification, new NotificationReceiver("", "1.", SequencedSets.of(ENCRYPTION), false));
 
@@ -418,7 +459,7 @@ class ReceiverActionServiceTest {
       // GIVEN a 7.3 bundle that in theory doesn't have to be transformed, because all Resources are
       // correct
       final Notification notification =
-          fromJSON("/bundles/7_3/laboratory-anonymous.json", P73_ROUTING);
+          fromJSON("/bundles/7_3/laboratory-anonymous.json", P73_ROUTING_LABORATORY);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(
@@ -527,7 +568,8 @@ class ReceiverActionServiceTest {
     void thatDisabled73FeatureFlagCausesExceptions() {
       // GIVEN a 7.3 bundle
       final Notification notification =
-          fromJSON("/bundles/7_3/laboratory-nonnominal-notifiedperson.json", P73_ROUTING);
+          fromJSON(
+              "/bundles/7_3/laboratory-nonnominal-notifiedperson.json", P73_ROUTING_LABORATORY);
       // AND the feature toggle is disabled
       final ReceiverActionService withDisabledToggle =
           new ReceiverActionService(
@@ -555,7 +597,9 @@ class ReceiverActionServiceTest {
     void thatNotifiedPersonFor73IsReplacedWithNotByNameUrnUuid() {
       // GIVEN a 7.3 bundle
       final Notification notification =
-          fromJSON("/bundles/7_3/laboratory-nonnominal-notifiedperson-urn-uuid.json", P73_ROUTING);
+          fromJSON(
+              "/bundles/7_3/laboratory-nonnominal-notifiedperson-urn-uuid.json",
+              P73_ROUTING_LABORATORY);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(
@@ -574,15 +618,13 @@ class ReceiverActionServiceTest {
           .allSatisfy(e -> assertThat(e.getFullUrl()).startsWith("urn:uuid:"));
     }
 
-    @ValueSource(
-        strings = {
-          "/bundles/7_3/laboratory-nonnominal-notifiedperson.json",
-          "/bundles/7_3/disease-nonnominal-notifiedperson.json"
-        })
     @ParameterizedTest
-    void thatNotifiedPersonFor73IsReplacedWithNotByName(@Nonnull final String bundlePath) {
+    @MethodSource(
+        "de.gematik.demis.nps.service.processing.ReceiverActionServiceTest#notificationArgs")
+    void thatNotifiedPersonFor73IsReplacedWithNotByName(
+        @Nonnull final String bundlePath, @Nonnull final RoutingData routingData) {
       // GIVEN a 7.3 bundle
-      final Notification notification = fromJSON(bundlePath, P73_ROUTING);
+      final Notification notification = fromJSON(bundlePath, routingData);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(
@@ -762,7 +804,7 @@ class ReceiverActionServiceTest {
     void thatPseudoOriginalCopiesBundleFor73ForRegulatoryReasons(@Nonnull final String bundlePath) {
       // GIVEN a 7.3 bundle that in theory doesn't have to be transformed, because all Resources are
       // correct
-      final Notification notification = fromJSON(bundlePath, P73_ROUTING);
+      final Notification notification = fromJSON(bundlePath, P73_ROUTING_LABORATORY);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(
@@ -781,7 +823,7 @@ class ReceiverActionServiceTest {
         })
     void thatPreEncryptedBundlesAreAdded(@Nonnull final String bundlePath) {
       when(encryptionService.encryptFor(any(), eq("1."))).thenReturn(new Binary());
-      final Notification notification = fromJSON(bundlePath, P73_ROUTING);
+      final Notification notification = fromJSON(bundlePath, P73_ROUTING_LABORATORY);
       receiverActionService.transform(
           notification, new NotificationReceiver("", "1.", SequencedSets.of(ENCRYPTION), false));
 
@@ -793,7 +835,7 @@ class ReceiverActionServiceTest {
       // GIVEN a 7.3 bundle that in theory doesn't have to be transformed, because all Resources are
       // correct
       final Notification notification =
-          fromJSON("/bundles/7_3/laboratory-anonymous.json", P73_ROUTING);
+          fromJSON("/bundles/7_3/laboratory-anonymous.json", P73_ROUTING_LABORATORY);
       // WHEN bundle is processed
       final Optional<? extends IBaseResource> transform =
           receiverActionService.transform(

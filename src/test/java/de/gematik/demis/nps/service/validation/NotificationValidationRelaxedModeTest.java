@@ -75,7 +75,6 @@ class NotificationValidationRelaxedModeTest {
 
   FeatureFlagsConfigProperties featureFlags;
   @Mock ValidationServiceClient validationServiceClient;
-  @Mock LifecycleValidationServiceClient lifecycleValidationServiceClient;
   @Mock HttpServletRequest httpServletRequest;
 
   private NotificationValidator underTest;

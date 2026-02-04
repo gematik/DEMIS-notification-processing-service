@@ -31,7 +31,7 @@ import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Demis
 import de.gematik.demis.nps.base.fhir.BundleQueries;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
-import de.gematik.demis.nps.service.codemapping.CodeMappingService;
+import de.gematik.demis.nps.service.codemapping.SwitchingCodeMappingService;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -57,7 +57,8 @@ public class NotificationFhirService {
           NotificationType.LABORATORY.getProfile().getUrl(),
           DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_NEGATIVE,
           DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_ANONYMOUS,
-          DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_NON_NOMINAL);
+          DemisConstants.PROFILE_NOTIFICATION_BUNDLE_LABORATORY_NON_NOMINAL,
+          DemisConstants.PROFILE_NOTIFICATION_BUNDLE_DISEASE_NON_NOMINAL);
 
   private static final Supplier<NpsServiceException> CANT_PARSE_DISEASE_CODE_ERROR =
       () ->
@@ -66,7 +67,7 @@ public class NotificationFhirService {
 
   private final NotificationCleaning cleaner;
   private final NotificationEnrichment enricher;
-  private final CodeMappingService codeMappingService;
+  private final SwitchingCodeMappingService codeMappingDecider;
   private static final Pattern pattern =
       Pattern.compile(
           "(?s)meta.*profile.*(" + String.join("|", ALLOWED_PRECHECK_PROFILES) + ")(?!\\w|/)");
@@ -124,12 +125,12 @@ public class NotificationFhirService {
   @Nonnull
   private String getDiseaseCodeFromLaboratoryNotification(@Nonnull final Bundle bundle) {
     final String code = getDiseaseCodeFromDiagnosticReport(bundle);
-    return codeMappingService.getMappedPathogenCode(code);
+    return codeMappingDecider.getMappedLaboratoryCode(code);
   }
 
   @Nonnull
   private String getDiseaseCodeFromDiseaseNotification(@Nonnull final Bundle bundle) {
     final String code = getDiseaseCodeFromCondition(bundle);
-    return codeMappingService.getMappedDiseaseCode(code);
+    return codeMappingDecider.getMappedDiseaseCode(code);
   }
 }

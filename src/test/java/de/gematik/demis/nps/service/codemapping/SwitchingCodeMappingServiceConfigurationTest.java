@@ -29,22 +29,22 @@ package de.gematik.demis.nps.service.codemapping;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.gematik.demis.service.base.clients.mapping.CodeMappingClient;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class CodeMappingServiceConfigurationTest {
-
+class SwitchingCodeMappingServiceConfigurationTest {
   @Nested
   @SpringBootTest(
       classes = CodeMappingServiceConfiguration.class,
-      properties = "feature.flag.codemapping.service.base=false")
-  class FeatureFlagOn {
+      properties = {
+        "demis.codemapping.enabled=false",
+        "feature.flag.codemapping.service.base=false"
+      })
+  class FeatureFlagOff {
     @MockitoBean FutsClient futsClientMock;
-    @MockitoBean CodeMappingClient codeMappingClientMock;
     @Autowired SwitchingCodeMappingService underTest;
 
     @Test

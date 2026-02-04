@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 import de.gematik.demis.nps.error.NpsServiceException;
-import de.gematik.demis.nps.service.codemapping.CodeMappingService;
+import de.gematik.demis.nps.service.codemapping.SwitchingCodeMappingService;
 import java.util.Collections;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CanonicalType;
@@ -64,11 +64,11 @@ class NotificationFhirServiceTest {
   private NotificationFhirService underTest;
   @Mock private NotificationCleaning cleanerMock;
   @Mock private NotificationEnrichment enricherMock;
-  @Mock private CodeMappingService codeMappingServiceMock;
+  @Mock private SwitchingCodeMappingService codeMappingDeciderMock;
 
   @BeforeEach
   void beforeAll() {
-    underTest = new NotificationFhirService(cleanerMock, enricherMock, codeMappingServiceMock);
+    underTest = new NotificationFhirService(cleanerMock, enricherMock, codeMappingDeciderMock);
   }
 
   @Nested
@@ -165,7 +165,7 @@ class NotificationFhirServiceTest {
 
     @Test
     void thatDiseaseCodeIsFoundForLaboratoryReports() {
-      when(codeMappingServiceMock.getMappedPathogenCode("code")).thenReturn("hit");
+      when(codeMappingDeciderMock.getMappedLaboratoryCode("code")).thenReturn("hit");
 
       final DiagnosticReport diagnosticReport = new DiagnosticReport();
       diagnosticReport.setCode(new CodeableConcept(new Coding("system", "code", "code")));
@@ -179,7 +179,7 @@ class NotificationFhirServiceTest {
 
     @Test
     void thatDiseaseCodeIsFoundForDiseases() {
-      when(codeMappingServiceMock.getMappedDiseaseCode("code")).thenReturn("hit");
+      when(codeMappingDeciderMock.getMappedDiseaseCode("code")).thenReturn("hit");
       final Condition condition = new Condition();
       condition.setCode(new CodeableConcept(new Coding("system", "code", "code")));
       final Bundle bundle = new Bundle();

@@ -50,20 +50,19 @@ class CounterVerifier {
 
   void assertSuccessCounter(final NotificationType expectedType, final String expectedDisease) {
     final Map<Tags, Double> counters = getCounters(COUNTER_NOTIFICATION_SUCCESS);
-    assertThat(counters)
-        .containsOnly(
-            entry(
-                Tags.of("type", expectedType.name(), "user", user, "disease_code", expectedDisease),
-                1.0d));
+    assertThat(counters).containsOnly(entry(Tags.empty(), 1.0d));
     assertZeroCounter(COUNTER_NOTIFICATION_ERROR);
   }
 
   void assertErrorCounter(final ErrorCode expectedErrorCode) {
     final Map<Tags, Double> counters = getCounters(COUNTER_NOTIFICATION_ERROR);
-    assertThat(counters)
-        .containsOnly(
-            entry(Tags.of("user", user, "error_code", expectedErrorCode.getCode()), 1.0d));
+    assertThat(counters).containsOnly(entry(Tags.empty(), 1.0d));
     assertZeroCounter(COUNTER_NOTIFICATION_SUCCESS);
+  }
+
+  void assertEndpointCounter(final String name) {
+    final Map<Tags, Double> counters = getCounters(name);
+    assertThat(counters).containsOnly(entry(Tags.empty(), 1.0d));
   }
 
   void assertZeroCounter(final String name) {

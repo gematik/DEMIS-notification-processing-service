@@ -27,16 +27,30 @@ package de.gematik.demis.nps.service.codemapping;
  * #L%
  */
 
+import de.gematik.demis.service.base.clients.mapping.CodeMappingAutoConfiguration;
+import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration
 @Slf4j
+@Import(CodeMappingAutoConfiguration.class)
 class CodeMappingServiceConfiguration {
 
   @Bean
-  CodeMappingService codeMappingService(final FutsClient futsClient) {
-    return new CodeMappingService(futsClient);
+  LegacyCodeMappingService legacyCodeMappingService(final FutsClient futsClient) {
+    return new LegacyCodeMappingService(futsClient);
+  }
+
+  @Bean
+  SwitchingCodeMappingService switchingCodeMappingService(
+      final LegacyCodeMappingService legacyService,
+      @Nullable
+          final de.gematik.demis.service.base.clients.mapping.CodeMappingService serviceBaseService,
+      @Value("${feature.flag.codemapping.service.base}") final boolean serviceBaseEnabled) {
+    return new SwitchingCodeMappingService(legacyService, serviceBaseService, serviceBaseEnabled);
   }
 }

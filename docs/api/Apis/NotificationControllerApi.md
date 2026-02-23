@@ -4,7 +4,7 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**processNotification**](NotificationControllerApi.md#processNotification) | **POST** /fhir/$process-notification |  |
+| [**processNotification**](NotificationControllerApi.md#processNotification) | **POST** /$process-notification |  |
 
 
 <a name="processNotification"></a>

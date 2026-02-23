@@ -33,26 +33,19 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.base.util.SequencedSets;
-import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
-import de.gematik.demis.nps.service.encryption.EncryptionService;
-import de.gematik.demis.nps.service.notbyname.NotByNameRegressionService;
 import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationFhirService;
@@ -90,7 +83,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessorTest {
@@ -102,14 +94,11 @@ class ProcessorTest {
   private static final String SENDER = "Me";
   private static final String TOKEN = "SomeToken";
 
-  @Mock NpsConfigProperties configProperties;
   @Mock NotificationValidator notificationValidator;
   @Mock LifecycleValidationService lifecycleValidationService;
   @Mock NotificationFhirService notificationFhirService;
   @Mock RoutingService routingService;
   @Mock PseudoService pseudoService;
-  @Mock NotByNameRegressionService notByNameCreator;
-  @Mock EncryptionService encryptionService;
   @Mock NotificationStorageService notificationStorageService;
   @Mock ReceiptService receiptService;
   @Mock FhirResponseService responseService;
@@ -133,14 +122,6 @@ class ProcessorTest {
         .originalNotificationAsJson(FHIR_NOTIFICATION)
         .routingData(routingData)
         .build();
-  }
-
-  private static <T> ListAppender<ILoggingEvent> listenToLog(final Class<T> clazz) {
-    final var log = (Logger) LoggerFactory.getLogger(clazz);
-    final var listAppender = new ListAppender<ILoggingEvent>();
-    listAppender.start();
-    log.addAppender(listAppender);
-    return listAppender;
   }
 
   @ParameterizedTest
@@ -237,13 +218,14 @@ class ProcessorTest {
         contextEnrichmentService,
         receiverActionService,
         fhirParser,
-        new BundleActionService(pseudoService),
+        new BundleActionService(pseudoService, new RequestProcessorState()),
         updateService,
         dlsService,
         false,
         true,
         isPermissionCheckEnabled,
-        new RequestNotificationProperties());
+        new RequestNotificationProperties(),
+        new RequestProcessorState());
   }
 
   @Test
@@ -406,52 +388,6 @@ class ProcessorTest {
         .isEqualTo(REPARSED_FHIR_NOTIFICATION);
   }
 
-  @Test
-  void logNotificationBundleId() {
-    final Bundle bundle = new Bundle();
-    bundle.setIdentifier(new Identifier().setValue("notification-id"));
-
-    final var validationOutcome =
-        new InternalOperationOutcome(new OperationOutcome(), "someBundleString");
-    when(notificationValidator.validateFhir(any(), any())).thenReturn(validationOutcome);
-    when(fhirParser.parseBundleOrParameter(any(), any(MessageType.class))).thenReturn(bundle);
-    when(routingService.getRoutingInformation(any()))
-        .thenReturn(getArbitraryRoutingResult(Set.of()));
-    when(notificationFhirService.getDiseaseCodeRoot(any(), any())).thenReturn("xxx");
-
-    doAnswer(
-            invocation -> {
-              final var notification = invocation.getArgument(0, Notification.class);
-              notification
-                  .getBundle()
-                  .setIdentifier(new Identifier().setValue("my-new-generated-uuid"));
-              return null;
-            })
-        .when(notificationFhirService)
-        .cleanAndEnrichNotification(any(), any());
-
-    final var listenToLog = listenToLog(Processor.class);
-
-    final Processor service = createProcessor(false);
-    service.execute(
-        FHIR_NOTIFICATION, MessageType.JSON, REQUEST_ID, SENDER, false, "", TOKEN, Set.of());
-
-    final Optional<ILoggingEvent> logEntry =
-        listenToLog.list.stream()
-            .filter(event -> Level.INFO.equals(event.getLevel()))
-            .filter(event -> event.getMessage().startsWith("Notification:"))
-            .findFirst();
-
-    final String expectedLogLine =
-        "Notification: bundleId=my-new-generated-uuid, type=LABORATORY, diseaseCode=xxx, sender=Me,"
-            + " testUser=false";
-    assertThat(logEntry)
-        .isPresent()
-        .get()
-        .extracting(ILoggingEvent::getFormattedMessage)
-        .isEqualTo(expectedLogLine);
-  }
-
   @Nested
   class Permissions {
 
@@ -465,17 +401,16 @@ class ProcessorTest {
       // THEN we can still route the request, because the feature flag is disabled
       assertThatNoException()
           .isThrownBy(
-              () -> {
-                processor.execute(
-                    FHIR_NOTIFICATION,
-                    CONTENT_TYPE,
-                    REQUEST_ID,
-                    "test-user",
-                    true,
-                    "test-user-other",
-                    TOKEN,
-                    Set.of());
-              });
+              () ->
+                  processor.execute(
+                      FHIR_NOTIFICATION,
+                      CONTENT_TYPE,
+                      REQUEST_ID,
+                      "test-user",
+                      true,
+                      "test-user-other",
+                      TOKEN,
+                      Set.of()));
     }
 
     @Test
@@ -501,10 +436,9 @@ class ProcessorTest {
                           TOKEN,
                           principalRoles));
       thrownBy.satisfies(
-          serviceException -> {
-            assertThat(serviceException.getErrorCode())
-                .isEqualTo(ErrorCode.MISSING_ROLES.getCode());
-          });
+          serviceException ->
+              assertThat(serviceException.getErrorCode())
+                  .isEqualTo(ErrorCode.MISSING_ROLES.getCode()));
     }
 
     @Test
@@ -517,17 +451,16 @@ class ProcessorTest {
       // THEN an exception is raised nevertheless
       assertThatNoException()
           .isThrownBy(
-              () -> {
-                processor.execute(
-                    FHIR_NOTIFICATION,
-                    CONTENT_TYPE,
-                    REQUEST_ID,
-                    "test-user",
-                    true,
-                    "test-user-other",
-                    TOKEN,
-                    principalRoles);
-              });
+              () ->
+                  processor.execute(
+                      FHIR_NOTIFICATION,
+                      CONTENT_TYPE,
+                      REQUEST_ID,
+                      "test-user",
+                      true,
+                      "test-user-other",
+                      TOKEN,
+                      principalRoles));
     }
 
     @Test
@@ -572,10 +505,9 @@ class ProcessorTest {
                           TOKEN,
                           roles));
       thrownBy.satisfies(
-          serviceException -> {
-            assertThat(serviceException.getErrorCode())
-                .isEqualTo(ErrorCode.MISSING_ROLES.getCode());
-          });
+          serviceException ->
+              assertThat(serviceException.getErrorCode())
+                  .isEqualTo(ErrorCode.MISSING_ROLES.getCode()));
     }
 
     private void mockNRSReturnsAllowedRoles(final Set<String> allowedRolesFromNRS) {

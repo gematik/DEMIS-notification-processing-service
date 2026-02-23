@@ -54,6 +54,13 @@ public final class NotificationLogger {
     log(requestNotificationProperties, error);
   }
 
+  public static void logRequestProcessingState(final RequestProcessorState requestProcessorState) {
+    if (!LOG.isInfoEnabled()) {
+      return;
+    }
+    LOG.info("{}", requestProcessorState.formatRequestProcessorState());
+  }
+
   private static void log(
       final RequestNotificationProperties requestNotificationProperties, final String error) {
     final String status = error == null ? "SUCCESS" : "FAILURE";

@@ -27,6 +27,9 @@ package de.gematik.demis.nps.base.util;
  * #L%
  */
 
+import static de.gematik.demis.nps.base.util.NotificationLogger.logRequestProcessingState;
+import static de.gematik.demis.nps.base.util.NotificationLogger.logSuccessfulNotification;
+
 import de.gematik.demis.nps.service.Statistics;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,6 +47,8 @@ public class RequestInterceptor implements HandlerInterceptor {
   public static final String HEADER_SENDER = "x-sender";
 
   private final RequestNotificationProperties requestNotificationProperties;
+  private final RequestProcessorState requestProcessorState;
+
   private final Statistics statistics;
 
   @SuppressWarnings("unusued")
@@ -73,7 +78,8 @@ public class RequestInterceptor implements HandlerInterceptor {
       final Exception ex) {
     if (response.getStatus() == 200) {
       statistics.incSuccessCounter();
-      NotificationLogger.logSuccessfulNotification(requestNotificationProperties);
+      logSuccessfulNotification(requestNotificationProperties);
+      logRequestProcessingState(requestProcessorState);
     }
   }
 }

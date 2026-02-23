@@ -29,6 +29,7 @@ package de.gematik.demis.nps.service.receipt;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.healthoffice.HealthOfficeMasterDataService;
@@ -55,6 +56,7 @@ public class ReceiptService {
   private final Statistics statistics;
   private final boolean isNotification73enabled;
   private final boolean isCustodianEnabled;
+  private final RequestProcessorState requestProcessorState;
 
   /**
    * Constructs a ReceiptService instance.
@@ -73,6 +75,7 @@ public class ReceiptService {
       HealthOfficeMasterDataService healthOfficeMasterDataService,
       FhirParser fhirParser,
       Statistics statistics,
+      RequestProcessorState requestProcessorState,
       @Value("${feature.flag.notifications.7_3}") boolean isNotification73enabled,
       @Value("${feature.flag.custodian.enabled}") boolean isCustodianEnabled) {
     this.receiptBundleCreator = receiptBundleCreator;
@@ -82,6 +85,7 @@ public class ReceiptService {
     this.statistics = statistics;
     this.isNotification73enabled = isNotification73enabled;
     this.isCustodianEnabled = isCustodianEnabled;
+    this.requestProcessorState = requestProcessorState;
   }
 
   /**
@@ -124,12 +128,13 @@ public class ReceiptService {
     try {
       final byte[] pdfBytes = generatePdf(notification);
       receiptBuilder.addPdf(pdfBytes);
+      requestProcessorState.setPdfGenerationSuccessful(true);
     } catch (final RuntimeException e) {
       log.error("error creating pdf", e);
       // do not abort processing
       statistics.incIgnoredErrorCounter(ErrorCode.NO_PDF.getCode());
+      requestProcessorState.setPdfGenerationSuccessful(false);
     }
-
     return receiptBuilder.build();
   }
 

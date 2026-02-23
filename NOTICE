@@ -23,7 +23,7 @@ This project includes:
   Apache Commons Lang under Apache-2.0
   Apache Commons Net under Apache License, Version 2.0
   Apache Commons Pool under Apache-2.0
-  Apache Commons Text under Apache License, Version 2.0
+  Apache Commons Text under Apache-2.0
   Apache HttpClient under Apache License, Version 2.0
   Apache HttpComponents Core HTTP/1.1 under Apache License, Version 2.0
   Apache HttpComponents Core HTTP/2 under Apache License, Version 2.0
@@ -145,12 +145,12 @@ This project includes:
   OpenTelemetry Java under The Apache License, Version 2.0
   OpenTelemetry Semantic Conventions Java under The Apache License, Version 2.0
   org.apiguardian:apiguardian-api under The Apache License, Version 2.0
-  org.eclipse.sisu.inject under Eclipse Public License, Version 2.0
+  org.eclipse.sisu:org.eclipse.sisu.inject under Eclipse Public License, Version 2.0
   org.opentest4j:opentest4j under The Apache License, Version 2.0
   org.roaringbitmap:RoaringBitmap under Apache 2
   org.xmlunit:xmlunit-core under The Apache Software License, Version 2.0
   Plexus Common Utilities under Apache License, Version 2.0
-  Plexus Interpolation API under Apache License, Version 2.0
+  Plexus Interpolation API under Apache-2.0
   Project Lombok under The MIT License
   Prometheus Metrics Config under The Apache Software License, Version 2.0
   Prometheus Metrics Core under The Apache Software License, Version 2.0

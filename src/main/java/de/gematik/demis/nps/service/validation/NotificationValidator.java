@@ -37,6 +37,7 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import com.google.common.collect.Maps;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
@@ -70,6 +71,7 @@ import org.springframework.util.MultiValueMap;
 @Slf4j
 public class NotificationValidator {
   private final ValidationServiceClient validationServiceClient;
+  private final RequestProcessorState requestProcessorState;
 
   private final FhirContext fhirContext;
   private final FeatureFlagsConfigProperties featureFlags;
@@ -79,17 +81,12 @@ public class NotificationValidator {
   private final Decoder decoder = new StringDecoder();
 
   private boolean relaxedValidationActivated;
-  private Set<String> headersToForward;
+  private static final Set<String> headersToForward =
+      Set.of(HEADER_FHIR_API_VERSION, HEADER_FHIR_PROFILE, HEADER_SENDER);
 
   @PostConstruct
   public void init() {
     relaxedValidationActivated = featureFlags.isEnabled("relaxed_validation");
-    final boolean isVersionHeaderForwardEnabled = featureFlags.isEnabled("new_api_endpoints");
-
-    headersToForward = Set.of(HEADER_FHIR_API_VERSION, HEADER_SENDER);
-    if (isVersionHeaderForwardEnabled) {
-      headersToForward = Set.of(HEADER_FHIR_API_VERSION, HEADER_FHIR_PROFILE, HEADER_SENDER);
-    }
   }
 
   private static void reduceIssuesSeverityToWarn(final OperationOutcome operationOutcome) {
@@ -122,19 +119,18 @@ public class NotificationValidator {
         fhirContext.newJsonParser().parseResource(OperationOutcome.class, body);
 
     if (isStatusSuccessful(status)) {
-      log.debug("Fhir Bundle successfully validated.");
+      requestProcessorState.setValidationSuccessful(true);
       return new InternalOperationOutcome(operationOutcome);
     } else if (relaxedValidationActivated) {
       RelaxedValidationResult validInRelaxedMode =
           isValidInRelaxedMode(fhirNotification, contentType);
       if (validInRelaxedMode.isValid) {
-        log.info(
-            "Fhir notification only valid with relaxed validation. Original validation output: {}",
-            fhirResourceToJson(operationOutcome));
+        requestProcessorState.setValidationSuccessful(true);
         reduceIssuesSeverityToWarn(operationOutcome);
         return new InternalOperationOutcome(operationOutcome, validInRelaxedMode.reparsedString);
       }
     }
+    requestProcessorState.setValidationSuccessful(false);
     final boolean hasFatalIssue =
         operationOutcome.getIssue().stream()
             .anyMatch(issue -> issue.getSeverity() == IssueSeverity.FATAL);

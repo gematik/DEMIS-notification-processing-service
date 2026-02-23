@@ -27,6 +27,7 @@ package de.gematik.demis.nps.service.processing;
  * #L%
  */
 
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.base.util.UUIDValidator;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.service.base.error.ServiceCallException;
@@ -41,12 +42,15 @@ import org.springframework.stereotype.Service;
 public class DlsService {
   private final DlsServiceClient client;
   private final boolean isFollowUpEnabled;
+  private final RequestProcessorState requestProcessorState;
 
   public DlsService(
       final DlsServiceClient client,
+      final RequestProcessorState requestProcessorState,
       @Value("${feature.flag.follow.up.notification}") final boolean isFollowUpEnabled) {
     this.client = client;
     this.isFollowUpEnabled = isFollowUpEnabled;
+    this.requestProcessorState = requestProcessorState;
   }
 
   /** Write the responsible receiver for the given notification id to the DLS. Fail silently. */
@@ -59,11 +63,13 @@ public class DlsService {
     final DlsStoreRequest payload = DlsStoreRequest.from(original);
     try {
       client.store(payload);
+      requestProcessorState.setDlsSuccessful(true);
     } catch (final ServiceCallException e) {
       log.warn(
           "DLS rejected Notification metadata for notification id '{}'",
           payload.notificationId(),
           e);
+      requestProcessorState.setDlsSuccessful(false);
     }
   }
 }

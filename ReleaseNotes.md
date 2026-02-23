@@ -2,6 +2,10 @@
 
 # Release Notification Processing Service
 
+## 2.9.1
+- removed feature flag FEATURE_FLAG_NEW_API_ENDPOINTS
+- optimized logging for notification processing steps
+
 ## 2.9.0
 - removed high cardinality metrics
 - added endpoint metrics counters including api version, submission type and request origin

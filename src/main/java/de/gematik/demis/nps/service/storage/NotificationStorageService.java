@@ -28,6 +28,8 @@ package de.gematik.demis.nps.service.storage;
  */
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
+import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -41,10 +43,17 @@ public class NotificationStorageService {
   private final FhirParser fhirParser;
   private final TransactionBundleFactory factory;
   private final FhirStorageWriterClient client;
+  private final RequestProcessorState requestProcessorState;
 
   public void storeNotifications(Collection<? extends IBaseResource> notificationsToForward) {
     final Bundle transactionBundle = factory.createTransactionBundle(notificationsToForward);
     final String json = fhirParser.encodeToJson(transactionBundle);
-    client.sendNotificationToFhirStorageWriter(json);
+    try {
+      client.sendNotificationToFhirStorageWriter(json);
+      requestProcessorState.setNotificationStorageSuccessful(true);
+    } catch (ServiceCallException e) {
+      requestProcessorState.setNotificationStorageSuccessful(false);
+      throw e;
+    }
   }
 }

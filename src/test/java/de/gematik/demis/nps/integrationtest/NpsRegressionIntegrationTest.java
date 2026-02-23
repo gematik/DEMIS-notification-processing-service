@@ -165,9 +165,9 @@ class NpsRegressionIntegrationTest {
 
   // FUTS endpoints
   private static final String FUTS_CONCEPTMAP_NOTIFICATION_CATEGORY_ENDPOINT =
-      "/fhir-ui-data-model-translation/conceptmap/NotificationCategoryToTransmissionCategory";
+      "/conceptmap/NotificationCategoryToTransmissionCategory";
   private static final String FUTS_CONCEPTMAP_DISEASE_CATEGORY_ENDPOINT =
-      "/fhir-ui-data-model-translation/conceptmap/NotificationDiseaseCategoryToTransmissionCategory";
+      "/conceptmap/NotificationDiseaseCategoryToTransmissionCategory";
 
   // Mock values
   private static final String MOCK_UUID = "fee6005e-5686-4b7b-b6ee-98b0e98a9d42";
@@ -180,7 +180,7 @@ class NpsRegressionIntegrationTest {
   // HTTP Headers
   private static final String REQUEST_ID = "aaa-bbb-ccc";
   private static final String USER_ID = "LABOR-12345";
-  private static final String NPS_ENDPOINT = "/fhir/$process-notification";
+  private static final String NPS_ENDPOINT = "/$process-notification";
 
   @Autowired MockMvc mockMvc;
   @Autowired MeterRegistry meterRegistry;
@@ -237,7 +237,6 @@ class NpsRegressionIntegrationTest {
         };
     setupStub(NRS, okJsonResource(resourceName));
     setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-    setupStub(PSS, ok());
     setupStub(FSW, ok());
     setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
@@ -284,7 +283,6 @@ class NpsRegressionIntegrationTest {
 
     setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY_7_4));
     setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-    setupStub(PSS, ok());
     setupStub(FSW, ok());
     setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
@@ -429,7 +427,6 @@ class NpsRegressionIntegrationTest {
       setupStub(FSW, ok());
       setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
-      // 200, no pss call, storage call without pseudonym, same result
       executeTest(OK, LABORATORY_DIR + EXPECTED_RESPONSE_JSON);
 
       assertFhirStorageRequest(
@@ -457,7 +454,6 @@ class NpsRegressionIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_HEALTHOFFICE_WITHOUT_CERTIFICATE));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
 
       executeTest(INTERNAL_SERVER_ERROR, ERRORS_DIR + EXPECTED_NO_CERTIFICATE_RESPONSE);
       counterVerifier.assertErrorCounter(ErrorCode.HEALTH_OFFICE_CERTIFICATE);
@@ -469,7 +465,6 @@ class NpsRegressionIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, status(500));
 
       executeTest(BAD_GATEWAY, ERRORS_DIR + EXPECTED_STORAGE_ERROR_RESPONSE);
@@ -481,7 +476,6 @@ class NpsRegressionIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, ok());
       setupStub(PDF, status(500));
 
@@ -498,7 +492,6 @@ class NpsRegressionIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY_WITH_TEST_USER));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, ok());
       setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
       final String expectedNotificationForHealthOffice =

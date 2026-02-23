@@ -27,15 +27,20 @@ package de.gematik.demis.nps.service;
  * #L%
  */
 
-import de.gematik.demis.nps.base.util.NotificationLogger;
+import static de.gematik.demis.nps.base.util.NotificationLogger.logRequestProcessingState;
+import static de.gematik.demis.nps.base.util.NotificationLogger.logUnsuccessfulNotification;
+
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.service.base.error.rest.ErrorCounter;
 import de.gematik.demis.service.base.error.rest.api.ErrorDTO;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nullable;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -46,10 +51,18 @@ public class Statistics implements ErrorCounter {
   private static final String COUNTER_NOTIFICATION_SUCCESS = "notification_success";
   private static final String COUNTER_NOTIFICATION_ERROR = "notification_error";
   private static final String COUNTER_NOTIFICATION_IGNORED_ERROR = "notification_ignored_error";
+  private final RequestProcessorState requestProcessorState;
+
+  @Value("${nps.context-path}")
+  private String contextPath;
 
   private static final String TAG_ERROR_CODE = "error_code";
 
   private final MeterRegistry meterRegistry;
+
+  private List<String> trackedContextPaths() {
+    return List.of(contextPath + "$process-notification");
+  }
 
   public void incSuccessCounter() {
     catchException(() -> meterRegistry.counter(COUNTER_NOTIFICATION_SUCCESS).increment());
@@ -57,9 +70,13 @@ public class Statistics implements ErrorCounter {
 
   @Override
   public void errorOccurred(final ErrorDTO error, @Nullable final String sender) {
+    // prevent logging for unspecified endpoints
+    if (error == null || !trackedContextPaths().contains(error.path())) {
+      return;
+    }
     incErrorCounter();
-    NotificationLogger.logUnsuccessfulNotification(
-        requestNotificationProperties, error.errorCode());
+    logUnsuccessfulNotification(requestNotificationProperties, error.errorCode());
+    logRequestProcessingState(requestProcessorState);
   }
 
   public void incErrorCounter() {

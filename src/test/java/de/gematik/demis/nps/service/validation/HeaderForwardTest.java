@@ -68,7 +68,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
-      "feature.flag.new_api_endpoints=true"
     })
 @AutoConfigureWireMock(port = 0)
 public class HeaderForwardTest {
@@ -94,11 +93,11 @@ public class HeaderForwardTest {
     return parser;
   }
 
-  private OperationOutcome mockParseOutcomeForResponse(final String stringToParse) {
+  private OperationOutcome mockParseOutcomeForResponse() {
     final IParser fhirJsonParser = setupFhirJsonParserMock();
     final OperationOutcome outcome = new OperationOutcome();
     outcome.setId("just for testing");
-    when(fhirJsonParser.parseResource(OperationOutcome.class, stringToParse)).thenReturn(outcome);
+    when(fhirJsonParser.parseResource(OperationOutcome.class, RESPONSE_BODY)).thenReturn(outcome);
     return outcome;
   }
 
@@ -115,11 +114,6 @@ public class HeaderForwardTest {
             .withHeader(HEADER_FHIR_PROFILE, profile == null ? absent() : equalTo(profile))
             .withRequestBody(equalTo(REQUEST_BODY))
             .willReturn(responseDefBuilder));
-  }
-
-  private static void setupVS(
-      final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
-    setupVS(contentType, null, null, responseDefBuilder);
   }
 
   private static void setRequestHeaders(final Map<String, String> headers) {
@@ -143,7 +137,7 @@ public class HeaderForwardTest {
         };
     setRequestHeaders(Map.of(HEADER_FHIR_API_VERSION, apiVersion, HEADER_FHIR_PROFILE, profile));
     setupVS(contentType, apiVersion, profile, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+    final OperationOutcome outcome = mockParseOutcomeForResponse();
     final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
     assertThat(result.operationOutcome()).isEqualTo(outcome);
@@ -160,7 +154,7 @@ public class HeaderForwardTest {
         };
     setRequestHeaders(Map.of(HEADER_FHIR_PROFILE, profile));
     setupVS(contentType, null, profile, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+    final OperationOutcome outcome = mockParseOutcomeForResponse();
     final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
     assertThat(result.operationOutcome()).isEqualTo(outcome);
@@ -176,7 +170,7 @@ public class HeaderForwardTest {
         };
     setRequestHeaders(Map.of());
     setupVS(contentType, null, null, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+    final OperationOutcome outcome = mockParseOutcomeForResponse();
     final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
     assertThat(result.operationOutcome()).isEqualTo(outcome);
@@ -193,7 +187,7 @@ public class HeaderForwardTest {
         };
     setRequestHeaders(Map.of(HEADER_FHIR_API_VERSION, apiVersion));
     setupVS(contentType, apiVersion, null, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+    final OperationOutcome outcome = mockParseOutcomeForResponse();
     final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
     assertThat(result.operationOutcome()).isEqualTo(outcome);

@@ -31,6 +31,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static de.gematik.demis.nps.integrationtest.BundleModifier.*;
 import static de.gematik.demis.nps.integrationtest.Stubs.*;
+import static de.gematik.demis.nps.service.notification.NotificationType.DISEASE;
+import static de.gematik.demis.nps.service.notification.NotificationType.LABORATORY;
 import static de.gematik.demis.nps.test.DecryptionUtil.USER_1;
 import static de.gematik.demis.nps.test.DecryptionUtil.USER_1_01_0_53;
 import static de.gematik.demis.nps.test.DecryptionUtil.USER_TEST_INT;
@@ -44,6 +46,7 @@ import static de.gematik.demis.nps.test.TestUtil.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -125,7 +128,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       "feature.flag.move-error-id-to-diagnostics=true",
       "demis.codemapping.enabled=true",
       "demis.codemapping.client.base-url=http://localhost:${wiremock.server.port}",
-      "demis.codemapping.client.context-path=/FUTS/fhir-ui-data-model-translation/",
+      "demis.codemapping.client.context-path=/FUTS/",
       "demis.codemapping.laboratory.concept-maps=NotificationCategoryToTransmissionCategory",
       "demis.codemapping.disease.concept-maps=NotificationDiseaseCategoryToTransmissionCategory",
       "demis.codemapping.cache-reload-cron=0 0 0 * * ?"
@@ -197,9 +200,9 @@ class NpsIntegrationTest {
 
   // FUTS endpoints
   private static final String FUTS_CONCEPTMAP_NOTIFICATION_CATEGORY_ENDPOINT =
-      "/fhir-ui-data-model-translation/conceptmap/NotificationCategoryToTransmissionCategory";
+      "/conceptmap/NotificationCategoryToTransmissionCategory";
   private static final String FUTS_CONCEPTMAP_DISEASE_CATEGORY_ENDPOINT =
-      "/fhir-ui-data-model-translation/conceptmap/NotificationDiseaseCategoryToTransmissionCategory";
+      "/conceptmap/NotificationDiseaseCategoryToTransmissionCategory";
 
   // Mock values
   private static final String MOCK_UUID = "fee6005e-5686-4b7b-b6ee-98b0e98a9d42";
@@ -212,7 +215,7 @@ class NpsIntegrationTest {
   // HTTP Headers
   private static final String REQUEST_ID = "aaa-bbb-ccc";
   private static final String USER_ID = "LABOR-12345";
-  private static final String NPS_ENDPOINT = "/fhir/$process-notification";
+  private static final String NPS_ENDPOINT = "/$process-notification";
 
   @Autowired MockMvc mockMvc;
   @Autowired MeterRegistry meterRegistry;
@@ -271,7 +274,6 @@ class NpsIntegrationTest {
         };
     setupStub(NRS, okJsonResource(resourceName));
     setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-    setupStub(PSS, ok());
     setupStub(FSW, ok());
     setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
@@ -318,7 +320,6 @@ class NpsIntegrationTest {
 
     setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY_7_4));
     setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-    setupStub(PSS, ok());
     setupStub(FSW, ok());
     setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
@@ -341,13 +342,13 @@ class NpsIntegrationTest {
     final Bundle fswBundle = getJsonParser().parseResource(Bundle.class, getRequestBody(FSW));
     assertThat(fswBundle.getEntry()).hasSize(1);
 
-    counterVerifier.assertSuccessCounter(NotificationType.LABORATORY, DISEASE_CODE);
+    counterVerifier.assertSuccessCounter(LABORATORY, DISEASE_CODE);
   }
 
   static Stream<Arguments> notificationArgs() {
     return Stream.of(
-        Arguments.of(NRS_RESPONSE_OKAY_LABORATORY_7_3, LABORATORY_DIR, NotificationType.LABORATORY),
-        Arguments.of(NRS_RESPONSE_OKAY_DISEASE_7_3, DISEASE_DIR, NotificationType.DISEASE));
+        Arguments.of(NRS_RESPONSE_OKAY_LABORATORY_7_3, LABORATORY_DIR, LABORATORY),
+        Arguments.of(NRS_RESPONSE_OKAY_DISEASE_7_3, DISEASE_DIR, DISEASE));
   }
 
   @ParameterizedTest
@@ -373,7 +374,6 @@ class NpsIntegrationTest {
 
       setupStub(NRS, okJsonResource(nrsResponseOkay));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, ok());
       setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
@@ -437,7 +437,7 @@ class NpsIntegrationTest {
 
     assertThat(fswBundle.getEntry()).hasSize(1);
 
-    final BundleEntryComponent encryptedEntry = fswBundle.getEntry().get(0);
+    final BundleEntryComponent encryptedEntry = fswBundle.getEntry().getFirst();
     final byte[] encryptedData = ((Binary) encryptedEntry.getResource()).getData();
     final String decrypted =
         new String(decryptData(responsibleDepartment, encryptedData), StandardCharsets.UTF_8);
@@ -521,7 +521,6 @@ class NpsIntegrationTest {
       setupStub(FSW, ok());
       setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
-      // 200, no pss call, storage call without pseudonym, same result
       executeTest(OK, LABORATORY_DIR + EXPECTED_RESPONSE_JSON);
 
       assertFhirStorageRequest(
@@ -538,7 +537,7 @@ class NpsIntegrationTest {
                       resource(LABORATORY_DIR + EXPECTED_GA_JSON),
                       BundleModifier::removePseudonym)),
           USER_1_01_0_53);
-      counterVerifier.assertSuccessCounter(NotificationType.LABORATORY, DISEASE_CODE);
+      counterVerifier.assertSuccessCounter(LABORATORY, DISEASE_CODE);
     }
 
     @Test
@@ -549,7 +548,6 @@ class NpsIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_HEALTHOFFICE_WITHOUT_CERTIFICATE));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
 
       executeTest(INTERNAL_SERVER_ERROR, ERRORS_DIR + EXPECTED_NO_CERTIFICATE_RESPONSE);
       counterVerifier.assertErrorCounter(ErrorCode.HEALTH_OFFICE_CERTIFICATE);
@@ -561,7 +559,6 @@ class NpsIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, status(500));
 
       executeTest(BAD_GATEWAY, ERRORS_DIR + EXPECTED_STORAGE_ERROR_RESPONSE);
@@ -573,13 +570,12 @@ class NpsIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, ok());
       setupStub(PDF, status(500));
 
       // 200, storage same, response without binary
       executeTest(OK, ERRORS_DIR + EXPECTED_WITHOUT_PDF_RESPONSE);
-      counterVerifier.assertSuccessCounter(NotificationType.LABORATORY, DISEASE_CODE);
+      counterVerifier.assertSuccessCounter(LABORATORY, DISEASE_CODE);
     }
 
     @Test
@@ -590,7 +586,6 @@ class NpsIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY_WITH_TEST_USER));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, ok());
       setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
       final String expectedNotificationForHealthOffice =
@@ -602,7 +597,7 @@ class NpsIntegrationTest {
               assertFhirResource(healthOfficeBundle, expectedNotificationForHealthOffice),
           TEST_USER_NAME);
 
-      counterVerifier.assertSuccessCounter(NotificationType.LABORATORY, DISEASE_CODE);
+      counterVerifier.assertSuccessCounter(LABORATORY, DISEASE_CODE);
     }
   }
 
@@ -615,7 +610,6 @@ class NpsIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, status(500));
 
       executeTestWithHeaders(
@@ -629,7 +623,6 @@ class NpsIntegrationTest {
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, status(500));
 
       executeTest(BAD_GATEWAY, ERRORS_DIR + EXPECTED_STORAGE_ERROR_RESPONSE);
@@ -653,7 +646,6 @@ class NpsIntegrationTest {
           };
       setupStub(NRS, okJsonResource(resourceName));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, ok());
       setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
@@ -685,7 +677,7 @@ class NpsIntegrationTest {
       try (var mocked = mockStatic(NotificationLogger.class)) {
         executeTest(UNPROCESSABLE_ENTITY, ERRORS_DIR + EXPECTED_FHIR_VALIDATION_ERROR_RESPONSE);
 
-        mocked.verify(() -> NotificationLogger.logSuccessfulNotification(any()), times(0));
+        mocked.verify(() -> NotificationLogger.logSuccessfulNotification(any()), never());
         mocked.verify(
             () ->
                 NotificationLogger.logUnsuccessfulNotification(
@@ -710,7 +702,7 @@ class NpsIntegrationTest {
             UNPROCESSABLE_ENTITY,
             ERRORS_DIR + EXPECTED_LABORATORY_LIFECYCLE_VALIDATION_ERROR_RESPONSE);
 
-        mocked.verify(() -> NotificationLogger.logSuccessfulNotification(any()), times(0));
+        mocked.verify(() -> NotificationLogger.logSuccessfulNotification(any()), never());
         mocked.verify(
             () ->
                 NotificationLogger.logUnsuccessfulNotification(
@@ -746,7 +738,6 @@ class NpsIntegrationTest {
           };
       setupStub(NRS, okJsonResource(resourceName));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(PSS, ok());
       setupStub(FSW, ok());
       setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
@@ -766,8 +757,9 @@ class NpsIntegrationTest {
       executeTestWithHeaders(
           input, OK, resourceDir + EXPECTED_RESPONSE_JSON, "v6", submissionType, "external");
 
-      assertThat(listAppender.list).hasSize(1);
-      String actualLog = listAppender.list.getFirst().getFormattedMessage();
+      assertThat(listAppender.list).hasSize(2);
+      String actualNotificationLogEntryLog = listAppender.list.getFirst().getFormattedMessage();
+      String actualRequestProcessorStateLog = listAppender.list.getLast().getFormattedMessage();
 
       String expectedCode =
           switch (type) {
@@ -788,7 +780,12 @@ class NpsIntegrationTest {
               + "\",\"submissionCategory\":\""
               + expectedCode
               + "\",\"apiVersion\":\"v6\",\"sender\":\"LABOR-12345\",\"validationStatus\":\"SUCCESS\"}";
-      assertThat(actualLog).isEqualTo(expectedJson);
+      String expectedRequestProcessorStateLog =
+          "Notification: bundleId=1a3a16aa-64e0-5eb1-8601-018fc3794b6e, type="
+              + type
+              + ", diseaseCode=cvd, sender=LABOR-12345, receiver=1.01.0.53., testUser=false, result=success, vs=success, nrs=success, lvs=success, ces=success, bundleActions=success, ps=success, fsw=success, dls=unset, pdfgen=success";
+      assertThat(actualNotificationLogEntryLog).isEqualTo(expectedJson);
+      assertThat(actualRequestProcessorStateLog).isEqualTo(expectedRequestProcessorStateLog);
     }
 
     @Test
@@ -802,12 +799,17 @@ class NpsIntegrationTest {
           "pathogen",
           "external");
 
-      assertThat(listAppender.list).hasSize(1);
-      String actualLog = listAppender.list.getFirst().getFormattedMessage();
+      assertThat(listAppender.list).hasSize(2);
+      String actualNotificationLogEntryLog = listAppender.list.getFirst().getFormattedMessage();
+      String actualRequestProcessorStateLog = listAppender.list.getLast().getFormattedMessage();
 
       String expectedJson =
           "{\"submissionType\":\"pathogen\",\"apiVersion\":\"v6\",\"sender\":\"LABOR-12345\",\"validationStatus\":\"FAILURE\",\"error\":\"FHIR_VALIDATION_ERROR\"}";
-      assertThat(actualLog).isEqualTo(expectedJson);
+      String expectedRequestProcessorStateLog =
+          "Notification: bundleId=, type=, diseaseCode=, sender=, receiver=, testUser=false, result=failed, vs=failed, nrs=unset, lvs=unset, ces=unset, bundleActions=unset, ps=unset, fsw=unset, dls=unset, pdfgen=unset";
+
+      assertThat(actualNotificationLogEntryLog).isEqualTo(expectedJson);
+      assertThat(actualRequestProcessorStateLog).isEqualTo(expectedRequestProcessorStateLog);
     }
 
     @Test
@@ -828,12 +830,16 @@ class NpsIntegrationTest {
           "pathogen",
           "external");
 
-      assertThat(listAppender.list).hasSize(1);
-      String actualLog = listAppender.list.getFirst().getFormattedMessage();
+      assertThat(listAppender.list).hasSize(2);
+      String actualNotificationLogEntryLog = listAppender.list.getFirst().getFormattedMessage();
+      String actualRequestProcessorStateLog = listAppender.list.getLast().getFormattedMessage();
 
       String expectedJson =
           "{\"notificationId\":\"e8d8cc43-32c2-4f93-8eaf-b2f3e6deb2a9\",\"submissionType\":\"pathogen\",\"submissionCategory\":\"cvdp\",\"apiVersion\":\"v6\",\"sender\":\"LABOR-12345\",\"validationStatus\":\"FAILURE\",\"error\":\"LIFECYCLE_VALIDATION_ERROR\"}";
-      assertThat(actualLog).isEqualTo(expectedJson);
+      String expectedRequestProcessorStateLog =
+          "Notification: bundleId=a5e00874-bb26-45ac-8eea-0bde76456703, type=LABORATORY, diseaseCode=cvd, sender=LABOR-12345, receiver=, testUser=false, result=failed, vs=success, nrs=success, lvs=failed, ces=unset, bundleActions=unset, ps=unset, fsw=unset, dls=unset, pdfgen=unset";
+      assertThat(actualNotificationLogEntryLog).isEqualTo(expectedJson);
+      assertThat(actualRequestProcessorStateLog).isEqualTo(expectedRequestProcessorStateLog);
     }
   }
 

@@ -29,12 +29,17 @@ package de.gematik.demis.nps.service.receipt;
 
 import static de.gematik.demis.nps.base.profile.DemisSystems.RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Compositions;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.base.util.TimeProvider;
 import de.gematik.demis.nps.base.util.UuidGenerator;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -83,6 +88,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             false,
             false);
 
@@ -139,6 +145,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             false,
             false);
 
@@ -202,6 +209,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             false,
             false);
 
@@ -256,6 +264,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             true,
             false);
 
@@ -313,6 +322,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             true,
             false);
 
@@ -372,6 +382,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             true,
             false);
 
@@ -417,6 +428,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             true,
             false);
 
@@ -461,6 +473,7 @@ class ReceiptServiceTest {
             healthOfficeMasterDataService,
             fhirParser,
             statistics,
+            new RequestProcessorState(),
             true,
             false);
 
@@ -508,6 +521,7 @@ class ReceiptServiceTest {
               healthOfficeMasterDataService,
               fhirParser,
               statistics,
+              new RequestProcessorState(),
               true,
               true);
     }

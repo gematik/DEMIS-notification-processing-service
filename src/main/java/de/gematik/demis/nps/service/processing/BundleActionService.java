@@ -27,6 +27,7 @@ package de.gematik.demis.nps.service.processing;
  * #L%
  */
 
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
@@ -40,15 +41,19 @@ import org.springframework.stereotype.Service;
 public class BundleActionService {
 
   private final PseudoService pseudoService;
+  private final RequestProcessorState requestProcessorState;
 
   @Autowired
-  public BundleActionService(final PseudoService pseudoService) {
+  public BundleActionService(
+      final PseudoService pseudoService, RequestProcessorState requestProcessorState) {
     this.pseudoService = pseudoService;
+    this.requestProcessorState = requestProcessorState;
   }
 
   public void process(
       @Nonnull final Notification notification, @Nonnull final SequencedSet<BundleAction> actions) {
     if (actions.isEmpty()) {
+      requestProcessorState.setBundleActionsSuccessful(false);
       throw new NpsServiceException(ErrorCode.NRS_PROCESSING_ERROR, "Received no bundle actions");
     }
 
@@ -64,15 +69,20 @@ public class BundleActionService {
                   ErrorCode.NRS_PROCESSING_ERROR, "Required action CREATE_PSEUDONYM_RECORD failed");
             }
           } catch (Exception e) {
+            requestProcessorState.setBundleActionsSuccessful(false);
             throw new NpsServiceException(
                 ErrorCode.NRS_PROCESSING_ERROR, "Error occurred during pseudonym creation", e);
           }
         }
         case NO_ACTION -> {}
-        case UNKNOWN ->
-            throw new NpsServiceException(
-                ErrorCode.NRS_PROCESSING_ERROR, "Unknown bundle action encountered");
+        case UNKNOWN -> {
+          requestProcessorState.setBundleActionsSuccessful(false);
+
+          throw new NpsServiceException(
+              ErrorCode.NRS_PROCESSING_ERROR, "Unknown bundle action encountered");
+        }
       }
     }
+    requestProcessorState.setBundleActionsSuccessful(true);
   }
 }

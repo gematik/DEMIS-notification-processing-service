@@ -70,7 +70,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
-      "feature.flag.new_api_endpoints=false"
     })
 @AutoConfigureWireMock(port = 0)
 class LifecycleValidationServiceTest {
@@ -134,7 +133,7 @@ class LifecycleValidationServiceTest {
 
       final var exception =
           catchThrowableOfType(
-              () -> underTest.validateLifecycle(notification), NpsServiceException.class);
+              NpsServiceException.class, () -> underTest.validateLifecycle(notification));
 
       assertThat(exception)
           .isNotNull()
@@ -194,7 +193,7 @@ class LifecycleValidationServiceTest {
 
       final var exception =
           catchThrowableOfType(
-              () -> underTest.validateLifecycle(notification), NpsServiceException.class);
+              NpsServiceException.class, () -> underTest.validateLifecycle(notification));
 
       assertThat(exception)
           .isNotNull()

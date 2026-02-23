@@ -36,12 +36,14 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.pseudonymization.PseudoService;
 import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.test.RoutingDataUtil;
+import java.util.SequencedSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,7 +59,7 @@ class BundleActionServiceTest {
 
   @BeforeEach
   void setup() {
-    bundleActionService = new BundleActionService(pseudoService);
+    bundleActionService = new BundleActionService(pseudoService, new RequestProcessorState());
   }
 
   private static Notification notification() {
@@ -114,11 +116,10 @@ class BundleActionServiceTest {
 
   @Test
   void thatNoActionsThrowsError() {
+    Notification notification = notification();
+    SequencedSet<BundleAction> actions = SequencedSets.of();
     assertThatExceptionOfType(NpsServiceException.class)
-        .isThrownBy(
-            () -> {
-              bundleActionService.process(notification(), SequencedSets.of());
-            });
+        .isThrownBy(() -> bundleActionService.process(notification, actions));
   }
 
   @Test

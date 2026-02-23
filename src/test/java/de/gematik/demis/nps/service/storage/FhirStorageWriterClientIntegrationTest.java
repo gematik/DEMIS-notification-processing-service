@@ -57,11 +57,11 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 @SpringBootTest(
     properties = {
       "nps.client.fhir-storage-writer.address=http://localhost:${wiremock.server.port}",
-      "nps.client.fhir-storage-writer.context-path=/notification-clearing-api/fhir/"
+      "nps.client.fhir-storage-writer.context-path=/"
     })
 @AutoConfigureWireMock(port = 0)
 class FhirStorageWriterClientIntegrationTest {
-  private static final String ENDPOINT = "/notification-clearing-api/fhir/";
+  private static final String ENDPOINT = "/";
 
   private static final String REQUEST_BODY =
 """
@@ -100,8 +100,8 @@ class FhirStorageWriterClientIntegrationTest {
 
     final ServiceCallException ex =
         catchThrowableOfType(
-            () -> underTest.sendNotificationToFhirStorageWriter(REQUEST_BODY),
-            ServiceCallException.class);
+            ServiceCallException.class,
+            () -> underTest.sendNotificationToFhirStorageWriter(REQUEST_BODY));
 
     assertThat(ex)
         .isNotNull()

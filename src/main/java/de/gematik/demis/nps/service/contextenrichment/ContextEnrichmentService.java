@@ -49,6 +49,7 @@ import static de.gematik.demis.nps.base.profile.DemisProfiles.PROFILE_BASE_URL;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +70,7 @@ public class ContextEnrichmentService {
   private final ContextEnrichmentServiceClient contextEnrichmentServiceClient;
   private final FhirParser fhirParserService;
   private final NotificationUpdateService notificationUpdateService;
+  private final RequestProcessorState requestProcessorState;
 
   /**
    * Enriches the bundle of notification with context information
@@ -79,6 +81,7 @@ public class ContextEnrichmentService {
   public void enrichBundleWithContextInformation(
       final Notification notification, final String authorization) {
     if (isBlank(authorization)) {
+      requestProcessorState.setContextEnrichmentSuccessful(true);
       log.warn("Authorization is null but required by CES. No enrichment with CES!");
       return;
     }
@@ -92,7 +95,9 @@ public class ContextEnrichmentService {
               .setResource(provenance)
               .setFullUrl(PROFILE_BASE_URL + provenance.getId());
       notificationUpdateService.addEntry(notification.getBundle(), entry);
+      requestProcessorState.setContextEnrichmentSuccessful(true);
     } catch (Exception e) {
+      requestProcessorState.setContextEnrichmentSuccessful(false);
       log.error("Error while enrich bundle: ", e);
     }
   }

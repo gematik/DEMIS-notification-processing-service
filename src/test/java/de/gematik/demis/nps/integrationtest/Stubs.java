@@ -45,16 +45,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 class Stubs {
-  static final String STUBS_PATH = "/integrationtest/stubs/";
-
+  private static final String STUBS_PATH = "/integrationtest/stubs/";
   static final String FUTS = "/FUTS";
-  static final UrlPattern VS = urlPathMatching("/VS/.+");
-  static final UrlPattern LVS = urlPathMatching("/LVS/.+");
-  static final UrlPattern NRS = urlPathMatching("/NRS/.+");
-  static final UrlPattern PS = urlPathMatching("/PS/.+");
-  static final UrlPattern PSS = urlPathMatching("/PSS/.+");
-  static final UrlPattern PDF = urlPathMatching("/PDF/.+");
-  static final UrlPattern FSW = urlPathMatching("/FSW/.+");
+
+  static final UrlPattern VS = urlPathMatching("/VS(/.+)?");
+  static final UrlPattern LVS = urlPathMatching("/LVS(/.+)?");
+  static final UrlPattern NRS = urlPathMatching("/NRS(/.+)?");
+  static final UrlPattern PS = urlPathMatching("/PS(/.+)?");
+  static final UrlPattern PDF = urlPathMatching("/PDF(/.+)?");
+  static final UrlPattern FSW = urlPathMatching("/FSW(/.+|/)");
 
   static String getRequestBody(final UrlPattern urlPattern) {
     final List<LoggedRequest> requests = WireMock.findAll(WireMock.postRequestedFor(urlPattern));

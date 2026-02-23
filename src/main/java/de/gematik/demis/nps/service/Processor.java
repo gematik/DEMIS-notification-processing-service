@@ -36,6 +36,7 @@ import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.contextenrichment.ContextEnrichmentService;
@@ -90,6 +91,7 @@ public class Processor {
   private final DlsService dlsService;
 
   private final RequestNotificationProperties requestNotificationProperties;
+  private final RequestProcessorState requestProcessorState;
 
   public Processor(
       NotificationValidator notificationValidator,
@@ -108,7 +110,8 @@ public class Processor {
       @Value("${feature.flag.notification_pre_check}") boolean notificationPreCheck,
       @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
       @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled,
-      final RequestNotificationProperties requestNotificationProperties) {
+      final RequestNotificationProperties requestNotificationProperties,
+      final RequestProcessorState requestProcessorState) {
     this.notificationValidator = notificationValidator;
     this.lifecycleValidationService = lifecycleValidationService;
     this.notificationFhirService = notificationFhirService;
@@ -126,6 +129,7 @@ public class Processor {
     this.isPermissionCheckEnabled = isPermissionCheckEnabled;
     this.dlsService = dlsService;
     this.requestNotificationProperties = requestNotificationProperties;
+    this.requestProcessorState = requestProcessorState;
   }
 
   public Parameters execute(
@@ -147,7 +151,7 @@ public class Processor {
             testUserFlag,
             testUserRecipient,
             internalOperationOutcome);
-    setRequestNotificationProperties(notification);
+    updateRequestScopeSummary(notification);
     if (!isProcessing73Enabled
         && Objects.equals(notification.getRoutingData().notificationCategory(), P_7_3)) {
       throw new UnsupportedOperationException(
@@ -159,7 +163,7 @@ public class Processor {
       // Assume that empty allowedRoles means no one is allowed to send
       boolean isMissingRoles = Sets.intersection(roles, allowedRoles).isEmpty();
       if (isMissingRoles) {
-        log.info(
+        log.warn(
             "Principal '{}' needs at least one role of '{}', but only has '{}'",
             sender,
             allowedRoles,
@@ -174,7 +178,7 @@ public class Processor {
     // cleanup and add (overwrite) some data like timestamp, identifier and sender
     notificationFhirService.cleanAndEnrichNotification(notification, requestId);
 
-    logInfos(notification);
+    updateRequestScopeSummary(notification);
 
     // process
     setResponsibleHealthOffice(notification);
@@ -213,9 +217,8 @@ public class Processor {
             originalNotificationJson);
     final Bundle parsedBundle =
         fhirParser.parseBundleOrParameter(originalNotificationJson, MessageType.JSON);
-    final NRSRoutingInput routingInput =
-        new NRSRoutingInput(validatedJSON, testUserFlag, testUserId);
-    final RoutingData routingInformation = routingService.getRoutingInformation(routingInput);
+    final NRSRoutingInput request = new NRSRoutingInput(validatedJSON, testUserFlag, testUserId);
+    final RoutingData routingInformation = routingService.getRoutingInformation(request);
 
     final String diseaseCodeRoot =
         notificationFhirService.getDiseaseCodeRoot(parsedBundle, routingInformation.type());
@@ -233,10 +236,15 @@ public class Processor {
         .build();
   }
 
-  private void setRequestNotificationProperties(@Nonnull final Notification notification) {
+  private void updateRequestScopeSummary(@Nonnull final Notification notification) {
     requestNotificationProperties.setNotificationId(
         notification.getCompositionIdentifier().orElse(null));
     requestNotificationProperties.setSubmissionCategory(notification.getDiseaseCode());
+    requestProcessorState.setBundleId(notification.getBundleIdentifier());
+    requestProcessorState.setSender(notification.getSender());
+    requestProcessorState.setDiseaseCode(notification.getDiseaseCodeRoot());
+    requestProcessorState.setType(notification.getType());
+    requestProcessorState.setTestUser(notification.isTestUser());
   }
 
   @Nonnull
@@ -258,16 +266,6 @@ public class Processor {
     }
 
     return notificationValidator.validateFhir(originalFhirNotification, contentType);
-  }
-
-  private void logInfos(final Notification notification) {
-    log.info(
-        "Notification: bundleId={}, type={}, diseaseCode={}, sender={}, testUser={}",
-        notification.getBundleIdentifier(),
-        notification.getType(),
-        notification.getDiseaseCodeRoot(),
-        notification.getSender(),
-        notification.isTestUser());
   }
 
   private List<? extends IBaseResource> createModifiedNotifications(
@@ -298,6 +296,7 @@ public class Processor {
   /** <strong>Beware: This method changes the internal state of notification</strong> */
   private void setResponsibleHealthOffice(@Nonnull final Notification notification) {
     final String healthOffice = notification.getRoutingData().responsible();
+    requestProcessorState.setReceiver(healthOffice);
     updateService.setResponsibleDepartment(notification.getBundle(), healthOffice);
   }
 

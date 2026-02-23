@@ -32,7 +32,7 @@ import static de.gematik.demis.nps.error.ServiceCallErrorCode.LVS;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
-import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationType;
@@ -43,7 +43,6 @@ import feign.codec.StringDecoder;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jena.sparql.function.library.leviathan.log;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -57,29 +56,30 @@ public class LifecycleValidationService {
   private final LifecycleValidationServiceClient lifecycleValidationServiceClient;
   private final Decoder decoder = new StringDecoder();
   private final FhirContext fhirContext;
-  private final FeatureFlagsConfigProperties featureFlags;
+  private final RequestProcessorState requestProcessorState;
 
   public void validateLifecycle(final Notification notification) {
     if (notification.getType() == NotificationType.LABORATORY) {
       validateLaboratoryLifecycle(notification.getBundle());
+      requestProcessorState.setLifecycleValidationSuccessful(true);
     }
     if (notification.getType() == NotificationType.DISEASE) {
       validateDiseaseLifecycle(notification.getBundle());
+      requestProcessorState.setLifecycleValidationSuccessful(true);
     }
   }
 
   private void validateDiseaseLifecycle(Bundle bundle) {
     final String fhirAsJson = fhirResourceToJson(bundle);
     try (final Response response = lifecycleValidationServiceClient.validateDisease(fhirAsJson)) {
-      if (isStatusSuccessful(response.status())) {
-        log.debug("Disease Lifecycle of notification successfully validated.");
-      } else {
+      if (!isStatusSuccessful(response.status())) {
         handleNotSuccessfulStatus(response, "Disease Lifecycle of notification validation failed.");
       }
     }
   }
 
   private void handleNotSuccessfulStatus(Response response, String details) {
+    requestProcessorState.setLifecycleValidationSuccessful(false);
     if (response.status() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
       final String message = readResponse(response);
       final var outcome = new OperationOutcome();
@@ -104,11 +104,10 @@ public class LifecycleValidationService {
     final String fhirAsJson = fhirResourceToJson(bundle);
     try (final Response response =
         lifecycleValidationServiceClient.validateLaboratory(fhirAsJson)) {
-      if (isStatusSuccessful(response.status())) {
-        log.debug("Laboratory Lifecycle of notification successfully validated.");
-      } else
+      if (!isStatusSuccessful(response.status())) {
         handleNotSuccessfulStatus(
             response, "Laboratory Lifecycle of notification validation failed.");
+      }
     }
   }
 

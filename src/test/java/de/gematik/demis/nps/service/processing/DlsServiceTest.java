@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryAnonymousDataBuilder;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.test.RoutingDataUtil;
 import de.gematik.demis.service.base.error.ServiceCallException;
@@ -90,7 +91,7 @@ class DlsServiceTest {
   @BeforeEach
   void setup() {
     Mockito.reset(DLS_SERVICE_CLIENT);
-    service = new DlsService(DLS_SERVICE_CLIENT, true);
+    service = new DlsService(DLS_SERVICE_CLIENT, new RequestProcessorState(), true);
   }
 
   @Test
@@ -109,7 +110,7 @@ class DlsServiceTest {
   class FeatureFlag {
     @Test
     void thatNoOpIfFeatureFlagIsDisabled() {
-      service = new DlsService(DLS_SERVICE_CLIENT, false);
+      service = new DlsService(DLS_SERVICE_CLIENT, new RequestProcessorState(), false);
       assertThatNoException().isThrownBy(() -> service.store(NOTIFICATION));
       verifyNoInteractions(DLS_SERVICE_CLIENT);
     }

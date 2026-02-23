@@ -59,12 +59,12 @@ nps:
     pseudonymization: "http://pseudonymization-service.demis.svc.cluster.local"
     fhir-storage-writer:
       address: "http://fhir-storage-writer.demis.svc.cluster.local"
-      context-path: ${DEMIS_NETWORK_FSS_CONTEXT_PATH:/notification-clearing-api/fhir/}
+      context-path: ${DEMIS_NETWORK_FSS_CONTEXT_PATH:/}
     futs:
       address: "http://futs.demis.svc.cluster.local"
-      context-path: ${DEMIS_NETWORK_FUTS_CONTEXT_PATH:/fhir-ui-data-model-translation/}
+      context-path: ${DEMIS_NETWORK_FUTS_CONTEXT_PATH:/}
     context-enrichment-service: "http://context-enrichment-service.demis.svc.cluster.local"
-  context-path: ${API_ENTRYPOINT:/fhir/}
+  context-path: ${API_ENTRYPOINT:/}
   certificate-dir: ${NPS_CERTIFICATES_PATH:data/certificates}
 
   anonymized-allowed: true
@@ -89,7 +89,6 @@ feature:
     notification_pre_check: false
     notifications.7_3: false
     relaxed_validation: false
-    new_api_endpoints: false
     permission.check.enabled: false
     custodian.enabled: false
     follow.up.notification: false
@@ -102,7 +101,7 @@ demis:
     cache-reload-cron: ${DEMIS_CODEMAPPING_CACHE_RELOAD_CRON:0 0/30 * * * *}
     client:
       base-url: ${DEMIS_CODEMAPPING_BASE_URL:http://futs.demis.svc.cluster.local}
-      context-path: ${DEMIS_NETWORK_FUTS_CONTEXT_PATH:/fhir-ui-data-model-translation/}
+      context-path: ${DEMIS_NETWORK_FUTS_CONTEXT_PATH:/}
     concept-maps:
       - NotificationDiseaseCategoryToTransmissionCategory
       - NotificationCategoryToTransmissionCategory

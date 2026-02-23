@@ -89,9 +89,6 @@ public class NotificationController {
       final WebRequest request,
       @Nonnull final TestUserProps testUserProps,
       @Nonnull final JwtToken token) {
-    if ("text".equalsIgnoreCase(contentType.getType())) {
-      log.info("sender= {}, deprecated contentType= {}", sender, contentType);
-    }
 
     final Parameters response =
         processor.execute(

@@ -30,6 +30,7 @@ package de.gematik.demis.nps.service.pseudonymization;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.gematik.demis.nps.base.profile.DemisExtensions;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.notification.Notification;
@@ -47,16 +48,19 @@ public class PseudoService {
   private final NotificationUpdateService notificationUpdateService;
   private final ObjectMapper objectMapper;
   private final Statistics statistics;
+  private final RequestProcessorState requestProcessorState;
 
   public PseudoService(
       PseudonymizationServiceClient pseudonymizationServiceClient,
       NotificationUpdateService notificationUpdateService,
       ObjectMapper objectMapper,
-      Statistics statistics) {
+      Statistics statistics,
+      RequestProcessorState requestProcessorState) {
     this.pseudonymizationServiceClient = pseudonymizationServiceClient;
     this.notificationUpdateService = notificationUpdateService;
     this.objectMapper = objectMapper;
     this.statistics = statistics;
+    this.requestProcessorState = requestProcessorState;
   }
 
   /**
@@ -75,12 +79,14 @@ public class PseudoService {
     try {
       final PseudonymizationResponse pseudonymizationResponse = createPseudonym(notification);
       addPseudonymToFhirResource(notification, pseudonymizationResponse);
+      requestProcessorState.setPseudonymizationSuccessful(true);
       return true;
     } catch (final RuntimeException e) {
       // We catch all exceptions here, so a failing pseudonymization does not abort the notification
       // processing. Pseudonymization can be considered optional.
       log.error("error in pseudonymization", e);
       statistics.incIgnoredErrorCounter(ErrorCode.NO_PSEUDONYM.getCode());
+      requestProcessorState.setPseudonymizationSuccessful(false);
       return false;
     }
   }

@@ -32,11 +32,15 @@ import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HE
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
@@ -100,12 +104,14 @@ class NotificationValidationRelaxedModeTest {
 
   @BeforeEach
   void setup() {
-    featureFlags =
-        new FeatureFlagsConfigProperties(
-            Map.of("relaxed_validation", true, "new_api_endpoints", true));
+    featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed_validation", true));
     underTest =
         new NotificationValidator(
-            validationServiceClient, fhirContext, featureFlags, httpServletRequest);
+            validationServiceClient,
+            new RequestProcessorState(),
+            fhirContext,
+            featureFlags,
+            httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();
     lenient().when(httpServletRequest.getHeader(eq(HEADER_FHIR_API_VERSION))).thenReturn("v1");

@@ -76,7 +76,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
-      "feature.flag.new_api_endpoints=false"
     })
 @AutoConfigureWireMock(port = 0)
 class NotificationValidatorIntegrationTest {
@@ -103,11 +102,11 @@ class NotificationValidatorIntegrationTest {
     return parser;
   }
 
-  private OperationOutcome mockParseOutcomeForResponse(final String stringToParse) {
+  private OperationOutcome mockParseOutcomeForResponse() {
     final IParser fhirJsonParser = setupFhirJsonParserMock();
     final OperationOutcome outcome = new OperationOutcome();
     outcome.setId("just for testing");
-    when(fhirJsonParser.parseResource(OperationOutcome.class, stringToParse)).thenReturn(outcome);
+    when(fhirJsonParser.parseResource(OperationOutcome.class, RESPONSE_BODY)).thenReturn(outcome);
     return outcome;
   }
 
@@ -157,7 +156,7 @@ class NotificationValidatorIntegrationTest {
             case XML -> APPLICATION_XML_VALUE;
           };
       setupVS(contentType, okJson(RESPONSE_BODY));
-      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
       final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
       assertThat(result.operationOutcome()).isEqualTo(outcome);
     }
@@ -173,8 +172,8 @@ class NotificationValidatorIntegrationTest {
             case JSON -> APPLICATION_JSON_VALUE;
             case XML -> APPLICATION_XML_VALUE;
           };
-      setupVS(contentType, apiVersion, null, okJson(RESPONSE_BODY));
-      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      setupVS(contentType, apiVersion, profile, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
       final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
       assertThat(result.operationOutcome()).isEqualTo(outcome);
@@ -190,8 +189,8 @@ class NotificationValidatorIntegrationTest {
             case JSON -> APPLICATION_JSON_VALUE;
             case XML -> APPLICATION_XML_VALUE;
           };
-      setupVS(contentType, null, null, okJson(RESPONSE_BODY));
-      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      setupVS(contentType, null, profile, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
       final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
       assertThat(result.operationOutcome()).isEqualTo(outcome);
@@ -206,7 +205,7 @@ class NotificationValidatorIntegrationTest {
           APPLICATION_JSON_VALUE,
           status(422).withBody(RESPONSE_BODY).withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
 
-      final OperationOutcome outcome = mockParseOutcomeForResponse(RESPONSE_BODY);
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
       outcome.addIssue().setSeverity(severity);
 
       final ErrorCode expectedErrorCode =

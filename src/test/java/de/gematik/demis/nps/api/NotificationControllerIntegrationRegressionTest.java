@@ -42,6 +42,7 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.Processor;
@@ -77,7 +78,7 @@ import org.springframework.test.web.servlet.MockMvc;
 })
 class NotificationControllerIntegrationRegressionTest {
 
-  private static final String ENDPOINT = "/fhir/$process-notification";
+  private static final String ENDPOINT = "/$process-notification";
   private static final String FHIR_NOTIFICATION = "does not matter";
   private static final String RESULT_BODY = "receipt fhir message";
   private static final String TOKEN = "SomeToken";
@@ -108,6 +109,7 @@ class NotificationControllerIntegrationRegressionTest {
 
   private final IParser parser = mock(IParser.class);
   @MockitoBean RequestNotificationProperties mockRequestNotificationProperties;
+  @MockitoBean RequestProcessorState mockRequestProcessorState;
   @MockitoBean Processor processor;
   @MockitoBean FhirContext fhirContext;
   @MockitoBean Statistics statistics;

@@ -27,8 +27,6 @@ package de.gematik.demis.nps.base.util;
  * #L%
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.time.Instant;
 import java.util.Date;
 import org.assertj.core.api.Assertions;

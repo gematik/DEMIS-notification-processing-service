@@ -87,7 +87,7 @@ class CertificateProviderTest {
     final var healthOffice = "HO-Unknown";
     final var exception =
         catchThrowableOfType(
-            () -> underTest.getCertificate(healthOffice), NpsServiceException.class);
+            NpsServiceException.class, () -> underTest.getCertificate(healthOffice));
 
     assertThat(underTest.hasCertificate(healthOffice)).isFalse();
 
@@ -101,7 +101,7 @@ class CertificateProviderTest {
   }
 
   @Test
-  void certificateInvalid() throws IOException {
+  void certificateInvalid() {
     Mockito.when(certificateRepository.findById(HEALTH_OFFICE_VALID_CERT))
         .thenReturn(
             java.util.Optional.of(
@@ -110,7 +110,7 @@ class CertificateProviderTest {
 
     final var exception =
         catchThrowableOfType(
-            () -> underTest.getCertificate(HEALTH_OFFICE_VALID_CERT), NpsServiceException.class);
+            NpsServiceException.class, () -> underTest.getCertificate(HEALTH_OFFICE_VALID_CERT));
 
     assertThat(exception)
         .isNotNull()

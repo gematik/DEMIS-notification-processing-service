@@ -45,7 +45,7 @@ class StatisticsTest {
 
   @Test
   void incNotificationEndpointCounter_WithApiVersion() {
-    Statistics statistics = new Statistics(null, meterRegistry);
+    Statistics statistics = new Statistics(null, null, meterRegistry);
 
     statistics.incNotificationEndpointCounter("v6", "pathogen", "internal");
 
@@ -57,7 +57,7 @@ class StatisticsTest {
 
   @Test
   void incNotificationEndpointCounter_WithoutApiVersion() {
-    Statistics statistics = new Statistics(null, meterRegistry);
+    Statistics statistics = new Statistics(null, null, meterRegistry);
 
     statistics.incNotificationEndpointCounter(null, "pathogen", "internal");
 

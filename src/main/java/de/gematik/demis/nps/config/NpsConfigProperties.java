@@ -51,6 +51,6 @@ public record NpsConfigProperties(
 
   @PostConstruct
   void log() {
-    log.info("NPS CONFIGURATION " + this);
+    log.info("NPS CONFIGURATION {}", this);
   }
 }

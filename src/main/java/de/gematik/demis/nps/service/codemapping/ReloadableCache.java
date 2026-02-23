@@ -70,7 +70,7 @@ class ReloadableCache<T, U> {
         log.info("{} conceptmap cache (re)loaded. # entries = {}", name, newMap.size());
       }
     } catch (final RuntimeException e) {
-      log.error("error fetching code map for " + name, e);
+      log.error("error fetching code map for {}", name, e);
     }
   }
 }

@@ -124,7 +124,7 @@ class PseudonymizationServiceClientIntegrationTest {
 
     final ServiceCallException ex =
         catchThrowableOfType(
-            () -> underTest.generatePseudonym(REQUEST), ServiceCallException.class);
+            ServiceCallException.class, () -> underTest.generatePseudonym(REQUEST));
 
     assertThat(ex)
         .isNotNull()

@@ -41,6 +41,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
 import de.gematik.demis.nps.service.routing.RoutingData;
@@ -78,7 +79,10 @@ class ContextEnrichmentServiceTest {
     notification = Notification.builder().bundle(bundle).routingData(routingData).build();
     underTest =
         new ContextEnrichmentService(
-            contextEnrichmentServiceClient, fhirParser, notificationUpdateService);
+            contextEnrichmentServiceClient,
+            fhirParser,
+            notificationUpdateService,
+            new RequestProcessorState());
   }
 
   @Test

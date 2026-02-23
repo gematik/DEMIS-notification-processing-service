@@ -28,7 +28,6 @@ package de.gematik.demis.nps.service.pseudonymization;
  */
 
 import static de.gematik.demis.nps.base.profile.DemisSystems.RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import ch.qos.logback.classic.Level;
@@ -40,7 +39,7 @@ import de.gematik.demis.notification.builder.demis.fhir.notification.builder.inf
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.technicals.HumanNameDataBuilder;
-import de.gematik.demis.nps.base.profile.DemisExtensions;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationUpdateService;
@@ -64,7 +63,6 @@ import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Specimen;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -145,59 +143,6 @@ class PseudoServiceTest {
     return listAppender;
   }
 
-  void createAndStorePseudonymAndAddToNotification() {
-    underTest =
-        new PseudoService(
-            pseudonymizationServiceClient,
-            notificationUpdateService,
-            new ObjectMapper(),
-            statistics);
-
-    final String familyName = "Mustermann";
-    final String firstName = "Max";
-    final String bundleId = "abc-def";
-    final String healthOffice = "1.23.45.";
-    final String birthDay = "23.05.1979";
-
-    final RoutingData routingData = RoutingDataUtil.emptyFor("");
-    final var notifiedPerson = createPatient(birthDay, familyName, firstName);
-    final var bundle = createBundle(notifiedPerson, bundleId, healthOffice);
-    final var notification =
-        Notification.builder()
-            .bundle(bundle)
-            .diseaseCodeRoot(DISEASE_CODE)
-            .routingData(routingData)
-            .testUser(false)
-            .build();
-
-    final var expectedRequest =
-        new PseudonymizationRequest(bundleId, DISEASE_CODE, familyName, firstName, birthDay);
-
-    final var activePseudonym = createPseudonym("ac");
-    final PseudonymizationResponse pseudoResponse =
-        new PseudonymizationResponse("demisPseudonym", createPseudonym("od"), activePseudonym);
-
-    Mockito.when(pseudonymizationServiceClient.generatePseudonym(expectedRequest))
-        .thenReturn(pseudoResponse);
-
-    underTest.createAndStorePseudonymAndAddToNotification(notification);
-  }
-
-  private void verifyNotificationUpdate(
-      final Bundle bundle,
-      final Patient notifiedPerson,
-      final PseudonymizationResponse pseudoResponse) {
-    final var argumentCaptor = ArgumentCaptor.forClass(Extension.class);
-    Mockito.verify(notificationUpdateService)
-        .addExtension(Mockito.eq(bundle), Mockito.eq(notifiedPerson), argumentCaptor.capture());
-    final Extension extension = argumentCaptor.getValue();
-
-    assertThat(extension)
-        .isNotNull()
-        .returns(DemisExtensions.EXTENSION_URL_PSEUDONYM, Extension::getUrl)
-        .returns(pseudoResponse, PseudoServiceTest::decodePseudonym);
-  }
-
   @Test
   void pseudoServiceError() {
     underTest =
@@ -205,7 +150,8 @@ class PseudoServiceTest {
             pseudonymizationServiceClient,
             notificationUpdateService,
             new ObjectMapper(),
-            statistics);
+            statistics,
+            new RequestProcessorState());
     final RoutingData routingData = RoutingDataUtil.empty61For("");
     final var notifiedPerson = createPatient("23.05.1980", "Mustermann", "Max");
     final var bundle = createBundle(notifiedPerson, "123", "xxx");

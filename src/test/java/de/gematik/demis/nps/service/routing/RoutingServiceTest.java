@@ -34,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.base.util.SequencedSets;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.error.ServiceCallErrorCode;
@@ -55,7 +56,7 @@ class RoutingServiceTest {
       List.of(new NotificationReceiver("", "", SequencedSets.of(), false));
   private final NotificationRoutingServiceClient mock =
       mock(NotificationRoutingServiceClient.class);
-  final RoutingService routingService = new RoutingService(mock);
+  final RoutingService routingService = new RoutingService(mock, new RequestProcessorState());
 
   @MethodSource("invalidResponses")
   @ParameterizedTest

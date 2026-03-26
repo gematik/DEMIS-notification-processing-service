@@ -37,14 +37,22 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 @FeignClient(name = "validation-service", url = "${nps.client.validation}")
 interface ValidationServiceClient {
-  String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
-  String HEADER_FHIR_PROFILE = "x-fhir-profile";
-  // this intentionally duplicates NotificationController#HEADER_SENDER, so we don't accidentally
-  // change the API here
-  String HEADER_SENDER = "x-sender";
 
   // Note: @RequestHeader for Content-Type as method parameter does not work
   // -> so let's define two methods
+  @PostMapping(
+      value = "/$validate",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  Response validateJsonBundle(@RequestBody String bundleAsJson);
+
+  @PostMapping(
+      value = "/$validate",
+      consumes = MediaType.APPLICATION_XML_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  Response validateXmlBundle(@RequestBody String bundleAsXml);
+
+  // Only required for feature flag "feign_interceptor_enabled" set to false
   @PostMapping(
       value = "/$validate",
       consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -56,4 +64,5 @@ interface ValidationServiceClient {
       consumes = MediaType.APPLICATION_XML_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   Response validateXmlBundle(@RequestHeader HttpHeaders headers, @RequestBody String bundleAsXml);
+  // --------------------------------------------------------------------------
 }

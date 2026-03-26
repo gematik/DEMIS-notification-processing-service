@@ -27,11 +27,13 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
+import static de.gematik.demis.nps.api.NotificationController.HEADER_SENDER;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_FATAL;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
 import static de.gematik.demis.nps.service.validation.ValidationServiceClient.*;
-import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
@@ -45,6 +47,7 @@ import de.gematik.demis.service.base.error.ServiceCallException;
 import feign.Response;
 import feign.codec.Decoder;
 import feign.codec.StringDecoder;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -54,7 +57,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -76,13 +78,16 @@ public class NotificationValidator {
   private final FhirContext fhirContext;
   private final FeatureFlagsConfigProperties featureFlags;
 
-  private final HttpServletRequest httpServletRequest;
-
   private final Decoder decoder = new StringDecoder();
 
   private boolean relaxedValidationActivated;
+
+  // Only required for feature flag "feign_interceptor_enabled" set to false
+  private final HttpServletRequest httpServletRequest;
   private static final Set<String> headersToForward =
       Set.of(HEADER_FHIR_API_VERSION, HEADER_FHIR_PROFILE, HEADER_SENDER);
+
+  // --------------------------------------------------------------------------
 
   @PostConstruct
   public void init() {
@@ -178,13 +183,22 @@ public class NotificationValidator {
 
   private Response callValidationService(
       final String fhirNotification, final MessageType contentType) {
-    final Map<String, String> rawHeaders = getHeadersToForward();
-    final HttpHeaders additionalHeaders =
-        new HttpHeaders(MultiValueMap.fromSingleValue(rawHeaders));
+
+    if (!featureFlags.isEnabled("feign_interceptor_enabled")) {
+      final Map<String, String> rawHeaders = getHeadersToForward();
+      final HttpHeaders additionalHeaders =
+          new HttpHeaders(MultiValueMap.fromSingleValue(rawHeaders));
+
+      return switch (contentType) {
+        case JSON ->
+            validationServiceClient.validateJsonBundle(additionalHeaders, fhirNotification);
+        case XML -> validationServiceClient.validateXmlBundle(additionalHeaders, fhirNotification);
+      };
+    }
 
     return switch (contentType) {
-      case JSON -> validationServiceClient.validateJsonBundle(additionalHeaders, fhirNotification);
-      case XML -> validationServiceClient.validateXmlBundle(additionalHeaders, fhirNotification);
+      case JSON -> validationServiceClient.validateJsonBundle(fhirNotification);
+      case XML -> validationServiceClient.validateXmlBundle(fhirNotification);
     };
   }
 

@@ -41,10 +41,11 @@ public enum NotificationType {
   LABORATORY(NOTIFICATION_BUNDLE_LABORATORY_PROFILE),
   DISEASE(NOTIFICATION_BUNDLE_DISEASE_PROFILE);
 
-  private final DemisProfiles.Profile<Bundle> profile;
+  /** Base / prefix profile identifying a family of Bundle profiles */
+  private final DemisProfiles.Profile<Bundle> baseProfile;
 
   NotificationType(DemisProfiles.Profile<Bundle> profile) {
-    this.profile = profile;
+    this.baseProfile = profile;
   }
 
   @JsonCreator
@@ -60,9 +61,5 @@ public enum NotificationType {
   @JsonValue
   public String toValue() {
     return this.name().toLowerCase();
-  }
-
-  public DemisProfiles.Profile<Bundle> getProfile() {
-    return profile;
   }
 }

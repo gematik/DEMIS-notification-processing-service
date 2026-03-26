@@ -76,14 +76,6 @@ nps:
 
   health-offices-live-test: ${NPS_FLAG_LIVE_TEST:false}
 
-  codemapping:
-    cache:
-      reload:
-        # reload codemapping cache every 30 minutes from 00:00
-        cron: "0 0/30 * * * *"
-
-
-
 feature:
   flag:
     notification_pre_check: false
@@ -93,11 +85,14 @@ feature:
     custodian.enabled: false
     follow.up.notification: false
     nbl.for.notByName.enabled: false
-    codemapping.service.base: false
+    fhir_core_split: false
+    feign_interceptor_enabled: false
+    new.error.message.for.failed.routing: false
+
 
 demis:
   codemapping:
-    enabled: ${feature.flag.codemapping.service.base}
+    enabled: true
     cache-reload-cron: ${DEMIS_CODEMAPPING_CACHE_RELOAD_CRON:0 0/30 * * * *}
     client:
       base-url: ${DEMIS_CODEMAPPING_BASE_URL:http://futs.demis.svc.cluster.local}
@@ -107,3 +102,6 @@ demis:
       - NotificationCategoryToTransmissionCategory
       - NotificationDiseaseCategoryNonNominalToTransmissionCategory
       - NotificationCategoryNonNominalToTransmissionCategory
+    fhir-profile-headers:
+      - disease
+      - laboratory

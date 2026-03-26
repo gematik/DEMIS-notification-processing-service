@@ -1,10 +1,10 @@
 # Declare Source Digest for the Base Image
-ARG SOURCE_DIGEST=9323904961b9adac73c36c9771a187ecea21111d96a331eec6173b9649481243
-FROM gematik1/osadl-alpine-openjdk21-jre:1.0.8@sha256:${SOURCE_DIGEST}
+ARG SOURCE_DIGEST=49026a2f80c05185ebd97d74f9296002a3cffb0bae8181cb66008480ffbcbf11
+FROM gematik1/osadl-alpine-openjdk25-jre:1.0.0@sha256:49026a2f80c05185ebd97d74f9296002a3cffb0bae8181cb66008480ffbcbf11
 
 # Redeclare Source Digest to be used in the build context
 # https://docs.docker.com/engine/reference/builder/#understand-how-arg-and-from-interact
-ARG SOURCE_DIGEST=9323904961b9adac73c36c9771a187ecea21111d96a331eec6173b9649481243
+ARG SOURCE_DIGEST=49026a2f80c05185ebd97d74f9296002a3cffb0bae8181cb66008480ffbcbf11
 
 # The STOPSIGNAL instruction sets the system call signal that will be sent to the container to exit
 # SIGTERM = 15 - https://de.wikipedia.org/wiki/Signal_(Unix)

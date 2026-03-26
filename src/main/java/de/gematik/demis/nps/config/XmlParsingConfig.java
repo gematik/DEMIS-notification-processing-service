@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.codemapping;
+package de.gematik.demis.nps.config;
 
 /*-
  * #%L
@@ -27,30 +27,28 @@ package de.gematik.demis.nps.service.codemapping;
  * #L%
  */
 
-import de.gematik.demis.service.base.clients.mapping.CodeMappingAutoConfiguration;
-import jakarta.annotation.Nullable;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import javax.xml.stream.XMLInputFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 @Configuration
-@Slf4j
-@Import(CodeMappingAutoConfiguration.class)
-class CodeMappingServiceConfiguration {
+public class XmlParsingConfig {
 
   @Bean
-  LegacyCodeMappingService legacyCodeMappingService(final FutsClient futsClient) {
-    return new LegacyCodeMappingService(futsClient);
-  }
+  public XMLInputFactory xmlInputFactory() {
+    XMLInputFactory f = XMLInputFactory.newFactory();
 
-  @Bean
-  SwitchingCodeMappingService switchingCodeMappingService(
-      final LegacyCodeMappingService legacyService,
-      @Nullable
-          final de.gematik.demis.service.base.clients.mapping.CodeMappingService serviceBaseService,
-      @Value("${feature.flag.codemapping.service.base}") final boolean serviceBaseEnabled) {
-    return new SwitchingCodeMappingService(legacyService, serviceBaseService, serviceBaseEnabled);
+    // Security hardening
+
+    // Do not allow XML to define extra rules inside itself
+    f.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+
+    // Do not allow XML to load files or data from outside the XML
+    f.setProperty("javax.xml.stream.isSupportingExternalEntities", false);
+
+    // Do not automatically replace shortcuts with large text
+    f.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, false);
+
+    return f;
   }
 }

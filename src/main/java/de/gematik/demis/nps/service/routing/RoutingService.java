@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -46,11 +47,16 @@ public class RoutingService {
 
   private final NotificationRoutingServiceClient client;
   private final RequestProcessorState requestProcessorState;
+  private final boolean newErrorMessageEnabled;
 
   public RoutingService(
-      final NotificationRoutingServiceClient client, final RequestProcessorState state) {
+      final NotificationRoutingServiceClient client,
+      final RequestProcessorState state,
+      @Value("${feature.flag.new.error.message.for.failed.routing}")
+          final boolean newErrorMessageEnabled) {
     this.client = client;
     this.requestProcessorState = state;
+    this.newErrorMessageEnabled = newErrorMessageEnabled;
   }
 
   @Nonnull
@@ -82,7 +88,7 @@ public class RoutingService {
           request.originalNotificationAsJSON(), request.isTestUser(), request.testUserId());
     } catch (final ServiceCallException e) {
       if (e.getHttpStatus() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
-        throwNoHealthOfficeResponsibleException();
+        throwMissingRoutingInformationException();
       }
       throw e;
     }
@@ -92,12 +98,18 @@ public class RoutingService {
     final Map<AddressOriginEnum, String> healthOffices = response.healthOffices();
     final String responsible = Strings.nullToEmpty(response.responsible());
     if (responsible.isBlank() || response.routes().isEmpty() || healthOffices == null) {
-      throwNoHealthOfficeResponsibleException();
+      throwMissingRoutingInformationException();
     }
   }
 
-  private void throwNoHealthOfficeResponsibleException() {
+  private void throwMissingRoutingInformationException() {
     requestProcessorState.setRoutingSuccessful(false);
-    throw new NpsServiceException(ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
+    if (newErrorMessageEnabled) {
+      throw new NpsServiceException(
+          ErrorCode.DESTINATION_MISSING, "No destination could be determined");
+    } else {
+      throw new NpsServiceException(
+          ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
+    }
   }
 }

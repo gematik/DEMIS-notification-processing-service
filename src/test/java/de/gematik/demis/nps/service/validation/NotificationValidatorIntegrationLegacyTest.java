@@ -31,10 +31,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
+import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
-import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity.FATAL;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpHeaders.ACCEPT;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
@@ -46,10 +50,16 @@ import ca.uhn.fhir.parser.IParser;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.nps.error.ErrorCode;
+import de.gematik.demis.nps.error.NpsServiceException;
+import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Map;
 import org.hl7.fhir.r4.model.OperationOutcome;
+import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
@@ -57,29 +67,33 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-@SpringBootTest
-@TestPropertySource(
+/**
+ * Only needed to check behaviour ok if feign_interceptor_enabled = false Can be removed with FF
+ * removal
+ */
+@SpringBootTest(
     properties = {
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
+      "feature.flag.feign_interceptor_enabled=false"
     })
 @AutoConfigureWireMock(port = 0)
-public class HeaderForwardTest {
+class NotificationValidatorIntegrationLegacyTest {
   private static final String ENDPOINT_VS = "/VS/$validate";
 
   private static final String REQUEST_BODY = "my body";
   private static final String RESPONSE_BODY =
       """
-      {"outcome":"does not matter"}
-      """;
+            {"outcome":"does not matter"}
+            """;
 
   @MockitoBean private FhirContext fhirContext;
+
   @Autowired NotificationValidator underTest;
 
   @BeforeEach
@@ -116,6 +130,11 @@ public class HeaderForwardTest {
             .willReturn(responseDefBuilder));
   }
 
+  private static void setupVS(
+      final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
+    setupVS(contentType, null, null, responseDefBuilder);
+  }
+
   private static void setRequestHeaders(final Map<String, String> headers) {
     final var mockRequest = new MockHttpServletRequest();
     for (var entry : headers.entrySet()) {
@@ -125,76 +144,90 @@ public class HeaderForwardTest {
     RequestContextHolder.setRequestAttributes(attrs);
   }
 
-  @ParameterizedTest
-  @EnumSource(MessageType.class)
-  void validationOkayWithSpecificVersionAndProfile(final MessageType messageType) {
-    final String apiVersion = "6";
-    final String profile = "fhir-profile-snapshots";
-    final String contentType =
-        switch (messageType) {
-          case JSON -> APPLICATION_JSON_VALUE;
-          case XML -> APPLICATION_XML_VALUE;
-        };
-    setRequestHeaders(Map.of(HEADER_FHIR_API_VERSION, apiVersion, HEADER_FHIR_PROFILE, profile));
-    setupVS(contentType, apiVersion, profile, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse();
-    final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+  @Nested
+  class ValidationServiceTest {
 
-    assertThat(result.operationOutcome()).isEqualTo(outcome);
-  }
+    @AfterEach
+    void tearDown() {
+      RequestContextHolder.resetRequestAttributes();
+    }
 
-  @ParameterizedTest
-  @EnumSource(MessageType.class)
-  void validationOkayWithoutSpecificVersionAndProfile(final MessageType messageType) {
-    final String profile = "fhir-profile-snapshots";
-    final String contentType =
-        switch (messageType) {
-          case JSON -> APPLICATION_JSON_VALUE;
-          case XML -> APPLICATION_XML_VALUE;
-        };
-    setRequestHeaders(Map.of(HEADER_FHIR_PROFILE, profile));
-    setupVS(contentType, null, profile, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse();
-    final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+    @ParameterizedTest
+    @EnumSource(MessageType.class)
+    void validationOkay(final MessageType messageType) {
+      final String contentType =
+          switch (messageType) {
+            case JSON -> APPLICATION_JSON_VALUE;
+            case XML -> APPLICATION_XML_VALUE;
+          };
+      setupVS(contentType, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
+      final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+      assertThat(result.operationOutcome()).isEqualTo(outcome);
+    }
 
-    assertThat(result.operationOutcome()).isEqualTo(outcome);
-  }
+    @ParameterizedTest
+    @EnumSource(MessageType.class)
+    void validationOkayWithSpecificVersion(final MessageType messageType) {
+      final String apiVersion = "6";
+      final String profile = "fhir-profile-snapshots";
+      setRequestHeaders(Map.of(HEADER_FHIR_API_VERSION, apiVersion, HEADER_FHIR_PROFILE, profile));
+      final String contentType =
+          switch (messageType) {
+            case JSON -> APPLICATION_JSON_VALUE;
+            case XML -> APPLICATION_XML_VALUE;
+          };
+      setupVS(contentType, apiVersion, profile, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
+      final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
-  @ParameterizedTest
-  @EnumSource(MessageType.class)
-  void validationOkayWithSpecificProfile(final MessageType messageType) {
-    final String contentType =
-        switch (messageType) {
-          case JSON -> APPLICATION_JSON_VALUE;
-          case XML -> APPLICATION_XML_VALUE;
-        };
-    setRequestHeaders(Map.of());
-    setupVS(contentType, null, null, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse();
-    final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+      assertThat(result.operationOutcome()).isEqualTo(outcome);
+    }
 
-    assertThat(result.operationOutcome()).isEqualTo(outcome);
-  }
+    @ParameterizedTest
+    @EnumSource(MessageType.class)
+    void validationOkayWithoutSpecificVersion(final MessageType messageType) {
+      final String profile = "fhir-profile-snapshots";
+      setRequestHeaders(Map.of(HEADER_FHIR_PROFILE, profile));
+      final String contentType =
+          switch (messageType) {
+            case JSON -> APPLICATION_JSON_VALUE;
+            case XML -> APPLICATION_XML_VALUE;
+          };
+      setupVS(contentType, null, profile, okJson(RESPONSE_BODY));
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
+      final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
 
-  @ParameterizedTest
-  @EnumSource(MessageType.class)
-  void validationOkayWithSpecificVersion(final MessageType messageType) {
-    final String apiVersion = "6";
-    final String contentType =
-        switch (messageType) {
-          case JSON -> APPLICATION_JSON_VALUE;
-          case XML -> APPLICATION_XML_VALUE;
-        };
-    setRequestHeaders(Map.of(HEADER_FHIR_API_VERSION, apiVersion));
-    setupVS(contentType, apiVersion, null, okJson(RESPONSE_BODY));
-    final OperationOutcome outcome = mockParseOutcomeForResponse();
-    final InternalOperationOutcome result = underTest.validateFhir(REQUEST_BODY, messageType);
+      assertThat(result.operationOutcome()).isEqualTo(outcome);
+    }
 
-    assertThat(result.operationOutcome()).isEqualTo(outcome);
-  }
+    @ParameterizedTest
+    @EnumSource(
+        value = IssueSeverity.class,
+        names = {"ERROR", "FATAL"})
+    void validationErrorOutcome(final IssueSeverity severity) {
+      setupVS(
+          APPLICATION_JSON_VALUE,
+          status(422).withBody(RESPONSE_BODY).withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
 
-  @AfterEach
-  void tearDown() {
-    RequestContextHolder.resetRequestAttributes();
+      final OperationOutcome outcome = mockParseOutcomeForResponse();
+      outcome.addIssue().setSeverity(severity);
+
+      final ErrorCode expectedErrorCode =
+          severity == FATAL ? ErrorCode.FHIR_VALIDATION_FATAL : ErrorCode.FHIR_VALIDATION_ERROR;
+
+      assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
+          .isExactlyInstanceOf(NpsServiceException.class)
+          .hasFieldOrPropertyWithValue("errorCode", expectedErrorCode.getCode())
+          .hasFieldOrPropertyWithValue("responseStatus", expectedErrorCode.getHttpStatus())
+          .hasFieldOrPropertyWithValue("operationOutcome", outcome);
+    }
+
+    @Test
+    void validationCallException() {
+      setupVS(APPLICATION_JSON_VALUE, serverError());
+      assertThatThrownBy(() -> underTest.validateFhir(REQUEST_BODY, MessageType.JSON))
+          .isExactlyInstanceOf(ServiceCallException.class);
+    }
   }
 }

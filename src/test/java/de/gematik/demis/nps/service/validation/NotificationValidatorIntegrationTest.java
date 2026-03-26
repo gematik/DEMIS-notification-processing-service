@@ -34,8 +34,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_API_VERSION;
-import static de.gematik.demis.nps.service.validation.ValidationServiceClient.HEADER_FHIR_PROFILE;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity.FATAL;
@@ -52,6 +52,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
+import de.gematik.demis.nps.test.WithMockFhirProfileContext;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Map;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -76,16 +77,17 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.relaxed_validation=false",
+      "feature.flag.feign_interceptor_enabled=true"
     })
 @AutoConfigureWireMock(port = 0)
-class NotificationValidatorIntegrationTest {
+class NotificationValidatorIntegrationTest extends WithMockFhirProfileContext {
   private static final String ENDPOINT_VS = "/VS/$validate";
 
   private static final String REQUEST_BODY = "my body";
   private static final String RESPONSE_BODY =
       """
-      {"outcome":"does not matter"}
-      """;
+            {"outcome":"does not matter"}
+            """;
 
   @MockitoBean private FhirContext fhirContext;
 
@@ -127,7 +129,7 @@ class NotificationValidatorIntegrationTest {
 
   private static void setupVS(
       final String contentType, final ResponseDefinitionBuilder responseDefBuilder) {
-    setupVS(contentType, null, null, responseDefBuilder);
+    setupVS(contentType, null, DEFAULT_FHIR_PROFILE_HEADER, responseDefBuilder);
   }
 
   private static void setRequestHeaders(final Map<String, String> headers) {

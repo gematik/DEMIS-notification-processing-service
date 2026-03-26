@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.codemapping;
+package de.gematik.demis.nps.test;
 
 /*-
  * #%L
@@ -27,20 +27,23 @@ package de.gematik.demis.nps.service.codemapping;
  * #L%
  */
 
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.mockito.Mockito.when;
 
-import feign.Headers;
-import java.util.Map;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import de.gematik.demis.nps.base.util.FhirProfileContext;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@FeignClient(name = "futs", url = "${nps.client.futs.address}")
-interface FutsClient {
+@SpringBootTest
+public abstract class WithMockFhirProfileContext {
 
-  @GetMapping(
-      value = "${nps.client.futs.context-path}conceptmap/{name}",
-      produces = APPLICATION_JSON_VALUE)
-  @Headers("x-fhir-profile: fhir-profile-snapshots")
-  Map<String, String> getConceptMap(@PathVariable String name);
+  public static final String DEFAULT_FHIR_PROFILE_HEADER = "profile-123";
+
+  @MockitoBean protected FhirProfileContext fhirProfileContext;
+
+  @BeforeEach
+  void defaultFhirProfileHeaders() {
+    when(fhirProfileContext.getOutgoingFhirProfileHeaderValue())
+        .thenReturn(DEFAULT_FHIR_PROFILE_HEADER); // individual tests can override this
+  }
 }

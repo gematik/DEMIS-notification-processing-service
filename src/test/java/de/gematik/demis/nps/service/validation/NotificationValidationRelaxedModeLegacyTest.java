@@ -32,6 +32,8 @@ import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,20 +60,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.DynamicPropertySource;
 
+/**
+ * Only needed to check behaviour ok if feign_interceptor_enabled = false Can be removed with FF
+ * removal
+ */
 @ExtendWith(MockitoExtension.class)
-class NotificationValidationRelaxedModeTest {
+class NotificationValidationRelaxedModeLegacyTest {
 
   private static final String ORIGINAL_NOTIFICATION =
-"""
-<Bundle xmlns="http://hl7.org/fhir">
-    <id value="098f6bcd-4621-3373-8ade-4e832627b4f6" />
-    <id value="9aaaaaaa-4621-3373-8ade-bbbbbbbbbbbb" />
-</Bundle>
-""";
+      """
+            <Bundle xmlns="http://hl7.org/fhir">
+                <id value="098f6bcd-4621-3373-8ade-4e832627b4f6" />
+                <id value="9aaaaaaa-4621-3373-8ade-bbbbbbbbbbbb" />
+            </Bundle>
+            """;
 
   private static final String CORRECTED_NOTIFICATION =
-"""
-{"resourceType":"Bundle","id":"098f6bcd-4621-3373-8ade-4e832627b4f6"}""";
+      """
+            {"resourceType":"Bundle","id":"098f6bcd-4621-3373-8ade-4e832627b4f6"}""";
 
   private static final FhirContext fhirContext = FhirContext.forR4Cached();
 
@@ -102,9 +108,7 @@ class NotificationValidationRelaxedModeTest {
 
   @BeforeEach
   void setup() {
-    featureFlags =
-        new FeatureFlagsConfigProperties(
-            Map.of("relaxed_validation", true, "feign_interceptor_enabled", true));
+    featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed_validation", true));
     underTest =
         new NotificationValidator(
             validationServiceClient,
@@ -114,9 +118,9 @@ class NotificationValidationRelaxedModeTest {
             httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();
-    lenient().when(httpServletRequest.getHeader(HEADER_FHIR_API_VERSION)).thenReturn("v1");
+    lenient().when(httpServletRequest.getHeader(eq(HEADER_FHIR_API_VERSION))).thenReturn("v1");
     lenient()
-        .when(httpServletRequest.getHeader(HEADER_FHIR_PROFILE))
+        .when(httpServletRequest.getHeader(eq(HEADER_FHIR_PROFILE)))
         .thenReturn("ars-profile-snapshots");
   }
 
@@ -124,11 +128,11 @@ class NotificationValidationRelaxedModeTest {
   void parsedFhirNotificationIsValid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(any(), eq(ORIGINAL_NOTIFICATION)))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(200, null);
-    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(any(), eq(CORRECTED_NOTIFICATION)))
         .thenReturn(secondTryResponse);
 
     final InternalOperationOutcome result =
@@ -143,11 +147,11 @@ class NotificationValidationRelaxedModeTest {
   void parsedFhirNotificationIsStillInvalid() throws Exception {
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(any(), eq(ORIGINAL_NOTIFICATION)))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(422, null);
-    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(any(), eq(CORRECTED_NOTIFICATION)))
         .thenReturn(secondTryResponse);
 
     assertThatThrownBy(() -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML))
@@ -169,14 +173,14 @@ class NotificationValidationRelaxedModeTest {
   void fhirNotificationNotParseable() throws Exception {
     final String notParseableNotification =
         """
-                        <Bundle xmlns="http://hl7.org/fhir">
-                            <id value="098f6bcd-4621-3373-8ade-4e832627b4f6" />
-                            <syntax error
-                        </Bundle>
-                        """;
+                                <Bundle xmlns="http://hl7.org/fhir">
+                                    <id value="098f6bcd-4621-3373-8ade-4e832627b4f6" />
+                                    <syntax error
+                                </Bundle>
+                                """;
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(notParseableNotification))
+    when(validationServiceClient.validateXmlBundle(any(), eq(notParseableNotification)))
         .thenReturn(firstResponse);
 
     assertThatThrownBy(() -> underTest.validateFhir(notParseableNotification, MessageType.XML))
@@ -200,11 +204,11 @@ class NotificationValidationRelaxedModeTest {
 
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
-    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+    when(validationServiceClient.validateXmlBundle(any(), eq(ORIGINAL_NOTIFICATION)))
         .thenReturn(firstResponse);
 
     final var secondTryResponse = mockResponse(200, null);
-    when(validationServiceClient.validateJsonBundle(CORRECTED_NOTIFICATION))
+    when(validationServiceClient.validateJsonBundle(any(), eq(CORRECTED_NOTIFICATION)))
         .thenReturn(secondTryResponse);
 
     final InternalOperationOutcome result =

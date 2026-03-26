@@ -89,7 +89,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            false,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -107,12 +106,15 @@ class ReceiptServiceTest {
             .routingData(routingData)
             .build();
 
+    Bundle preEncryptedBundle = new Bundle();
+    preEncryptedBundle.setId("originalBundle");
+    notification.putPreEncryptedBundle("1.1.", preEncryptedBundle);
+    when(fhirParser.encodeToJson(preEncryptedBundle)).thenReturn("someBundleJsonMock");
+
     Organization organization = new Organization();
     organization.setId("organizationId");
     when(healthOfficeMasterDataService.getHealthOfficeOrganization("1.1.", false))
         .thenReturn(organization);
-
-    when(fhirParser.encodeToJson(bundle)).thenReturn("someBundleJsonMock");
 
     byte[] t = new byte[10];
     when(pdfGenServiceClient.createDiseasePdfFromJson("someBundleJsonMock")).thenReturn(t);
@@ -146,7 +148,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            false,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -176,11 +177,14 @@ class ReceiptServiceTest {
             .routingData(routingData)
             .build();
 
+    Bundle preEncryptedBundle = new Bundle();
+    preEncryptedBundle.setId("originalBundle");
+    notification.putPreEncryptedBundle("1.1.", preEncryptedBundle);
+    when(fhirParser.encodeToJson(preEncryptedBundle)).thenReturn("someBundleJsonMock");
+
     Organization organization = new Organization();
     organization.setId("organizationId");
     when(healthOfficeMasterDataService.getHealthOfficeOrganization("1.1.", false)).thenReturn(null);
-
-    when(fhirParser.encodeToJson(bundle)).thenReturn("someBundleJsonMock");
 
     Bundle receiptBundle = receiptService.generateReceipt(notification);
 
@@ -210,7 +214,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            false,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -228,11 +231,15 @@ class ReceiptServiceTest {
             .routingData(routingData)
             .build();
 
+    Bundle preEncryptedBundle = new Bundle();
+    preEncryptedBundle.setId("originalBundle");
+    notification.putPreEncryptedBundle("1.1.", preEncryptedBundle);
+    when(fhirParser.encodeToJson(preEncryptedBundle)).thenReturn("someBundleJsonMock");
+
     Organization organization = new Organization();
     organization.setId("organizationId");
     when(healthOfficeMasterDataService.getHealthOfficeOrganization("1.1.", false)).thenReturn(null);
 
-    when(fhirParser.encodeToJson(bundle)).thenReturn("someBundleJsonMock");
     when(pdfGenServiceClient.createDiseasePdfFromJson("someBundleJsonMock"))
         .thenThrow(new RuntimeException());
 
@@ -265,7 +272,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            true,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -323,7 +329,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            true,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -383,7 +388,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            true,
             false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
@@ -429,7 +433,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            true,
             false);
 
     // We just need to ensure correct data flow, and we don't mind what's the organization exactly
@@ -474,7 +477,6 @@ class ReceiptServiceTest {
             fhirParser,
             statistics,
             new RequestProcessorState(),
-            true,
             false);
 
     // We just need to ensure correct data flow, and we don't mind what is the organization exactly
@@ -522,7 +524,6 @@ class ReceiptServiceTest {
               fhirParser,
               statistics,
               new RequestProcessorState(),
-              true,
               true);
     }
 

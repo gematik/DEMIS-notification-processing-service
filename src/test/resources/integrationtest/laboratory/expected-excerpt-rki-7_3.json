@@ -14,7 +14,7 @@
   },
   "identifier": {
     "system": "https://demis.rki.de/fhir/NamingSystem/NotificationBundleId",
-    "value": "67"
+    "value": "53"
   },
   "type": "document",
   "timestamp": "2021-03-04T20:16:01.000+01:00",
@@ -43,7 +43,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/64"
+        "reference": "Patient/50"
       },
       "date": "2021-03-04T20:16:00.000+01:00",
       "author": [ {
@@ -74,10 +74,10 @@
       } ]
     }
   }, {
-    "fullUrl": "https://demis.rki.de/fhir/Patient/64",
+    "fullUrl": "https://demis.rki.de/fhir/Patient/50",
     "resource": {
       "resourceType": "Patient",
-      "id": "64",
+      "id": "50",
       "meta": {
         "profile": [ "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonAnonymous" ]
       },
@@ -200,7 +200,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/64"
+        "reference": "Patient/50"
       },
       "receivedTime": "2021-03-04T15:40:00.000+01:00",
       "collection": {
@@ -237,7 +237,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/64"
+        "reference": "Patient/50"
       },
       "valueCodeableConcept": {
         "coding": [ {
@@ -294,7 +294,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/64"
+        "reference": "Patient/50"
       },
       "issued": "2021-03-04T20:15:00.000+01:00",
       "result": [ {

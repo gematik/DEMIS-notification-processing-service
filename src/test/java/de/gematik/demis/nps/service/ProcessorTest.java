@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.nps.base.util.FhirProfileContext;
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.base.util.SequencedSets;
@@ -107,6 +108,7 @@ class ProcessorTest {
   @Mock FhirParser fhirParser;
   @Mock NotificationUpdateService updateService;
   @Mock DlsService dlsService;
+  @Mock FhirProfileContext fhirProfileContext;
 
   /** Help with checked issues on Collections: https://stackoverflow.com/a/5655702 */
   @Captor private ArgumentCaptor<Collection<? extends IBaseResource>> storageParameter;
@@ -225,7 +227,8 @@ class ProcessorTest {
         true,
         isPermissionCheckEnabled,
         new RequestNotificationProperties(),
-        new RequestProcessorState());
+        new RequestProcessorState(),
+        fhirProfileContext);
   }
 
   @Test

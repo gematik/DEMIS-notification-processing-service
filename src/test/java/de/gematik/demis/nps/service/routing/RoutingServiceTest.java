@@ -29,6 +29,7 @@ package de.gematik.demis.nps.service.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -56,7 +57,7 @@ class RoutingServiceTest {
       List.of(new NotificationReceiver("", "", SequencedSets.of(), false));
   private final NotificationRoutingServiceClient mock =
       mock(NotificationRoutingServiceClient.class);
-  final RoutingService routingService = new RoutingService(mock, new RequestProcessorState());
+  final RoutingService routingService = new RoutingService(mock, new RequestProcessorState(), true);
 
   @MethodSource("invalidResponses")
   @ParameterizedTest
@@ -70,13 +71,32 @@ class RoutingServiceTest {
 
   @Test
   void that422StatusCodeIsForwardedAsIs() {
+    final RoutingService routingServiceNewErrorMessage =
+        new RoutingService(mock, new RequestProcessorState(), true);
     when(mock.ruleBased(anyString(), anyBoolean(), anyString()))
         .thenThrow(
             new ServiceCallException(
                 "", ServiceCallErrorCode.NRS, HttpStatus.UNPROCESSABLE_ENTITY.value(), null));
 
-    assertThatExceptionOfType(NpsServiceException.class)
-        .isThrownBy(() -> routingService.getRoutingInformation(REQUEST));
+    assertThatThrownBy(() -> routingServiceNewErrorMessage.getRoutingInformation(REQUEST))
+        .isInstanceOf(NpsServiceException.class)
+        .hasMessageContaining("No destination could be determined")
+        .hasFieldOrPropertyWithValue("errorCode", "DESTINATION_MISSING");
+  }
+
+  @Test
+  void that422StatusCodeIsForwardedAsIs_Regression() {
+    final RoutingService routingServiceRegression =
+        new RoutingService(mock, new RequestProcessorState(), false);
+    when(mock.ruleBased(anyString(), anyBoolean(), anyString()))
+        .thenThrow(
+            new ServiceCallException(
+                "", ServiceCallErrorCode.NRS, HttpStatus.UNPROCESSABLE_ENTITY.value(), null));
+
+    assertThatThrownBy(() -> routingServiceRegression.getRoutingInformation(REQUEST))
+        .isInstanceOf(NpsServiceException.class)
+        .hasMessageContaining("no health office is responsible")
+        .hasFieldOrPropertyWithValue("errorCode", "MISSING_RESPONSIBLE");
   }
 
   @Test

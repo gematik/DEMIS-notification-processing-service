@@ -29,6 +29,7 @@ package de.gematik.demis.nps.base.util;
 
 import static de.gematik.demis.nps.base.util.NotificationLogger.logRequestProcessingState;
 import static de.gematik.demis.nps.base.util.NotificationLogger.logSuccessfulNotification;
+import static de.gematik.demis.nps.config.NpsHeaders.*;
 
 import de.gematik.demis.nps.service.Statistics;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,10 +42,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 @RequiredArgsConstructor
 public class RequestInterceptor implements HandlerInterceptor {
-  private static final String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
-  private static final String HEADER_FHIR_SUBMISSION_TYPE = "x-fhir-api-submission-type";
-  private static final String HEADER_FHIR_REQUEST_ORIGIN = "x-fhir-api-request-origin";
-  public static final String HEADER_SENDER = "x-sender";
 
   private final RequestNotificationProperties requestNotificationProperties;
   private final RequestProcessorState requestProcessorState;
@@ -67,6 +64,7 @@ public class RequestInterceptor implements HandlerInterceptor {
     requestNotificationProperties.setSubmissionType(submissionType);
     requestNotificationProperties.setApiVersion(apiVersion);
     requestNotificationProperties.setSender(sender);
+
     return true;
   }
 

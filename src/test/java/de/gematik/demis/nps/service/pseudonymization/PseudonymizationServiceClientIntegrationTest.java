@@ -41,6 +41,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import de.gematik.demis.nps.error.ServiceCallErrorCode;
+import de.gematik.demis.nps.test.WithMockFhirProfileContext;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 
 @SpringBootTest(properties = "nps.client.pseudonymization=http://localhost:${wiremock.server.port}")
 @AutoConfigureWireMock(port = 0)
-class PseudonymizationServiceClientIntegrationTest {
+class PseudonymizationServiceClientIntegrationTest extends WithMockFhirProfileContext {
 
   private static final String EXPECTED_REQUEST_BODY =
 """

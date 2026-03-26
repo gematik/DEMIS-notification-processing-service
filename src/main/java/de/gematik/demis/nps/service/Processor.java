@@ -29,12 +29,10 @@ package de.gematik.demis.nps.service;
 
 import static de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory.P_7_3;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
+import de.gematik.demis.nps.base.util.FhirProfileContext;
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -50,7 +48,6 @@ import de.gematik.demis.nps.service.receipt.ReceiptService;
 import de.gematik.demis.nps.service.response.FhirResponseService;
 import de.gematik.demis.nps.service.routing.AddressOriginEnum;
 import de.gematik.demis.nps.service.routing.NRSRoutingInput;
-import de.gematik.demis.nps.service.routing.NotificationReceiver;
 import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.service.routing.RoutingService;
 import de.gematik.demis.nps.service.storage.NotificationStorageService;
@@ -92,6 +89,7 @@ public class Processor {
 
   private final RequestNotificationProperties requestNotificationProperties;
   private final RequestProcessorState requestProcessorState;
+  private final FhirProfileContext fhirProfileContext;
 
   public Processor(
       NotificationValidator notificationValidator,
@@ -111,7 +109,8 @@ public class Processor {
       @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
       @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled,
       final RequestNotificationProperties requestNotificationProperties,
-      final RequestProcessorState requestProcessorState) {
+      final RequestProcessorState requestProcessorState,
+      FhirProfileContext fhirProfileContext) {
     this.notificationValidator = notificationValidator;
     this.lifecycleValidationService = lifecycleValidationService;
     this.notificationFhirService = notificationFhirService;
@@ -130,6 +129,7 @@ public class Processor {
     this.dlsService = dlsService;
     this.requestNotificationProperties = requestNotificationProperties;
     this.requestProcessorState = requestProcessorState;
+    this.fhirProfileContext = fhirProfileContext;
   }
 
   public Parameters execute(
@@ -142,8 +142,15 @@ public class Processor {
       final String authorization,
       final Set<String> roles) {
 
+    if (notificationPreCheck) {
+      notificationFhirService.preCheckProfile(fhirNotification);
+    }
+
+    fhirProfileContext.initialize(fhirNotification, contentType);
+
     final InternalOperationOutcome internalOperationOutcome =
         validateNotification(fhirNotification, contentType);
+
     Notification notification =
         buildNotification(
             encodeToJson(fhirNotification, contentType),
@@ -261,36 +268,22 @@ public class Processor {
   private InternalOperationOutcome validateNotification(
       @Nonnull String originalFhirNotification, @Nonnull MessageType contentType) {
     // validate and find Receiver
-    if (notificationPreCheck) {
-      notificationFhirService.preCheckProfile(originalFhirNotification);
-    }
-
     return notificationValidator.validateFhir(originalFhirNotification, contentType);
   }
 
   private List<? extends IBaseResource> createModifiedNotifications(
       @Nonnull final Notification notification) {
-    final List<NotificationReceiver> routes = notification.getRoutingData().routes();
-    final ImmutableListMultimap<String, NotificationReceiver> receiverById =
-        Multimaps.index(routes, NotificationReceiver::specificReceiverId);
-
-    Multimap<String, Optional<? extends IBaseResource>> resourceByReceiver =
-        Multimaps.transformValues(
-            receiverById, receiver -> receiverActionService.transform(notification, receiver));
-    resourceByReceiver = Multimaps.filterValues(resourceByReceiver, Optional::isPresent);
-
-    // A receiver that should receive 3 bundles but only receives 2, will not show up here. But a
-    // receiver that receives no bundle they are supposed to, will.
-    final Sets.SetView<String> receiversWithoutBundle =
-        Sets.difference(receiverById.keySet(), resourceByReceiver.keySet());
-    for (final String receiverId : receiversWithoutBundle) {
-      log.warn(
-          "No bundle produced for receiver '{}' of notification '{}'",
-          receiverId,
-          notification.getBundleIdentifier());
-    }
-
-    return resourceByReceiver.values().stream().flatMap(Optional::stream).toList();
+    final List<IBaseResource> modifiedNotifications = new ArrayList<>();
+    notification
+        .getRoutingData()
+        .routes()
+        .forEach(
+            routeByReceiver -> {
+              final Optional<? extends IBaseResource> resourceByReceiver =
+                  receiverActionService.transform(notification, routeByReceiver);
+              resourceByReceiver.ifPresent(modifiedNotifications::add);
+            });
+    return modifiedNotifications;
   }
 
   /** <strong>Beware: This method changes the internal state of notification</strong> */

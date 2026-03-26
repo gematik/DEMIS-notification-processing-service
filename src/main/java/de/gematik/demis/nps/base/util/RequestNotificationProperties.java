@@ -32,6 +32,10 @@ import lombok.Setter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
+/**
+ * This class is used to store the properties of a notification request. It can be accessed from
+ * anywhere in the application.
+ */
 @Getter
 @Setter
 @Component

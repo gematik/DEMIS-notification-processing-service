@@ -54,7 +54,6 @@ public class ReceiptService {
   private final HealthOfficeMasterDataService healthOfficeMasterDataService;
   private final FhirParser fhirParser;
   private final Statistics statistics;
-  private final boolean isNotification73enabled;
   private final boolean isCustodianEnabled;
   private final RequestProcessorState requestProcessorState;
 
@@ -66,7 +65,6 @@ public class ReceiptService {
    * @param healthOfficeMasterDataService the service for retrieving health office data
    * @param fhirParser the parser for FHIR resources
    * @param statistics the statistics service for tracking errors
-   * @param isNotification73enabled flag indicating if Notification 7.3 is enabled
    * @param isCustodianEnabled set to true to add custodian reference for test users
    */
   public ReceiptService(
@@ -76,14 +74,12 @@ public class ReceiptService {
       FhirParser fhirParser,
       Statistics statistics,
       RequestProcessorState requestProcessorState,
-      @Value("${feature.flag.notifications.7_3}") boolean isNotification73enabled,
       @Value("${feature.flag.custodian.enabled}") boolean isCustodianEnabled) {
     this.receiptBundleCreator = receiptBundleCreator;
     this.pdfGenServiceClient = pdfGenServiceClient;
     this.healthOfficeMasterDataService = healthOfficeMasterDataService;
     this.fhirParser = fhirParser;
     this.statistics = statistics;
-    this.isNotification73enabled = isNotification73enabled;
     this.isCustodianEnabled = isCustodianEnabled;
     this.requestProcessorState = requestProcessorState;
   }
@@ -149,13 +145,13 @@ public class ReceiptService {
    */
   private byte[] generatePdf(final Notification notification) {
     String bundleAsJson;
+
     if (NotificationCategory.P_7_4.equals(notification.getRoutingData().notificationCategory())) {
       bundleAsJson = getBundleFor74Notification(notification);
-    } else if (isNotification73enabled) {
-      bundleAsJson = getPreEncryptedBundle(notification);
     } else {
-      bundleAsJson = fhirParser.encodeToJson(notification.getBundle());
+      bundleAsJson = getPreEncryptedBundle(notification);
     }
+
     return switch (notification.getType()) {
       case DISEASE -> pdfGenServiceClient.createDiseasePdfFromJson(bundleAsJson);
       case LABORATORY -> pdfGenServiceClient.createLaboratoryPdfFromJson(bundleAsJson);

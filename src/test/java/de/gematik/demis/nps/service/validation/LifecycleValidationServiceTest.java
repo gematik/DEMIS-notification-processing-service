@@ -52,6 +52,7 @@ import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.test.RoutingDataUtil;
+import de.gematik.demis.nps.test.WithMockFhirProfileContext;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -72,7 +73,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "feature.flag.relaxed_validation=false",
     })
 @AutoConfigureWireMock(port = 0)
-class LifecycleValidationServiceTest {
+class LifecycleValidationServiceTest extends WithMockFhirProfileContext {
 
   private static final String REQUEST_BODY = "my body";
   private static final String RESPONSE_BODY =

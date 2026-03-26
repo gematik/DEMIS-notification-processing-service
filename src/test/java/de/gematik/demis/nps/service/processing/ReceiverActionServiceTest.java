@@ -190,7 +190,6 @@ class ReceiverActionServiceTest {
               npsConfigProperties,
               encryptionService,
               notByNameRegressionService,
-              true,
               false);
     }
 
@@ -203,35 +202,6 @@ class ReceiverActionServiceTest {
           .bundle(original)
           .routingData(routingData)
           .build();
-    }
-
-    @Test
-    void thatDisabled73FeatureFlagCausesExceptions() {
-      // GIVEN a 7.3 bundle
-      final Notification notification =
-          fromJSON(
-              "/bundles/7_3/laboratory-nonnominal-notifiedperson.json", P73_ROUTING_LABORATORY);
-      // AND the feature toggle is disabled
-      final ReceiverActionService withDisabledToggle =
-          new ReceiverActionService(
-              new RKIBundleValidator(),
-              npsConfigProperties,
-              encryptionService,
-              notByNameRegressionService,
-              false,
-              false);
-      // WHEN bundle is processed
-      final NpsServiceException npsServiceException =
-          catchThrowableOfType(
-              NpsServiceException.class,
-              () ->
-                  withDisabledToggle.transform(
-                      notification,
-                      new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), false)));
-      // THEN
-      assertThat(npsServiceException).isNotNull();
-      assertThat(npsServiceException.getErrorCode())
-          .isEqualTo(ErrorCode.UNSUPPORTED_PROFILE.toString());
     }
 
     @Test
@@ -321,7 +291,6 @@ class ReceiverActionServiceTest {
               npsConfigProperties,
               encryptionService,
               notByNameRegressionService,
-              true,
               false);
       service.transform(
           notification, new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), true));
@@ -354,7 +323,6 @@ class ReceiverActionServiceTest {
               npsConfigProperties,
               encryptionService,
               notByNameRegressionService,
-              true,
               false);
       service.transform(
           notification, new NotificationReceiver("", "1.", SequencedSets.of(ENCRYPTION), true));
@@ -549,7 +517,6 @@ class ReceiverActionServiceTest {
               npsConfigProperties,
               encryptionService,
               notByNameRegressionService,
-              true,
               true);
     }
 
@@ -562,35 +529,6 @@ class ReceiverActionServiceTest {
           .bundle(original)
           .routingData(routingData)
           .build();
-    }
-
-    @Test
-    void thatDisabled73FeatureFlagCausesExceptions() {
-      // GIVEN a 7.3 bundle
-      final Notification notification =
-          fromJSON(
-              "/bundles/7_3/laboratory-nonnominal-notifiedperson.json", P73_ROUTING_LABORATORY);
-      // AND the feature toggle is disabled
-      final ReceiverActionService withDisabledToggle =
-          new ReceiverActionService(
-              new RKIBundleValidator(),
-              npsConfigProperties,
-              encryptionService,
-              notByNameRegressionService,
-              false,
-              false);
-      // WHEN bundle is processed
-      final NpsServiceException npsServiceException =
-          catchThrowableOfType(
-              NpsServiceException.class,
-              () ->
-                  withDisabledToggle.transform(
-                      notification,
-                      new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), false)));
-      // THEN
-      assertThat(npsServiceException).isNotNull();
-      assertThat(npsServiceException.getErrorCode())
-          .isEqualTo(ErrorCode.UNSUPPORTED_PROFILE.toString());
     }
 
     @Test
@@ -662,7 +600,6 @@ class ReceiverActionServiceTest {
               npsConfigProperties,
               encryptionService,
               notByNameRegressionService,
-              true,
               false);
       service.transform(
           notification, new NotificationReceiver("", "1.", SequencedSets.of(NO_ACTION), true));
@@ -695,7 +632,6 @@ class ReceiverActionServiceTest {
               npsConfigProperties,
               encryptionService,
               notByNameRegressionService,
-              true,
               false);
       service.transform(
           notification, new NotificationReceiver("", "1.", SequencedSets.of(ENCRYPTION), true));
@@ -968,7 +904,6 @@ class ReceiverActionServiceTest {
               npsConfigPropertiesLocal,
               encryptionServiceLocal,
               notByNameRegressionServiceLocal,
-              false,
               false);
       Optional<? extends IBaseResource> excerptRegression =
           receiverActionServiceRegression.transform(notification, receiver);
@@ -980,7 +915,6 @@ class ReceiverActionServiceTest {
               npsConfigPropertiesLocal,
               encryptionServiceLocal,
               notByNameRegressionServiceLocal,
-              false,
               true);
       Optional<? extends IBaseResource> excerpt =
           receiverActionServiceLocal.transform(notification, receiver);
@@ -1051,7 +985,6 @@ class ReceiverActionServiceTest {
               npsConfigPropertiesLocal,
               encryptionServiceLocal,
               notByNameRegressionServiceLocal,
-              false,
               false);
       Optional<? extends IBaseResource> excerptRegression =
           receiverActionServiceRegression.transform(notification, receiver);
@@ -1063,7 +996,6 @@ class ReceiverActionServiceTest {
               npsConfigPropertiesLocal,
               encryptionServiceLocal,
               notByNameRegressionServiceLocal,
-              false,
               true);
       Optional<? extends IBaseResource> excerpt =
           receiverActionServiceLocal.transform(notification, receiver);
@@ -1166,7 +1098,6 @@ class ReceiverActionServiceTest {
               npsConfigPropertiesLocal,
               encryptionServiceLocal,
               notByNameRegressionServiceLocal,
-              false,
               true);
       Optional<? extends IBaseResource> excerpt =
           receiverActionServiceLocal.transform(notification, receiver);
@@ -1232,7 +1163,6 @@ class ReceiverActionServiceTest {
               npsConfigPropertiesLocal,
               encryptionServiceLocal,
               notByNameRegressionService,
-              false,
               true);
       Optional<? extends IBaseResource> excerpt =
           receiverActionServiceLocal.transform(notification, receiver);

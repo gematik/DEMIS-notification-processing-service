@@ -14,7 +14,7 @@
   },
   "identifier": {
     "system": "https://demis.rki.de/fhir/NamingSystem/NotificationBundleId",
-    "value": "57"
+    "value": "51"
   },
   "type": "document",
   "timestamp": "2025-07-04T16:43:43.637+02:00",
@@ -51,7 +51,7 @@
         } ]
       } ],
       "subject": {
-        "reference": "Patient/56"
+        "reference": "Patient/50"
       },
       "date": "2022-03-10T14:57:52+01:00",
       "author": [ {
@@ -85,10 +85,10 @@
       } ]
     }
   }, {
-    "fullUrl": "https://demis.rki.de/fhir/Patient/56",
+    "fullUrl": "https://demis.rki.de/fhir/Patient/50",
     "resource": {
       "resourceType": "Patient",
-      "id": "56",
+      "id": "50",
       "meta": {
         "profile": [ "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonAnonymous" ]
       },
@@ -135,7 +135,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/56"
+        "reference": "Patient/50"
       },
       "onsetDateTime": "2025-01-01",
       "recordedDate": "2025-02-13",
@@ -211,7 +211,7 @@
       "questionnaire": "https://demis.rki.de/fhir/Questionnaire/DiseaseQuestionsHIVD",
       "status": "completed",
       "subject": {
-        "reference": "Patient/56"
+        "reference": "Patient/50"
       },
       "item": [ {
         "linkId": "firstDiagnosisGER",

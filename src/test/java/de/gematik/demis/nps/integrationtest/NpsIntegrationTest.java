@@ -126,6 +126,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       "feature.flag.move-error-id-to-diagnostics=true",
       "feature.flag.notifications.7_3=true",
       "feature.flag.move-error-id-to-diagnostics=true",
+      "feature.flag.new.error.message.for.failed.routing= true",
       "demis.codemapping.enabled=true",
       "demis.codemapping.client.base-url=http://localhost:${wiremock.server.port}",
       "demis.codemapping.client.context-path=/FUTS/",
@@ -190,8 +191,8 @@ class NpsIntegrationTest {
       "expected-laboratory-lifecycle-validation-error-response.json";
   private static final String EXPECTED_DISEASE_LIFECYCLE_VALIDATION_ERROR_RESPONSE =
       "expected-disease-lifecycle-validation-error-response.json";
-  private static final String EXPECTED_NO_RESPONSIBLE_RESPONSE =
-      "expected-no-responsible-response.json";
+  private static final String EXPECTED_MISSING_DESTINATION_RESPONSE =
+      "expected-missing-destination-response.json";
   private static final String EXPECTED_NO_CERTIFICATE_RESPONSE =
       "expected-no-certificate-response.json";
   private static final String EXPECTED_STORAGE_ERROR_RESPONSE =
@@ -502,14 +503,14 @@ class NpsIntegrationTest {
     }
 
     @Test
-    void notificationRoutingServiceReturnsNoResponsible_shouldReturnMissingResponsibleError()
+    void notificationRoutingServiceReturnsNoResult_shouldReturnMissingDestinationError()
         throws Exception {
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_NO_HEALTHOFFICE));
 
-      executeTest(UNPROCESSABLE_ENTITY, ERRORS_DIR + EXPECTED_NO_RESPONSIBLE_RESPONSE);
-      counterVerifier.assertErrorCounter(ErrorCode.MISSING_RESPONSIBLE);
+      executeTest(UNPROCESSABLE_ENTITY, ERRORS_DIR + EXPECTED_MISSING_DESTINATION_RESPONSE);
+      counterVerifier.assertErrorCounter(ErrorCode.DESTINATION_MISSING);
     }
 
     @Test

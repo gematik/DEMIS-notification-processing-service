@@ -1,4 +1,4 @@
-package de.gematik.demis.nps.service.codemapping;
+package de.gematik.demis.nps.config;
 
 /*-
  * #%L
@@ -27,29 +27,20 @@ package de.gematik.demis.nps.service.codemapping;
  * #L%
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+/**
+ * Defines constants for HTTP headers used in the NPS application (incoming and outgoing). This
+ * class is a central place to manage header names, ensuring consistency across the application and
+ * avoiding hard-coded strings scattered throughout the codebase.
+ */
+public final class NpsHeaders {
+  private NpsHeaders() {}
 
-import de.gematik.demis.service.base.clients.mapping.CodeMappingClient;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
-class CodeMappingServiceConfigurationTest {
-
-  @Nested
-  @SpringBootTest(
-      classes = CodeMappingServiceConfiguration.class,
-      properties = "feature.flag.codemapping.service.base=false")
-  class FeatureFlagOn {
-    @MockitoBean FutsClient futsClientMock;
-    @MockitoBean CodeMappingClient codeMappingClientMock;
-    @Autowired SwitchingCodeMappingService underTest;
-
-    @Test
-    void legacyImplementationIsUsedByDefault() {
-      assertThat(underTest.getMappedDiseaseCode("code")).isNull();
-    }
-  }
+  public static final String HEADER_FHIR_REQUEST_ORIGIN = "x-fhir-api-request-origin";
+  // Used for monitoring
+  public static final String HEADER_FHIR_SUBMISSION_TYPE = "x-fhir-api-submission-type";
+  public static final String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
+  // Used for routing
+  public static final String HEADER_FHIR_PROFILE = "x-fhir-profile";
+  public static final String HEADER_FHIR_PROFILE_VERSION = "x-fhir-profile-version";
+  public static final String HEADER_SENDER = "x-sender";
 }

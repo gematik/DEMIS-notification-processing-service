@@ -69,7 +69,6 @@ public class ReceiverActionService {
   private final NpsConfigProperties configProperties;
   private final EncryptionService encryptionService;
   private final NotByNameRegressionService notByNameRegressionService;
-  private final boolean isProcessing73Enabled;
   private final boolean isNblForNotByNameCreationEnabled;
 
   public ReceiverActionService(
@@ -77,14 +76,12 @@ public class ReceiverActionService {
       final NpsConfigProperties configProperties,
       final EncryptionService encryptionService,
       final NotByNameRegressionService notByNameRegressionService,
-      @Value("${feature.flag.notifications.7_3}") boolean isProcessing73Enabled,
       @Value("${feature.flag.nbl.for.notByName.enabled}")
           boolean isNblForNotByNameCreationEnabled) {
     this.rkiBundleValidator = rkiBundleValidator;
     this.configProperties = configProperties;
     this.encryptionService = encryptionService;
     this.notByNameRegressionService = notByNameRegressionService;
-    this.isProcessing73Enabled = isProcessing73Enabled;
     this.isNblForNotByNameCreationEnabled = isNblForNotByNameCreationEnabled;
   }
 
@@ -158,7 +155,6 @@ public class ReceiverActionService {
    */
   public Optional<? extends IBaseResource> transform(
       final Notification notification, final NotificationReceiver receiver) {
-    assert73ProcessingAllowed(notification);
 
     Optional<? extends IBaseResource> intermediateResult = Optional.of(notification.getBundle());
     final ArrayDeque<Action> remainingActions = Queues.newArrayDeque(receiver.actions());
@@ -172,9 +168,7 @@ public class ReceiverActionService {
               intermediateResult
                   .map(ReceiverActionService::castToBundleOrNull)
                   .orElseThrow(() -> new IllegalStateException("Can only encrypt bundles"));
-          if (isProcessing73Enabled) {
-            notification.putPreEncryptedBundle(receiver.specificReceiverId(), asBundle);
-          }
+          notification.putPreEncryptedBundle(receiver.specificReceiverId(), asBundle);
           intermediateResult =
               processEncryption(
                   asBundle,
@@ -301,15 +295,6 @@ public class ReceiverActionService {
         return Optional.empty();
       }
       throw e; // We are returning this error to the Requester
-    }
-  }
-
-  /** Throw exception if a 7.3 notification is passed, but the feature is disabled. */
-  private void assert73ProcessingAllowed(final Notification notification) {
-    final RoutingData routingInformation = notification.getRoutingData();
-    if (routingInformation.notificationCategory().equals(P_7_3) && !isProcessing73Enabled) {
-      throw new NpsServiceException(
-          ErrorCode.UNSUPPORTED_PROFILE, "7.3 notifications can't be processed");
     }
   }
 }

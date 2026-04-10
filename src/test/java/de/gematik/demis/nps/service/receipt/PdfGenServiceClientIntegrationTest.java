@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import de.gematik.demis.nps.error.ServiceCallErrorCode;
-import de.gematik.demis.nps.test.WithMockFhirProfileContext;
+import de.gematik.demis.nps.test.WithMockFhirPackageContext;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +61,7 @@ import org.springframework.test.context.TestPropertySource;
       "demis.codemapping.laboratory.concept-maps[0]=dummy-lab",
       "demis.codemapping.cache-reload-cron=0 0 0 * * ?"
     })
-class PdfGenServiceClientIntegrationTest extends WithMockFhirProfileContext {
+class PdfGenServiceClientIntegrationTest extends WithMockFhirPackageContext {
   private static final String ENDPOINT_LABORATORY = "/laboratoryReport";
   private static final String ENDPOINT_DISEASE = "/diseaseNotification";
 

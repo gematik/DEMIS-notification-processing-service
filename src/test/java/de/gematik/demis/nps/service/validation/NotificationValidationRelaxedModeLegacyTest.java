@@ -42,6 +42,7 @@ import ca.uhn.fhir.context.FhirContext;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
+import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import feign.Response;
@@ -84,6 +85,7 @@ class NotificationValidationRelaxedModeLegacyTest {
   FeatureFlagsConfigProperties featureFlags;
   @Mock ValidationServiceClient validationServiceClient;
   @Mock HttpServletRequest httpServletRequest;
+  @Mock NpsConfigProperties npsConfigProperties;
 
   private NotificationValidator underTest;
 
@@ -115,6 +117,7 @@ class NotificationValidationRelaxedModeLegacyTest {
             new RequestProcessorState(),
             fhirContext,
             featureFlags,
+            npsConfigProperties,
             httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();

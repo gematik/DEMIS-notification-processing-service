@@ -36,11 +36,10 @@ public final class NpsHeaders {
   private NpsHeaders() {}
 
   public static final String HEADER_FHIR_REQUEST_ORIGIN = "x-fhir-api-request-origin";
-  // Used for monitoring
   public static final String HEADER_FHIR_SUBMISSION_TYPE = "x-fhir-api-submission-type";
-  public static final String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
-  // Used for routing
-  public static final String HEADER_FHIR_PROFILE = "x-fhir-profile";
-  public static final String HEADER_FHIR_PROFILE_VERSION = "x-fhir-profile-version";
+  @Deprecated public static final String HEADER_FHIR_API_VERSION = "x-fhir-api-version";
+  public static final String HEADER_FHIR_PACKAGE_VERSION = "x-fhir-package-version";
+  @Deprecated public static final String HEADER_FHIR_PROFILE = "x-fhir-profile";
+  public static final String HEADER_FHIR_PACKAGE = "x-fhir-package";
   public static final String HEADER_SENDER = "x-sender";
 }

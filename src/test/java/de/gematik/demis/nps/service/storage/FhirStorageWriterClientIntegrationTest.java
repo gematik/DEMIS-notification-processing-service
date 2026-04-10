@@ -47,7 +47,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import de.gematik.demis.nps.error.ServiceCallErrorCode;
-import de.gematik.demis.nps.test.WithMockFhirProfileContext;
+import de.gematik.demis.nps.test.WithMockFhirPackageContext;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -61,7 +61,7 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
       "nps.client.fhir-storage-writer.context-path=/"
     })
 @AutoConfigureWireMock(port = 0)
-class FhirStorageWriterClientIntegrationTest extends WithMockFhirProfileContext {
+class FhirStorageWriterClientIntegrationTest extends WithMockFhirPackageContext {
   private static final String ENDPOINT = "/";
 
   private static final String REQUEST_BODY =

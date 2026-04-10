@@ -45,5 +45,5 @@ public class RequestNotificationProperties {
   private String notificationId;
   private String submissionType;
   private String submissionCategory;
-  private String apiVersion;
+  private String packageVersion;
 }

@@ -40,18 +40,19 @@ import org.springframework.web.context.request.RequestContextHolder;
 
 /**
  * This Feign interceptor is based on the global {@link HeadersForwardingRequestInterceptor}
- * provided by service-base. Additionally, it sets the outgoing x-fhir-profile header with the value
- * resolved in {@link FhirProfileContext} if the header is not already present.
+ * provided by service-base. Additionally, it sets the outgoing {@link
+ * NpsHeaders#HEADER_FHIR_PACKAGE } with the value resolved in {@link FhirPackageContext} if the
+ * header is not already present.
  */
 @Component
 @ConditionalOnProperty(name = "feature.flag.feign_interceptor_enabled", havingValue = "true")
 public class CustomHeaderForwardingFeignInterceptor implements RequestInterceptor {
 
-  private final FhirProfileContext fhirProfileContext;
+  private final FhirPackageContext fhirPackageContext;
   private final RequestInterceptor forwardingInterceptor;
 
-  public CustomHeaderForwardingFeignInterceptor(FhirProfileContext fhirProfileContext) {
-    this.fhirProfileContext = fhirProfileContext;
+  public CustomHeaderForwardingFeignInterceptor(FhirPackageContext fhirPackageContext) {
+    this.fhirPackageContext = fhirPackageContext;
     this.forwardingInterceptor = new HeadersForwardingRequestInterceptor();
   }
 
@@ -64,21 +65,21 @@ public class CustomHeaderForwardingFeignInterceptor implements RequestIntercepto
 
     forwardingInterceptor.apply(requestTemplate);
 
-    if (!hasXFhirProfileHeader(requestTemplate)) {
+    if (!hasXFhirPackageHeader(requestTemplate)) {
       requestTemplate.header(
-          NpsHeaders.HEADER_FHIR_PROFILE, fhirProfileContext.getOutgoingFhirProfileHeaderValue());
+          NpsHeaders.HEADER_FHIR_PACKAGE, fhirPackageContext.getOutgoingFhirPackageHeaderValue());
     }
   }
 
-  private boolean hasXFhirProfileHeader(RequestTemplate requestTemplate) {
+  private boolean hasXFhirPackageHeader(RequestTemplate requestTemplate) {
     return requestTemplate.headers().entrySet().stream()
-        .anyMatch(this::isNonBlankFhirProfileHeader);
+        .anyMatch(this::isNonBlankFhirPackageHeader);
   }
 
-  private boolean isNonBlankFhirProfileHeader(Map.Entry<String, Collection<String>> entry) {
+  private boolean isNonBlankFhirPackageHeader(Map.Entry<String, Collection<String>> entry) {
     Collection<String> values = entry.getValue();
 
-    return entry.getKey().equalsIgnoreCase(NpsHeaders.HEADER_FHIR_PROFILE)
+    return entry.getKey().equalsIgnoreCase(NpsHeaders.HEADER_FHIR_PACKAGE)
         && values != null
         && values.stream().anyMatch(StringUtils::isNotBlank);
   }

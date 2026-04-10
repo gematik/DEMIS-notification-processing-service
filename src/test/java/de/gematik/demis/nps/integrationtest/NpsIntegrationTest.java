@@ -29,6 +29,8 @@ package de.gematik.demis.nps.integrationtest;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_REQUEST_ORIGIN;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_SUBMISSION_TYPE;
 import static de.gematik.demis.nps.integrationtest.BundleModifier.*;
 import static de.gematik.demis.nps.integrationtest.Stubs.*;
 import static de.gematik.demis.nps.service.notification.NotificationType.DISEASE;
@@ -70,6 +72,7 @@ import de.gematik.demis.nps.base.data.CertificateRepository;
 import de.gematik.demis.nps.base.util.NotificationLogger;
 import de.gematik.demis.nps.base.util.TimeProvider;
 import de.gematik.demis.nps.base.util.UuidGenerator;
+import de.gematik.demis.nps.config.NpsHeaders;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.service.base.error.rest.ErrorFieldProvider;
@@ -953,10 +956,10 @@ class NpsIntegrationTest {
             .header("x-request-id", REQUEST_ID)
             .header(NotificationController.HEADER_SENDER, USER_ID)
             .header(TestUserPropsValueResolver.HEADER_IS_TEST_NOTIFICATION, isTestUser)
-            .header("x-fhir-api-submission-type", submissionTypeHeader)
-            .header("x-fhir-api-request-origin", requestOriginHeader);
+            .header(HEADER_FHIR_SUBMISSION_TYPE, submissionTypeHeader)
+            .header(HEADER_FHIR_REQUEST_ORIGIN, requestOriginHeader);
     if (apiVersionHeader != null) {
-      requestBuilder.header("x-fhir-api-version", apiVersionHeader);
+      requestBuilder.header(NpsHeaders.HEADER_FHIR_PACKAGE_VERSION, apiVersionHeader);
     }
     if (testUser != null) {
       // MockHttpServletRequest will complain about Headers set to null

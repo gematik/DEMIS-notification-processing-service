@@ -39,7 +39,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import de.gematik.demis.nps.service.processing.BundleAction;
 import de.gematik.demis.nps.service.processing.BundleActionType;
-import de.gematik.demis.nps.test.WithMockFhirProfileContext;
+import de.gematik.demis.nps.test.WithMockFhirPackageContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,7 +47,7 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 
 @SpringBootTest(properties = "nps.client.routing=http://localhost:${wiremock.server.port}")
 @AutoConfigureWireMock(port = 0)
-class NotificationRoutingServiceClientIntegrationTest extends WithMockFhirProfileContext {
+class NotificationRoutingServiceClientIntegrationTest extends WithMockFhirPackageContext {
 
   private static final String FHIR_JSON = "does not matter";
 

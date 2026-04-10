@@ -92,9 +92,9 @@ public class Statistics implements ErrorCounter {
   }
 
   public void incNotificationEndpointCounter(
-      final String apiVersion, final String submissionType, final String requestOrigin) {
+      final String packageVersion, final String submissionType, final String requestOrigin) {
     String counterName;
-    final String version = Optional.ofNullable(apiVersion).orElse("legacy");
+    final String version = Optional.ofNullable(packageVersion).orElse("legacy");
     if (version.equals("legacy")) {
       counterName = "nps_notifications_legacy_api";
     } else {

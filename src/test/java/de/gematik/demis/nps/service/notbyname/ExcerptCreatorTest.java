@@ -28,11 +28,13 @@ package de.gematik.demis.nps.service.notbyname;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import de.gematik.demis.notification.builder.demis.fhir.notification.utils.DemisConstants;
 import de.gematik.demis.nps.base.profile.DemisSystems;
+import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.test.RoutingDataUtil;
@@ -107,6 +109,57 @@ class ExcerptCreatorTest {
   }
 
   @Test
+  @DisplayName("createAnonymousBundle Laboratory with invalid reference throws exception")
+  void createAnonymousBundle_Laboratory_invalidRefs_throwsException() throws IOException {
+    String json =
+        Files.readString(Path.of("src/test/resources/bundles/7_3/laboratory-anonymous.json"));
+    json =
+        json.replace(
+            "\"reference\": \"Patient/555-42-23-7\"", "\"reference\": \"Patient/invalid-ref\"");
+    Bundle bundle = fhirParser.parseResource(Bundle.class, json);
+
+    Notification notification =
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(true)
+            .type(NotificationType.LABORATORY)
+            .testUserRecipient("foobar")
+            .routingData(RoutingDataUtil.laboratoryExample())
+            .build();
+
+    assertThatThrownBy(() -> ExcerptCreator.createAnonymousBundle(notification))
+        .isInstanceOf(NpsServiceException.class)
+        .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
+        .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
+  }
+
+  @Test
+  @DisplayName("createAnonymousBundle Disease with invalid reference throws exception")
+  void createAnonymousBundle_Disease_invalidRefs_throwsException() throws IOException {
+    String json =
+        Files.readString(
+            Path.of("src/test/resources/bundles/7_3/disease-nonnominal-notbyname.json"));
+    json =
+        json.replace(
+            "\"reference\": \"Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e\"",
+            "\"reference\": \"Patient/invalid-ref\"");
+    Bundle bundle = fhirParser.parseResource(Bundle.class, json);
+
+    Notification notification =
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(false)
+            .type(NotificationType.DISEASE)
+            .routingData(RoutingDataUtil.diseaseExample())
+            .build();
+
+    assertThatThrownBy(() -> ExcerptCreator.createAnonymousBundle(notification))
+        .isInstanceOf(NpsServiceException.class)
+        .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
+        .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
+  }
+
+  @Test
   @DisplayName("createNotByNameBundle adds Test-User tag when Notification is a test user")
   void createNotByNameBundleAddsTestUserTagWhenTestUser() throws IOException {
     String json =
@@ -155,5 +208,55 @@ class ExcerptCreatorTest {
     assertThat(result.getMeta().getTag())
         .extracting("system")
         .containsOnly(DemisConstants.RELATED_NOTIFICATION_CODING_SYSTEM);
+  }
+
+  @Test
+  @DisplayName("createNotByNameBundle Laboratory with invalid reference throws exception")
+  void createNotByNameBundle_Laboratory_invalidRefs_throwsException() throws IOException {
+    String json =
+        Files.readString(Path.of("src/test/resources/bundles/laboratory_cvdp_bundle.json"));
+    json =
+        json.replace(
+            "\"reference\": \"Patient/c9201e8c-0425-4fb4-89c3-95f2405f290a\"",
+            "\"reference\": \"Patient/invalid-ref\"");
+    Bundle bundle = fhirParser.parseResource(Bundle.class, json);
+
+    Notification notification =
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(true)
+            .type(NotificationType.LABORATORY)
+            .testUserRecipient("foobar")
+            .routingData(RoutingDataUtil.laboratoryExample())
+            .build();
+
+    assertThatThrownBy(() -> ExcerptCreator.createNotByNameBundle(notification))
+        .isInstanceOf(NpsServiceException.class)
+        .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
+        .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
+  }
+
+  @Test
+  @DisplayName("createNotByNameBundle Disease with invalid reference throws exception")
+  void createNotByNameBundle_Disease_invalidRefs_throwsException() throws IOException {
+    String json = Files.readString(Path.of("src/test/resources/bundles/disease_bundle_max.json"));
+    json =
+        json.replace(
+            "\"reference\": \"Patient/458a9cb4-1e94-424e-bfd2-64cbd3efa41e\"",
+            "\"reference\": \"Patient/invalid-ref\"");
+    Bundle bundle = fhirParser.parseResource(Bundle.class, json);
+
+    Notification notification =
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(false)
+            .type(NotificationType.DISEASE)
+            .routingData(RoutingDataUtil.diseaseExample())
+            .build();
+
+    assertThatThrownBy(() -> ExcerptCreator.createNotByNameBundle(notification))
+        .isInstanceOf(NpsServiceException.class)
+        .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
+        .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
   }
 }

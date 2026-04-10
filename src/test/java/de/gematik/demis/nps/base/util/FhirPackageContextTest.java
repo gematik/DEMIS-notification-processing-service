@@ -45,26 +45,26 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FhirProfileContextTest {
+class FhirPackageContextTest {
 
   @Mock private HttpServletRequest request;
   @Mock private NotificationTypeResolver notificationTypeResolver;
   @Mock private FeatureFlagsConfigProperties featureFlagsConfigProperties;
 
-  @InjectMocks private FhirProfileContext underTest;
+  @InjectMocks private FhirPackageContext underTest;
 
   @Test
   void getOutgoingFhirProfileHeader_Value_throwsIfNotInitialized() {
-    assertThrows(IllegalStateException.class, () -> underTest.getOutgoingFhirProfileHeaderValue());
+    assertThrows(IllegalStateException.class, () -> underTest.getOutgoingFhirPackageHeaderValue());
   }
 
   @Test
   void initializeOnce_doesNotDeriveProfileHeaderIfAlreadyPresentInRequest() {
-    when(request.getHeader(NpsHeaders.HEADER_FHIR_PROFILE)).thenReturn("profile-1");
+    when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn("profile-1");
 
     underTest.initialize("SHOULD_NOT_BE_USED", MessageType.JSON);
 
-    assertEquals("profile-1", underTest.getOutgoingFhirProfileHeaderValue());
+    assertEquals("profile-1", underTest.getOutgoingFhirPackageHeaderValue());
 
     verifyNoInteractions(notificationTypeResolver);
     verifyNoInteractions(featureFlagsConfigProperties);
@@ -72,14 +72,14 @@ class FhirProfileContextTest {
 
   @Test
   void initializeOnce_setsLegacyProfileWhenHeaderMissingAndFeatureFlagIsOff() {
-    when(request.getHeader(NpsHeaders.HEADER_FHIR_PROFILE)).thenReturn(null);
-    when(featureFlagsConfigProperties.isEnabled(FhirProfileContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
+    when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn(null);
+    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
         .thenReturn(false);
 
     underTest.initialize("{json}", MessageType.JSON);
 
     assertEquals(
-        FhirProfileContext.LEGACY_CORE_PROFILE, underTest.getOutgoingFhirProfileHeaderValue());
+        FhirPackageContext.LEGACY_CORE_PACKAGE, underTest.getOutgoingFhirPackageHeaderValue());
 
     verifyNoInteractions(notificationTypeResolver);
   }
@@ -88,8 +88,8 @@ class FhirProfileContextTest {
   @EnumSource(NotificationType.class)
   void initializeOnce_derivesSplitProfileWhenHeaderMissingAndFeatureFlagIsOn(
       NotificationType notificationType) {
-    when(request.getHeader(NpsHeaders.HEADER_FHIR_PROFILE)).thenReturn(null);
-    when(featureFlagsConfigProperties.isEnabled(FhirProfileContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
+    when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn(null);
+    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
         .thenReturn(true);
     when(notificationTypeResolver.resolveFromNotification("{json}", MessageType.JSON))
         .thenReturn(notificationType);
@@ -99,23 +99,23 @@ class FhirProfileContextTest {
     switch (notificationType) {
       case DISEASE ->
           assertEquals(
-              FhirProfileContext.DISEASE_PROFILE, underTest.getOutgoingFhirProfileHeaderValue());
+              FhirPackageContext.DISEASE_PACKAGE, underTest.getOutgoingFhirPackageHeaderValue());
       case LABORATORY ->
           assertEquals(
-              FhirProfileContext.LABORATORY_PROFILE, underTest.getOutgoingFhirProfileHeaderValue());
+              FhirPackageContext.LABORATORY_PACKAGE, underTest.getOutgoingFhirPackageHeaderValue());
     }
   }
 
   @Test
   void initializeOnce_firstCallWins_subsequentCallsIgnored() {
-    when(request.getHeader(NpsHeaders.HEADER_FHIR_PROFILE)).thenReturn("profile-1");
+    when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn("profile-1");
 
     underTest.initialize("{json1}", MessageType.JSON);
     clearInvocations(request, notificationTypeResolver, featureFlagsConfigProperties);
 
     underTest.initialize("{json2}", MessageType.JSON);
 
-    assertEquals("profile-1", underTest.getOutgoingFhirProfileHeaderValue());
+    assertEquals("profile-1", underTest.getOutgoingFhirPackageHeaderValue());
     verifyNoInteractions(request);
     verifyNoInteractions(notificationTypeResolver);
     verifyNoInteractions(featureFlagsConfigProperties);

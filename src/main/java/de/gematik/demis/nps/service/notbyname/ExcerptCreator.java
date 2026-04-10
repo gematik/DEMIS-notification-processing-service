@@ -27,9 +27,12 @@ package de.gematik.demis.nps.service.notbyname;
  * #L%
  */
 
+import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.disease.DiseaseExcerptBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.LaboratoryExcerptBuilder;
 import de.gematik.demis.nps.base.profile.DemisSystems;
+import de.gematik.demis.nps.error.ErrorCode;
+import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.notification.Notification;
 import org.hl7.fhir.r4.model.Bundle;
 
@@ -38,35 +41,44 @@ public class ExcerptCreator {
   private ExcerptCreator() {}
 
   public static Bundle createAnonymousBundle(final Notification notification) {
-    Bundle excerptBundle =
-        switch (notification.getType()) {
-          case LABORATORY ->
-              LaboratoryExcerptBuilder.createExcerptNotifiedPersonAnonymousFromNonNominalBundle(
-                  notification.getBundle());
+    Bundle excerptBundle;
+    try {
+      excerptBundle =
+          switch (notification.getType()) {
+            case LABORATORY ->
+                LaboratoryExcerptBuilder.createExcerptNotifiedPersonAnonymousFromNonNominalBundle(
+                    notification.getBundle());
 
-          case DISEASE ->
-              DiseaseExcerptBuilder.createExcerptNotifiedPersonAnonymousFromNonNominalBundle(
-                  notification.getBundle());
-        };
+            case DISEASE ->
+                DiseaseExcerptBuilder.createExcerptNotifiedPersonAnonymousFromNonNominalBundle(
+                    notification.getBundle());
+          };
+    } catch (UnprocessableEntityException e) {
+      throw new NpsServiceException(ErrorCode.UNPROCESSABLE_ENTITY, e.getMessage());
+    }
     // Add a tag, if the notification is sent by a test user
     modifyBundleForTestUser(excerptBundle, notification.isTestUser());
     return excerptBundle;
   }
 
   public static Bundle createNotByNameBundle(final Notification notification) {
-    Bundle excerptBundle =
-        switch (notification.getType()) {
-          case LABORATORY ->
-              LaboratoryExcerptBuilder.createExcerptNotifiedPersonNotByNameFromNominalBundle(
-                  notification.getBundle());
+    Bundle excerptBundle;
+    try {
+      excerptBundle =
+          switch (notification.getType()) {
+            case LABORATORY ->
+                LaboratoryExcerptBuilder.createExcerptNotifiedPersonNotByNameFromNominalBundle(
+                    notification.getBundle());
 
-          case DISEASE ->
-              DiseaseExcerptBuilder.createExcerptNotifiedPersonNotByNameFromNominalBundle(
-                  notification.getBundle());
-        };
+            case DISEASE ->
+                DiseaseExcerptBuilder.createExcerptNotifiedPersonNotByNameFromNominalBundle(
+                    notification.getBundle());
+          };
+    } catch (UnprocessableEntityException e) {
+      throw new NpsServiceException(ErrorCode.UNPROCESSABLE_ENTITY, e.getMessage());
+    }
     // Add a tag, if the notification is sent by a test user
     modifyBundleForTestUser(excerptBundle, notification.isTestUser());
-
     return excerptBundle;
   }
 

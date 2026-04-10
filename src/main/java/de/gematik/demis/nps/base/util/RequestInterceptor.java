@@ -54,15 +54,15 @@ public class RequestInterceptor implements HandlerInterceptor {
       @NonNull final HttpServletRequest request,
       @NonNull final HttpServletResponse response,
       @NonNull final Object handler) {
-    final String apiVersion = request.getHeader(HEADER_FHIR_API_VERSION);
+    final String packageVersion = request.getHeader(HEADER_FHIR_PACKAGE_VERSION);
     final String submissionType = request.getHeader(HEADER_FHIR_SUBMISSION_TYPE);
     final String requestOriginHeader = request.getHeader(HEADER_FHIR_REQUEST_ORIGIN);
     final String sender = request.getHeader(HEADER_SENDER);
 
-    statistics.incNotificationEndpointCounter(apiVersion, submissionType, requestOriginHeader);
+    statistics.incNotificationEndpointCounter(packageVersion, submissionType, requestOriginHeader);
 
     requestNotificationProperties.setSubmissionType(submissionType);
-    requestNotificationProperties.setApiVersion(apiVersion);
+    requestNotificationProperties.setPackageVersion(packageVersion);
     requestNotificationProperties.setSender(sender);
 
     return true;

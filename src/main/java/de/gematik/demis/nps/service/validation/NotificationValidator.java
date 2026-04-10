@@ -27,13 +27,12 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
-import static de.gematik.demis.nps.api.NotificationController.HEADER_SENDER;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_SENDER;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_ERROR;
 import static de.gematik.demis.nps.error.ErrorCode.FHIR_VALIDATION_FATAL;
 import static de.gematik.demis.nps.error.ServiceCallErrorCode.VS;
-import static de.gematik.demis.nps.service.validation.ValidationServiceClient.*;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
@@ -41,6 +40,7 @@ import com.google.common.collect.Maps;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
+import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.service.base.error.ServiceCallException;
@@ -77,6 +77,7 @@ public class NotificationValidator {
 
   private final FhirContext fhirContext;
   private final FeatureFlagsConfigProperties featureFlags;
+  private final NpsConfigProperties npsConfigProperties;
 
   private final Decoder decoder = new StringDecoder();
 
@@ -132,6 +133,7 @@ public class NotificationValidator {
       if (validInRelaxedMode.isValid) {
         requestProcessorState.setValidationSuccessful(true);
         reduceIssuesSeverityToWarn(operationOutcome);
+        logRelaxedValidationUsage();
         return new InternalOperationOutcome(operationOutcome, validInRelaxedMode.reparsedString);
       }
     }
@@ -216,6 +218,18 @@ public class NotificationValidator {
     final Optional<String> first =
         Stream.of(httpServletRequest.getHeader(headerName)).filter(Objects::nonNull).findFirst();
     return first.map(value -> Maps.immutableEntry(headerName, value));
+  }
+
+  /**
+   * Logs the sender (user ID) when relaxed validation is used successfully. This allows the RKI to
+   * identify users who rely on relaxed validation via Splunk analysis.
+   */
+  void logRelaxedValidationUsage() {
+    if (!npsConfigProperties.loggingRelaxedValidation()) {
+      return;
+    }
+    final String sender = httpServletRequest.getHeader(HEADER_SENDER);
+    log.info("Relaxed validation was used successfully for sender: {}", sender);
   }
 
   private String fhirResourceToJson(final IBaseResource bundle) {

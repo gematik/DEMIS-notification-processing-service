@@ -27,8 +27,8 @@ package de.gematik.demis.nps.service.validation;
  * #L%
  */
 
-import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
-import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE_VERSION;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,6 +40,7 @@ import ca.uhn.fhir.context.FhirContext;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
+import de.gematik.demis.nps.config.NpsConfigProperties;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import feign.Response;
@@ -78,6 +79,7 @@ class NotificationValidationRelaxedModeTest {
   FeatureFlagsConfigProperties featureFlags;
   @Mock ValidationServiceClient validationServiceClient;
   @Mock HttpServletRequest httpServletRequest;
+  @Mock NpsConfigProperties npsConfigProperties;
 
   private NotificationValidator underTest;
 
@@ -111,12 +113,13 @@ class NotificationValidationRelaxedModeTest {
             new RequestProcessorState(),
             fhirContext,
             featureFlags,
+            npsConfigProperties,
             httpServletRequest);
     // simulate the @PostConstruct method
     underTest.init();
-    lenient().when(httpServletRequest.getHeader(HEADER_FHIR_API_VERSION)).thenReturn("v1");
+    lenient().when(httpServletRequest.getHeader(HEADER_FHIR_PACKAGE_VERSION)).thenReturn("v1");
     lenient()
-        .when(httpServletRequest.getHeader(HEADER_FHIR_PROFILE))
+        .when(httpServletRequest.getHeader(HEADER_FHIR_PACKAGE))
         .thenReturn("ars-profile-snapshots");
   }
 

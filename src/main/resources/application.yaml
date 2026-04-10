@@ -76,6 +76,12 @@ nps:
 
   health-offices-live-test: ${NPS_FLAG_LIVE_TEST:false}
 
+  # Enables additional logging for relaxed validation troubleshooting.
+  # Warning: this logging can include user identifiers and therefore has
+  # data privacy implications. Keep disabled by default and enable only
+  # temporarily for controlled debugging in secured environments.
+  logging-relaxed-validation: ${CONF_FLAG_LOGGING_RELAXED_VALIDATION:false}
+
 feature:
   flag:
     notification_pre_check: false
@@ -102,6 +108,6 @@ demis:
       - NotificationCategoryToTransmissionCategory
       - NotificationDiseaseCategoryNonNominalToTransmissionCategory
       - NotificationCategoryNonNominalToTransmissionCategory
-    fhir-profile-headers:
+    fhir-package-headers:
       - disease
       - laboratory

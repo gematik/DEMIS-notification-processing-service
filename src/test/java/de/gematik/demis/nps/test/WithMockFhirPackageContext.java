@@ -29,21 +29,21 @@ package de.gematik.demis.nps.test;
 
 import static org.mockito.Mockito.when;
 
-import de.gematik.demis.nps.base.util.FhirProfileContext;
+import de.gematik.demis.nps.base.util.FhirPackageContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
-public abstract class WithMockFhirProfileContext {
+public abstract class WithMockFhirPackageContext {
 
   public static final String DEFAULT_FHIR_PROFILE_HEADER = "profile-123";
 
-  @MockitoBean protected FhirProfileContext fhirProfileContext;
+  @MockitoBean protected FhirPackageContext fhirPackageContext;
 
   @BeforeEach
   void defaultFhirProfileHeaders() {
-    when(fhirProfileContext.getOutgoingFhirProfileHeaderValue())
+    when(fhirPackageContext.getOutgoingFhirPackageHeaderValue())
         .thenReturn(DEFAULT_FHIR_PROFILE_HEADER); // individual tests can override this
   }
 }

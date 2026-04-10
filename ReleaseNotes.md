@@ -2,6 +2,11 @@
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.11.0
+- added CONF_FLAG_LOGGING_RELAXED_VALIDATION to log sender IDs of users relying on relaxed validation
+- updated notification builder library to 9.2.2
+- added handling of UnprocessableEntityException for unresolvable references in bundles during excerpt creation
+
 ## Release 2.10.0
 - Removed istio helm chart
 - updated base-image and updated from java 21 to java 25

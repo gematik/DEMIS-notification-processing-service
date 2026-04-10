@@ -39,66 +39,67 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
 /**
- * This class holds the context of the FHIR profile to be used for outgoing requests during the
- * processing of a notification. It is initialized once per request and can be accessed throughout
- * the processing of the notification. The context is determined based on the incoming request
- * header "x-fhir-profile" or derived from the notification type if the header is not present.
+ * This class holds the value of the {@link NpsHeaders#HEADER_FHIR_PACKAGE } to be used for outgoing
+ * requests during the processing of a notification. It is initialized once per request and can be
+ * accessed throughout the processing of the notification. The value is determined based on the
+ * header value in the incoming request or derived from the notification type if the header is not
+ * present in the incoming request.
  */
 @Component
 @RequestScope
 @RequiredArgsConstructor
-public class FhirProfileContext {
+public class FhirPackageContext {
   private final HttpServletRequest request;
   private final NotificationTypeResolver notificationTypeResolver;
   private final FeatureFlagsConfigProperties featureFlagsConfigProperties;
 
-  // The naming of these split profiles derived from the package name
+  // The naming derived from the full package name
   // i.e. rki.demis.disease -> "disease", rki.demis.laboratory -> "laboratory"
-  static final String DISEASE_PROFILE = "disease";
-  static final String LABORATORY_PROFILE = "laboratory";
-  static final String LEGACY_CORE_PROFILE = "fhir-profile-snapshots";
+  static final String DISEASE_PACKAGE = "disease";
+  static final String LABORATORY_PACKAGE = "laboratory";
+  static final String LEGACY_CORE_PACKAGE = "fhir-profile-snapshots";
 
   static final String FEATURE_FLAG_FHIR_CORE_SPLIT = "fhir_core_split";
 
-  // Holds the value of the x-fhir-profile header to be used for outgoing requests.
-  private String outgoingFhirProfileHeaderValue;
+  // Holds the value of the x-fhir-package header to be used for outgoing requests.
+  private String outgoingFhirPackageHeaderValue;
 
   public void initialize(String fhirNotification, MessageType messageType) {
 
-    if (StringUtils.isNotBlank(this.outgoingFhirProfileHeaderValue)) {
+    if (StringUtils.isNotBlank(this.outgoingFhirPackageHeaderValue)) {
       // already initialized, do nothing
       return;
     }
 
-    var incomingFhirProfileHeader = request.getHeader(NpsHeaders.HEADER_FHIR_PROFILE);
+    var incomingFhirPackageHeader = request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE);
 
-    if (StringUtils.isNotBlank(incomingFhirProfileHeader)) {
-      this.outgoingFhirProfileHeaderValue = incomingFhirProfileHeader;
+    if (StringUtils.isNotBlank(incomingFhirPackageHeader)) {
+      this.outgoingFhirPackageHeaderValue = incomingFhirPackageHeader;
       return;
     }
 
     if (!featureFlagsConfigProperties.isEnabled(FEATURE_FLAG_FHIR_CORE_SPLIT)) {
-      this.outgoingFhirProfileHeaderValue = LEGACY_CORE_PROFILE;
+      this.outgoingFhirPackageHeaderValue = LEGACY_CORE_PACKAGE;
       return;
     }
 
     var notificationType =
         notificationTypeResolver.resolveFromNotification(fhirNotification, messageType);
-    this.outgoingFhirProfileHeaderValue = deriveFhirProfileFromSubmissionType(notificationType);
+    this.outgoingFhirPackageHeaderValue = deriveFhirPackageFromSubmissionType(notificationType);
   }
 
-  public String getOutgoingFhirProfileHeaderValue() {
-    if (StringUtils.isBlank(this.outgoingFhirProfileHeaderValue)) {
+  public String getOutgoingFhirPackageHeaderValue() {
+    if (StringUtils.isBlank(this.outgoingFhirPackageHeaderValue)) {
       throw new IllegalStateException(
           "FhirProfileContext has not been initialized for the current request.");
     }
-    return this.outgoingFhirProfileHeaderValue;
+    return this.outgoingFhirPackageHeaderValue;
   }
 
-  private String deriveFhirProfileFromSubmissionType(NotificationType notificationType) {
+  private String deriveFhirPackageFromSubmissionType(NotificationType notificationType) {
     return switch (notificationType) {
-      case DISEASE -> DISEASE_PROFILE;
-      case LABORATORY -> LABORATORY_PROFILE;
+      case DISEASE -> DISEASE_PACKAGE;
+      case LABORATORY -> LABORATORY_PACKAGE;
     };
   }
 }

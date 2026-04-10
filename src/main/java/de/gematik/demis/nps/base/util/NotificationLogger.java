@@ -69,7 +69,7 @@ public final class NotificationLogger {
             requestNotificationProperties.getNotificationId(),
             requestNotificationProperties.getSubmissionType(),
             requestNotificationProperties.getSubmissionCategory(),
-            Optional.ofNullable(requestNotificationProperties.getApiVersion()).orElse(""),
+            Optional.ofNullable(requestNotificationProperties.getPackageVersion()).orElse(""),
             requestNotificationProperties.getSender(),
             status,
             error);

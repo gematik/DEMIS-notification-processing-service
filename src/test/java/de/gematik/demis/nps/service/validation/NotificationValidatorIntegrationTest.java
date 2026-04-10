@@ -34,8 +34,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
-import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity.FATAL;
@@ -52,7 +52,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
-import de.gematik.demis.nps.test.WithMockFhirProfileContext;
+import de.gematik.demis.nps.test.WithMockFhirPackageContext;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import java.util.Map;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -80,7 +80,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "feature.flag.feign_interceptor_enabled=true"
     })
 @AutoConfigureWireMock(port = 0)
-class NotificationValidatorIntegrationTest extends WithMockFhirProfileContext {
+class NotificationValidatorIntegrationTest extends WithMockFhirPackageContext {
   private static final String ENDPOINT_VS = "/VS/$validate";
 
   private static final String REQUEST_BODY = "my body";
@@ -121,8 +121,8 @@ class NotificationValidatorIntegrationTest extends WithMockFhirProfileContext {
         post(ENDPOINT_VS)
             .withHeader(CONTENT_TYPE, equalTo(contentType))
             .withHeader(ACCEPT, equalTo(APPLICATION_JSON_VALUE))
-            .withHeader(HEADER_FHIR_API_VERSION, version == null ? absent() : equalTo(version))
-            .withHeader(HEADER_FHIR_PROFILE, profile == null ? absent() : equalTo(profile))
+            .withHeader(HEADER_FHIR_PACKAGE_VERSION, version == null ? absent() : equalTo(version))
+            .withHeader(HEADER_FHIR_PACKAGE, profile == null ? absent() : equalTo(profile))
             .withRequestBody(equalTo(REQUEST_BODY))
             .willReturn(responseDefBuilder));
   }
@@ -168,7 +168,8 @@ class NotificationValidatorIntegrationTest extends WithMockFhirProfileContext {
     void validationOkayWithSpecificVersion(final MessageType messageType) {
       final String apiVersion = "6";
       final String profile = "fhir-profile-snapshots";
-      setRequestHeaders(Map.of(HEADER_FHIR_API_VERSION, apiVersion, HEADER_FHIR_PROFILE, profile));
+      setRequestHeaders(
+          Map.of(HEADER_FHIR_PACKAGE_VERSION, apiVersion, HEADER_FHIR_PACKAGE, profile));
       final String contentType =
           switch (messageType) {
             case JSON -> APPLICATION_JSON_VALUE;
@@ -185,7 +186,7 @@ class NotificationValidatorIntegrationTest extends WithMockFhirProfileContext {
     @EnumSource(MessageType.class)
     void validationOkayWithoutSpecificVersion(final MessageType messageType) {
       final String profile = "fhir-profile-snapshots";
-      setRequestHeaders(Map.of(HEADER_FHIR_PROFILE, profile));
+      setRequestHeaders(Map.of(HEADER_FHIR_PACKAGE, profile));
       final String contentType =
           switch (messageType) {
             case JSON -> APPLICATION_JSON_VALUE;

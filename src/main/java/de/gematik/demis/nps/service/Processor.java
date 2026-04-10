@@ -32,7 +32,7 @@ import static de.gematik.demis.notification.builder.demis.fhir.notification.type
 import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
-import de.gematik.demis.nps.base.util.FhirProfileContext;
+import de.gematik.demis.nps.base.util.FhirPackageContext;
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -89,7 +89,7 @@ public class Processor {
 
   private final RequestNotificationProperties requestNotificationProperties;
   private final RequestProcessorState requestProcessorState;
-  private final FhirProfileContext fhirProfileContext;
+  private final FhirPackageContext fhirPackageContext;
 
   public Processor(
       NotificationValidator notificationValidator,
@@ -110,7 +110,7 @@ public class Processor {
       @Value("${feature.flag.permission.check.enabled}") boolean isPermissionCheckEnabled,
       final RequestNotificationProperties requestNotificationProperties,
       final RequestProcessorState requestProcessorState,
-      FhirProfileContext fhirProfileContext) {
+      FhirPackageContext fhirPackageContext) {
     this.notificationValidator = notificationValidator;
     this.lifecycleValidationService = lifecycleValidationService;
     this.notificationFhirService = notificationFhirService;
@@ -129,7 +129,7 @@ public class Processor {
     this.dlsService = dlsService;
     this.requestNotificationProperties = requestNotificationProperties;
     this.requestProcessorState = requestProcessorState;
-    this.fhirProfileContext = fhirProfileContext;
+    this.fhirPackageContext = fhirPackageContext;
   }
 
   public Parameters execute(
@@ -146,7 +146,7 @@ public class Processor {
       notificationFhirService.preCheckProfile(fhirNotification);
     }
 
-    fhirProfileContext.initialize(fhirNotification, contentType);
+    fhirPackageContext.initialize(fhirNotification, contentType);
 
     final InternalOperationOutcome internalOperationOutcome =
         validateNotification(fhirNotification, contentType);

@@ -46,8 +46,8 @@ public record NpsConfigProperties(
     @NotEmpty String certificateDir,
     @NotNull OperationOutcome.IssueSeverity outcomeIssueThreshold,
     boolean anonymizedAllowed,
-    boolean relaxedValidation,
-    boolean healthOfficesLiveTest) {
+    boolean healthOfficesLiveTest,
+    boolean loggingRelaxedValidation) {
 
   @PostConstruct
   void log() {

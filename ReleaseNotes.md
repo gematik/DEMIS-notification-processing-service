@@ -2,6 +2,9 @@
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.11.1
+- updated spring parent to 2.15.8
+
 ## Release 2.11.0
 - added CONF_FLAG_LOGGING_RELAXED_VALIDATION to log sender IDs of users relying on relaxed validation
 - updated notification builder library to 9.2.2

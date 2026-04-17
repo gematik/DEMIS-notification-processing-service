@@ -4,11 +4,11 @@
   <parent>
     <groupId>de.gematik.demis</groupId>
     <artifactId>spring-parent</artifactId>
-    <version>2.15.6</version>
+    <version>2.15.8</version>
     <relativePath></relativePath><!-- lookup parent from repository -->
   </parent>
   <artifactId>notification-processing-service</artifactId>
-  <version>2.10.1-SNAPSHOT</version>
+  <version>2.11.1-SNAPSHOT</version>
   <name>notification-processing-service</name>
   <packaging>jar</packaging>
   <description>Notification Processing Service</description>
@@ -21,7 +21,6 @@
   <properties>
     <java.version>25</java.version>
     <dep.bouncycastle.version>1.81</dep.bouncycastle.version>
-    <notification.builder.version>9.2.2</notification.builder.version>
   </properties>
   <dependencyManagement>
     <dependencies>

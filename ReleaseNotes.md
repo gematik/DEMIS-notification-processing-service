@@ -2,6 +2,12 @@
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.12.0
+- removed FEATURE_FLAG_FOLLOW_UP_NOTIFICATION
+- updated TransmittingSiteSearchText.xml
+- updated spring-parent to version 2.16.1
+- updated base image to gematik1/osadl-alpine-openjdk25-jre:1.0.4
+
 ## Release 2.11.1
 - updated spring parent to 2.15.8
 

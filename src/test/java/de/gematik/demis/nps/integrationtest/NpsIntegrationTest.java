@@ -270,7 +270,7 @@ class NpsIntegrationTest {
   void success(final NotificationType type) throws Exception {
     setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
     setupStub(LVS, ok());
-
+    setupStub(DLS, ok());
     final String resourceName =
         switch (type) {
           case LABORATORY -> NRS_RESPONSE_OKAY_LABORATORY;
@@ -321,7 +321,7 @@ class NpsIntegrationTest {
   void process7_4Notification() throws Exception {
     setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
     setupStub(LVS, ok());
-
+    setupStub(DLS, ok());
     setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY_7_4));
     setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
     setupStub(FSW, ok());
@@ -375,7 +375,7 @@ class NpsIntegrationTest {
 
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
-
+      setupStub(DLS, ok());
       setupStub(NRS, okJsonResource(nrsResponseOkay));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
       setupStub(FSW, ok());
@@ -520,6 +520,7 @@ class NpsIntegrationTest {
     void pseudonymServiceReturnsBadRequest_shouldStillSucceedWithoutPseudonym() throws Exception {
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
+      setupStub(DLS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, statusJsonResource(400, PS_RESPONSE_400));
       setupStub(FSW, ok());
@@ -572,6 +573,7 @@ class NpsIntegrationTest {
     void pdfServiceReturnsInternalServerError_shouldStillSucceedWithoutPdf() throws Exception {
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
+      setupStub(DLS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
       setupStub(FSW, ok());
@@ -588,6 +590,7 @@ class NpsIntegrationTest {
       testUser = TEST_USER_NAME;
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
+      setupStub(DLS, ok());
       setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY_WITH_TEST_USER));
       setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
       setupStub(FSW, ok());
@@ -642,6 +645,7 @@ class NpsIntegrationTest {
     void success_callsNotificationLogger(final NotificationType type) throws Exception {
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
+      setupStub(DLS, ok());
 
       final String resourceName =
           switch (type) {
@@ -734,7 +738,7 @@ class NpsIntegrationTest {
     void success_isSuccessfulLog(final NotificationType type) throws Exception {
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
-
+      setupStub(DLS, ok());
       final String resourceName =
           switch (type) {
             case LABORATORY -> NRS_RESPONSE_OKAY_LABORATORY;
@@ -787,7 +791,7 @@ class NpsIntegrationTest {
       String expectedRequestProcessorStateLog =
           "Notification: bundleId=1a3a16aa-64e0-5eb1-8601-018fc3794b6e, type="
               + type
-              + ", diseaseCode=cvd, sender=LABOR-12345, receiver=1.01.0.53., testUser=false, result=success, vs=success, nrs=success, lvs=success, ces=success, bundleActions=success, ps=success, fsw=success, dls=unset, pdfgen=success";
+              + ", diseaseCode=cvd, sender=LABOR-12345, receiver=1.01.0.53., testUser=false, result=success, vs=success, nrs=success, lvs=success, ces=success, bundleActions=success, ps=success, fsw=success, dls=success, pdfgen=success";
       assertThat(actualNotificationLogEntryLog).isEqualTo(expectedJson);
       assertThat(actualRequestProcessorStateLog).isEqualTo(expectedRequestProcessorStateLog);
     }

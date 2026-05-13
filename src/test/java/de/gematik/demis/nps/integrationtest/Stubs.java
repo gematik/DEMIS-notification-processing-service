@@ -50,6 +50,7 @@ class Stubs {
 
   static final UrlPattern VS = urlPathMatching("/VS(/.+)?");
   static final UrlPattern LVS = urlPathMatching("/LVS(/.+)?");
+  static final UrlPattern DLS = urlPathMatching("/DLS(/.+)?");
   static final UrlPattern NRS = urlPathMatching("/NRS(/.+)?");
   static final UrlPattern PS = urlPathMatching("/PS(/.+)?");
   static final UrlPattern PDF = urlPathMatching("/PDF(/.+)?");

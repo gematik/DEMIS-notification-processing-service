@@ -14,6 +14,7 @@ nps:
     routing: "http://localhost:${wiremock.server.port}/NRS"
     pdfgen: "http://localhost:${wiremock.server.port}/PDF"
     pseudonymization: "http://localhost:${wiremock.server.port}/PS"
+    dls: "http://localhost:${wiremock.server.port}/DLS"
     fhir-storage-writer:
       address: "http://localhost:${wiremock.server.port}"
       context-path: /FSW/

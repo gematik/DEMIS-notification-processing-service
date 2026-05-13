@@ -89,7 +89,6 @@ feature:
     relaxed_validation: false
     permission.check.enabled: false
     custodian.enabled: false
-    follow.up.notification: false
     nbl.for.notByName.enabled: false
     fhir_core_split: false
     feign_interceptor_enabled: false

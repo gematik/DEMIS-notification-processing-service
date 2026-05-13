@@ -34,7 +34,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryAnonymousDataBuilder;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
@@ -91,7 +90,7 @@ class DlsServiceTest {
   @BeforeEach
   void setup() {
     Mockito.reset(DLS_SERVICE_CLIENT);
-    service = new DlsService(DLS_SERVICE_CLIENT, new RequestProcessorState(), true);
+    service = new DlsService(DLS_SERVICE_CLIENT, new RequestProcessorState());
   }
 
   @Test
@@ -104,16 +103,6 @@ class DlsServiceTest {
   void thatClientIsNotCalledIfInvalidUUID() {
     assertThatNoException().isThrownBy(() -> service.store(NOTIFICATION_INVALID_UUID));
     verify(DLS_SERVICE_CLIENT, never()).store(any());
-  }
-
-  @Nested
-  class FeatureFlag {
-    @Test
-    void thatNoOpIfFeatureFlagIsDisabled() {
-      service = new DlsService(DLS_SERVICE_CLIENT, new RequestProcessorState(), false);
-      assertThatNoException().isThrownBy(() -> service.store(NOTIFICATION));
-      verifyNoInteractions(DLS_SERVICE_CLIENT);
-    }
   }
 
   @Nested

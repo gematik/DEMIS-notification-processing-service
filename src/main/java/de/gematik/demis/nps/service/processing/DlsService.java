@@ -33,7 +33,6 @@ import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.service.base.error.ServiceCallException;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /** Provides access to the DLS microservice */
@@ -41,22 +40,18 @@ import org.springframework.stereotype.Service;
 @Service
 public class DlsService {
   private final DlsServiceClient client;
-  private final boolean isFollowUpEnabled;
   private final RequestProcessorState requestProcessorState;
 
   public DlsService(
-      final DlsServiceClient client,
-      final RequestProcessorState requestProcessorState,
-      @Value("${feature.flag.follow.up.notification}") final boolean isFollowUpEnabled) {
+      final DlsServiceClient client, final RequestProcessorState requestProcessorState) {
     this.client = client;
-    this.isFollowUpEnabled = isFollowUpEnabled;
     this.requestProcessorState = requestProcessorState;
   }
 
   /** Write the responsible receiver for the given notification id to the DLS. Fail silently. */
   public void store(@Nonnull final Notification original) {
     final String notificationId = original.getComposition().getIdentifier().getValue();
-    if (!isFollowUpEnabled || !UUIDValidator.isValidUUID(notificationId)) {
+    if (!UUIDValidator.isValidUUID(notificationId)) {
       return;
     }
 

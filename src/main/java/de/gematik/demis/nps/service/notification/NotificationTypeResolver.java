@@ -30,6 +30,7 @@ package de.gematik.demis.nps.service.notification;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Component;
  * FHIR Bundles. The resolution is done by prefix matching the profile URL against known
  * notification types.
  */
+@Slf4j
 @Component
 public class NotificationTypeResolver {
 
@@ -69,7 +71,9 @@ public class NotificationTypeResolver {
           case XML -> xmlReader.readProfile(notification);
         };
 
-    return resolveFromProfileUrl(profileUrl);
+    var notificationType = resolveFromProfileUrl(profileUrl);
+    log.debug("NotificationType derived from notification: {}", notificationType);
+    return notificationType;
   }
 
   /** Resolves the type from a profile URL using prefix matching. */

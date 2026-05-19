@@ -2,6 +2,10 @@
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.12.1
+- added debug-logs
+- updated notification-builder-library to version 9.2.7
+
 ## Release 2.12.0
 - removed FEATURE_FLAG_FOLLOW_UP_NOTIFICATION
 - updated TransmittingSiteSearchText.xml

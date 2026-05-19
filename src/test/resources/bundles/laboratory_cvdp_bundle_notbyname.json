@@ -197,7 +197,9 @@
       },
       "issued": "2021-03-04T20:15:00.000+01:00",
       "result": [ {
-        "reference": "Observation/4cf6dbcb-07b4-4794-bbd3-c052a1d67135"
+          "reference": "Observation/4cf6dbcb-07b4-4794-bbd3-c052a1d67135"
+        }, {
+          "reference": "Observation/f0baf9ca-7bd2-4a2d-baf9-ca7bd22a2dbf"
       } ],
       "conclusion": "Ich bin die textuelle Conclusion ...",
       "conclusionCode": [ {
@@ -249,6 +251,58 @@
       } ],
       "note": [ {
         "text": "Nette Zusatzinformation …"
+      } ],
+      "method": {
+        "coding": [ {
+          "system": "http://snomed.info/sct",
+          "code": "398545005",
+          "display": "Nucleic acid assay (procedure)"
+        } ]
+      },
+      "specimen": {
+        "reference": "Specimen/5497b5f4-2994-4c8c-a94e-e37ad111e220"
+      }
+    }
+  }, {
+    "fullUrl": "https://demis.rki.de/fhir/Observation/f0baf9ca-7bd2-4a2d-baf9-ca7bd22a2dbf",
+    "resource": {
+      "resourceType": "Observation",
+      "id": "f0baf9ca-7bd2-4a2d-baf9-ca7bd22a2dbf",
+      "meta": {
+        "profile": [ "https://demis.rki.de/fhir/StructureDefinition/PathogenDetectionCVDP" ]
+      },
+      "status": "final",
+      "category": [ {
+        "coding": [ {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "laboratory"
+        } ]
+      } ],
+      "code": {
+        "coding": [ {
+          "system": "http://loinc.org",
+          "code": "94660-8",
+          "display": "SARS-CoV-2 (COVID-19) RNA [Presence] in Serum or Plasma by NAA with probe detection"
+        } ]
+      },
+      "subject": {
+        "reference": "Patient/c9201e8c-0425-4fb4-89c3-95f2405f290a"
+      },
+      "valueQuantity": {
+        "value": 123.45,
+        "unit": "mg/dl",
+        "system": "http://unitsofmeasure.org",
+        "code": "mg/dL"
+      },
+      "interpretation": [ {
+        "coding": [ {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+          "code": "POS",
+          "display": "Positive"
+        } ]
+      } ],
+      "note": [ {
+        "text": "Keine Zusatzinformation"
       } ],
       "method": {
         "coding": [ {

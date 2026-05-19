@@ -4,7 +4,7 @@ logging:
 
 nps:
     client:
-        validation: "http://localhost:9010"
+        validation: "http://localhost:8080"
         lifecycle-vs: "http://localhost:9011"
         routing: "http://localhost:9012"
         pdfgen: "http://localhost:9013"

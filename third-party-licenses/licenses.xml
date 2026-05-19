@@ -516,7 +516,7 @@
     <dependency>
       <groupId>de.gematik.demis</groupId>
       <artifactId>notification-builder-library</artifactId>
-      <version>9.2.4</version>
+      <version>9.2.7</version>
       <licenses>
         <license>
           <name>EUPL-1.2</name>

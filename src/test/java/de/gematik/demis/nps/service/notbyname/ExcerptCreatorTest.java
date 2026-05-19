@@ -39,9 +39,12 @@ import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.notification.NotificationType;
 import de.gematik.demis.nps.test.RoutingDataUtil;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Quantity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -234,6 +237,35 @@ class ExcerptCreatorTest {
         .isInstanceOf(NpsServiceException.class)
         .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
         .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
+  }
+
+  @Test
+  @DisplayName("createNotByNameBundle and copies Quantity completely")
+  void createNotByNameBundleAndCopiesQuantityCompletely() throws IOException {
+    String json =
+        Files.readString(Path.of("src/test/resources/bundles/laboratory_cvdp_bundle.json"));
+    Bundle bundle = fhirParser.parseResource(Bundle.class, json);
+
+    Notification notification =
+        Notification.builder()
+            .bundle(bundle)
+            .testUser(true)
+            .type(NotificationType.LABORATORY)
+            .testUserRecipient("foobar")
+            .routingData(RoutingDataUtil.laboratoryExample())
+            .build();
+
+    Bundle result = ExcerptCreator.createNotByNameBundle(notification);
+
+    assertThat(result.getEntry().get(8))
+        .extracting(e -> e.getResource())
+        .isInstanceOf(Observation.class)
+        .extracting(r -> (Observation) r)
+        .extracting(Observation::getValue)
+        .isInstanceOf(Quantity.class)
+        .extracting(q -> (Quantity) q)
+        .extracting(Quantity::getValue, Quantity::getUnit, Quantity::getSystem, Quantity::getCode)
+        .containsExactly(new BigDecimal("123.45"), "mg/dl", "http://unitsofmeasure.org", "mg/dL");
   }
 
   @Test

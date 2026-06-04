@@ -48,7 +48,6 @@ import feign.Response;
 import feign.codec.Decoder;
 import feign.codec.StringDecoder;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Map;
@@ -81,19 +80,13 @@ public class NotificationValidator {
 
   private final Decoder decoder = new StringDecoder();
 
-  private boolean relaxedValidationActivated;
-
   // Only required for feature flag "feign_interceptor_enabled" set to false
   private final HttpServletRequest httpServletRequest;
   private static final Set<String> headersToForward =
       Set.of(HEADER_FHIR_API_VERSION, HEADER_FHIR_PROFILE, HEADER_SENDER);
+  public static final String HEADER_VALIDATION_RELAXED = "x-validation-relaxed";
 
   // --------------------------------------------------------------------------
-
-  @PostConstruct
-  public void init() {
-    relaxedValidationActivated = featureFlags.isEnabled("relaxed_validation");
-  }
 
   private static void reduceIssuesSeverityToWarn(final OperationOutcome operationOutcome) {
     operationOutcome.getIssue().stream()
@@ -123,6 +116,9 @@ public class NotificationValidator {
 
     final OperationOutcome operationOutcome =
         fhirContext.newJsonParser().parseResource(OperationOutcome.class, body);
+
+    final boolean relaxedValidationActivated =
+        Boolean.parseBoolean(httpServletRequest.getHeader(HEADER_VALIDATION_RELAXED));
 
     if (isStatusSuccessful(status)) {
       requestProcessorState.setValidationSuccessful(true);

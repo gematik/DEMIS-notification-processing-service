@@ -61,8 +61,7 @@ public class NotificationTypeResolver {
 
   public NotificationType resolveFromNotification(String notification, MessageType messageType) {
     if (messageType == null) {
-      throw new NpsServiceException(
-          ErrorCode.INVALID_REQUEST_PAYLOAD, "MessageType must not be null");
+      throw new NpsServiceException(ErrorCode.UNPROCESSABLE_ENTITY, "MessageType must not be null");
     }
 
     String profileUrl =
@@ -80,7 +79,7 @@ public class NotificationTypeResolver {
   private NotificationType resolveFromProfileUrl(String profileUrl) {
     if (profileUrl == null || profileUrl.isBlank()) {
       throw new NpsServiceException(
-          ErrorCode.INVALID_REQUEST_PAYLOAD, "Bundle.meta.profile missing or empty.");
+          ErrorCode.UNPROCESSABLE_ENTITY, "Bundle.meta.profile missing or empty.");
     }
 
     if (profileUrl.startsWith(NotificationType.LABORATORY.getBaseProfile().getUrl())) {

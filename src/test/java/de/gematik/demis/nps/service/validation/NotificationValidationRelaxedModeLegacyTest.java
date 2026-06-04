@@ -29,6 +29,7 @@ package de.gematik.demis.nps.service.validation;
 
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
+import static de.gematik.demis.nps.service.validation.NotificationValidator.HEADER_VALIDATION_RELAXED;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -110,7 +111,7 @@ class NotificationValidationRelaxedModeLegacyTest {
 
   @BeforeEach
   void setup() {
-    featureFlags = new FeatureFlagsConfigProperties(Map.of("relaxed_validation", true));
+    featureFlags = new FeatureFlagsConfigProperties(Map.of());
     underTest =
         new NotificationValidator(
             validationServiceClient,
@@ -119,9 +120,8 @@ class NotificationValidationRelaxedModeLegacyTest {
             featureFlags,
             npsConfigProperties,
             httpServletRequest);
-    // simulate the @PostConstruct method
-    underTest.init();
     lenient().when(httpServletRequest.getHeader(eq(HEADER_FHIR_API_VERSION))).thenReturn("v1");
+    lenient().when(httpServletRequest.getHeader(eq(HEADER_VALIDATION_RELAXED))).thenReturn("true");
     lenient()
         .when(httpServletRequest.getHeader(eq(HEADER_FHIR_PROFILE)))
         .thenReturn("ars-profile-snapshots");

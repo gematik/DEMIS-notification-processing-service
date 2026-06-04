@@ -108,7 +108,7 @@ class ProfileReaderJson {
 
     } catch (IOException e) {
       throw new NpsServiceException(
-          ErrorCode.INVALID_REQUEST_PAYLOAD, "Unable to parse FHIR JSON.", e);
+          ErrorCode.UNPROCESSABLE_ENTITY, "Unable to parse FHIR JSON.", e);
     }
   }
 
@@ -123,7 +123,7 @@ class ProfileReaderJson {
 
     } catch (IOException e) {
       throw new NpsServiceException(
-          ErrorCode.INVALID_REQUEST_PAYLOAD, "Unable to parse FHIR Bundle JSON.", e);
+          ErrorCode.UNPROCESSABLE_ENTITY, "Unable to parse FHIR Bundle JSON.", e);
     }
   }
 
@@ -156,7 +156,7 @@ class ProfileReaderJson {
 
     } catch (IOException e) {
       throw new NpsServiceException(
-          ErrorCode.INVALID_REQUEST_PAYLOAD, "Unable to parse FHIR Parameters JSON.", e);
+          ErrorCode.UNPROCESSABLE_ENTITY, "Unable to parse FHIR Parameters JSON.", e);
     }
   }
 
@@ -273,6 +273,6 @@ class ProfileReaderJson {
   }
 
   private static NpsServiceException parsingError(String message) {
-    return new NpsServiceException(ErrorCode.INVALID_REQUEST_PAYLOAD, message);
+    return new NpsServiceException(ErrorCode.UNPROCESSABLE_ENTITY, message);
   }
 }

@@ -29,11 +29,15 @@ package de.gematik.demis.nps.service.validation;
 
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE_VERSION;
+import static de.gematik.demis.nps.service.validation.NotificationValidator.HEADER_VALIDATION_RELAXED;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -104,9 +108,7 @@ class NotificationValidationRelaxedModeTest {
 
   @BeforeEach
   void setup() {
-    featureFlags =
-        new FeatureFlagsConfigProperties(
-            Map.of("relaxed_validation", true, "feign_interceptor_enabled", true));
+    featureFlags = new FeatureFlagsConfigProperties(Map.of("feign_interceptor_enabled", true));
     underTest =
         new NotificationValidator(
             validationServiceClient,
@@ -115,9 +117,8 @@ class NotificationValidationRelaxedModeTest {
             featureFlags,
             npsConfigProperties,
             httpServletRequest);
-    // simulate the @PostConstruct method
-    underTest.init();
     lenient().when(httpServletRequest.getHeader(HEADER_FHIR_PACKAGE_VERSION)).thenReturn("v1");
+    lenient().when(httpServletRequest.getHeader(HEADER_VALIDATION_RELAXED)).thenReturn("true");
     lenient()
         .when(httpServletRequest.getHeader(HEADER_FHIR_PACKAGE))
         .thenReturn("ars-profile-snapshots");
@@ -199,7 +200,7 @@ class NotificationValidationRelaxedModeTest {
 
   @Test
   @DynamicPropertySource
-  void returnReparsedStringForRelaxedValidation() throws IOException {
+  void returnReparsedStringForRelaxedValidation_ValidationRelaxedHeaderTrue() throws IOException {
 
     final var outcome = createOperationOutcomeOfValidationService();
     final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
@@ -215,5 +216,89 @@ class NotificationValidationRelaxedModeTest {
     assertThat(result).isNotNull();
     assertThat(result.reparsedStringAsJsonWhenRelaxedValidationWasUsed())
         .isEqualTo(CORRECTED_NOTIFICATION);
+    verify(validationServiceClient, times(1)).validateXmlBundle(ORIGINAL_NOTIFICATION);
+    verify(validationServiceClient, times(1)).validateJsonBundle(CORRECTED_NOTIFICATION);
+  }
+
+  @Test
+  @DynamicPropertySource
+  void throwsNpsException_ValidationRelaxedHeaderFalse() throws IOException {
+    lenient().when(httpServletRequest.getHeader(HEADER_VALIDATION_RELAXED)).thenReturn("false");
+
+    final var outcome = createOperationOutcomeOfValidationService();
+    final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
+    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+        .thenReturn(firstResponse);
+
+    assertThatThrownBy(() -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML))
+        .isInstanceOf(NpsServiceException.class)
+        .satisfies(
+            ex -> {
+              NpsServiceException exception = (NpsServiceException) ex;
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCode.FHIR_VALIDATION_FATAL.name());
+              assertThat(exception.getOperationOutcome()).isNotNull();
+              assertThat(exception.getOperationOutcome().getIssue())
+                  .extracting(OperationOutcomeIssueComponent::getSeverity)
+                  .containsExactly(
+                      IssueSeverity.INFORMATION, IssueSeverity.ERROR, IssueSeverity.FATAL);
+            });
+    verify(validationServiceClient, times(1)).validateXmlBundle(ORIGINAL_NOTIFICATION);
+    verify(validationServiceClient, never()).validateJsonBundle(CORRECTED_NOTIFICATION);
+  }
+
+  @Test
+  @DynamicPropertySource
+  void throwsNpsException_ValidationRelaxedHeaderOtherValue() throws IOException {
+    lenient().when(httpServletRequest.getHeader(HEADER_VALIDATION_RELAXED)).thenReturn("invalid");
+
+    final var outcome = createOperationOutcomeOfValidationService();
+    final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
+    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+        .thenReturn(firstResponse);
+
+    assertThatThrownBy(() -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML))
+        .isInstanceOf(NpsServiceException.class)
+        .satisfies(
+            ex -> {
+              NpsServiceException exception = (NpsServiceException) ex;
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCode.FHIR_VALIDATION_FATAL.name());
+              assertThat(exception.getOperationOutcome()).isNotNull();
+              assertThat(exception.getOperationOutcome().getIssue())
+                  .extracting(OperationOutcomeIssueComponent::getSeverity)
+                  .containsExactly(
+                      IssueSeverity.INFORMATION, IssueSeverity.ERROR, IssueSeverity.FATAL);
+            });
+    verify(validationServiceClient, times(1)).validateXmlBundle(ORIGINAL_NOTIFICATION);
+    verify(validationServiceClient, never()).validateJsonBundle(CORRECTED_NOTIFICATION);
+  }
+
+  @Test
+  @DynamicPropertySource
+  void throwsNpsException_ValidationRelaxedHeaderNotSet() throws IOException {
+    lenient().when(httpServletRequest.getHeader(HEADER_VALIDATION_RELAXED)).thenReturn(null);
+
+    final var outcome = createOperationOutcomeOfValidationService();
+    final var firstResponse = mockResponse(422, fhirResourceToJson(outcome));
+    when(validationServiceClient.validateXmlBundle(ORIGINAL_NOTIFICATION))
+        .thenReturn(firstResponse);
+
+    assertThatThrownBy(() -> underTest.validateFhir(ORIGINAL_NOTIFICATION, MessageType.XML))
+        .isInstanceOf(NpsServiceException.class)
+        .satisfies(
+            ex -> {
+              NpsServiceException exception = (NpsServiceException) ex;
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCode.FHIR_VALIDATION_FATAL.name());
+              assertThat(exception.getOperationOutcome()).isNotNull();
+              assertThat(exception.getOperationOutcome().getIssue())
+                  .extracting(OperationOutcomeIssueComponent::getSeverity)
+                  .containsExactly(
+                      IssueSeverity.INFORMATION, IssueSeverity.ERROR, IssueSeverity.FATAL);
+            });
+
+    verify(validationServiceClient, times(1)).validateXmlBundle(ORIGINAL_NOTIFICATION);
+    verify(validationServiceClient, never()).validateJsonBundle(CORRECTED_NOTIFICATION);
   }
 }

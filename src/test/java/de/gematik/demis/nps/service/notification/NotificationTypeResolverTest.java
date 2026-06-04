@@ -316,28 +316,28 @@ class NotificationTypeResolverTest {
         { "resourceType":"Bundle", "meta": { "tag": [] } }
         """,
             MessageType.JSON,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "xml missing meta.profile",
             """
         <Bundle xmlns="http://hl7.org/fhir"><meta><tag><system value="x"/><code value="y"/></tag></meta></Bundle>
         """,
             MessageType.XML,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "json blank profile",
             """
         { "resourceType":"Bundle", "meta": { "profile": ["   "] } }
         """,
             MessageType.JSON,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "xml blank profile",
             """
         <Bundle xmlns="http://hl7.org/fhir"><meta><profile value="   "/></meta></Bundle>
         """,
             MessageType.XML,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "json unknown profile",
             """
@@ -353,36 +353,33 @@ class NotificationTypeResolverTest {
             MessageType.XML,
             ErrorCode.UNSUPPORTED_PROFILE),
         Arguments.of(
-            "malformed json",
-            "{ not valid json",
-            MessageType.JSON,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            "malformed json", "{ not valid json", MessageType.JSON, ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "malformed xml",
             "<Bundle><meta></Bundle>",
             MessageType.XML,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "json meta.profile not array",
             """
         { "resourceType":"Bundle", "meta": { "profile": "not-an-array" } }
         """,
             MessageType.JSON,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "xml profile missing value attribute",
             """
         <Bundle xmlns="http://hl7.org/fhir"><meta><profile/></meta></Bundle>
         """,
             MessageType.XML,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "message type null",
             """
         { "resourceType":"Bundle", "meta": { "profile": ["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"] } }
         """,
             null,
-            ErrorCode.INVALID_REQUEST_PAYLOAD),
+            ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "The Bundle element is too deep within the XML structure",
             """
@@ -403,6 +400,6 @@ class NotificationTypeResolverTest {
                     </Parameters>
                     """,
             MessageType.XML,
-            ErrorCode.INVALID_REQUEST_PAYLOAD));
+            ErrorCode.UNPROCESSABLE_ENTITY));
   }
 }

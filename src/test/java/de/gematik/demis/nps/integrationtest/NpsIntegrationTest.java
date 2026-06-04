@@ -51,7 +51,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
@@ -459,7 +458,7 @@ class NpsIntegrationTest {
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       executeTest(
           resource(ERRORS_DIR + INPUT_UNSUPPORTED_REPORT_JSON),
-          BAD_REQUEST,
+          UNPROCESSABLE_ENTITY,
           ERRORS_DIR + EXPECTED_UNSUPPORTED_PROFILE_RESPONSE);
       counterVerifier.assertErrorCounter(ErrorCode.UNSUPPORTED_PROFILE);
     }

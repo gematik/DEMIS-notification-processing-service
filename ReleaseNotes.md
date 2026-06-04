@@ -2,6 +2,14 @@
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.12.2
+- arranged jvm options and resource limits
+- optimized custom environment variables handling in helm chart
+- updated docker base image to gematik1/osadl-alpine-openjdk25-jre:1.0.5
+- replaced ff FEATURE_FLAG_RELAXED_VALIDATION by x-validation-relaxed request header control
+- harmonized error handling of type resolver and pre-check with validation-service behavior.
+
+
 ## Release 2.12.1
 - added debug-logs
 - updated notification-builder-library to version 9.2.7

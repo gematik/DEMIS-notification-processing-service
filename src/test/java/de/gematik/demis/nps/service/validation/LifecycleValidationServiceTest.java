@@ -70,7 +70,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
-      "feature.flag.relaxed_validation=false",
     })
 @AutoConfigureWireMock(port = 0)
 class LifecycleValidationServiceTest extends WithMockFhirPackageContext {

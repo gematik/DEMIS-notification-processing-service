@@ -141,7 +141,7 @@ class ProfileReaderXml {
 
     } catch (XMLStreamException e) {
       throw new NpsServiceException(
-          ErrorCode.INVALID_REQUEST_PAYLOAD, "Unable to parse FHIR Bundle XML.", e);
+          ErrorCode.UNPROCESSABLE_ENTITY, "Unable to parse FHIR Bundle XML.", e);
     }
   }
 }

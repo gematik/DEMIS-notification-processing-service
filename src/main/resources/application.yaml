@@ -86,7 +86,6 @@ feature:
   flag:
     notification_pre_check: false
     notifications.7_3: false
-    relaxed_validation: false
     permission.check.enabled: false
     custodian.enabled: false
     nbl.for.notByName.enabled: false

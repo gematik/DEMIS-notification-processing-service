@@ -30,6 +30,7 @@ package de.gematik.demis.nps.service.validation;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_API_VERSION;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PROFILE;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_SENDER;
+import static de.gematik.demis.nps.service.validation.NotificationValidator.HEADER_VALIDATION_RELAXED;
 import static de.gematik.demis.nps.test.TestUtil.fhirResourceToJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
@@ -229,8 +230,7 @@ class NotificationValidatorRelaxedLoggingTest {
   private NotificationValidator createValidator(
       boolean relaxedValidation, boolean loggingRelaxedValidation) {
     final FeatureFlagsConfigProperties featureFlags =
-        new FeatureFlagsConfigProperties(
-            Map.of("relaxed_validation", relaxedValidation, "feign_interceptor_enabled", true));
+        new FeatureFlagsConfigProperties(Map.of("feign_interceptor_enabled", true));
     final NpsConfigProperties npsConfigProperties = mock(NpsConfigProperties.class);
     when(npsConfigProperties.loggingRelaxedValidation()).thenReturn(loggingRelaxedValidation);
     final NotificationValidator validator =
@@ -241,8 +241,10 @@ class NotificationValidatorRelaxedLoggingTest {
             featureFlags,
             npsConfigProperties,
             httpServletRequest);
-    validator.init();
     lenient().when(httpServletRequest.getHeader(HEADER_FHIR_API_VERSION)).thenReturn("v1");
+    lenient()
+        .when(httpServletRequest.getHeader(HEADER_VALIDATION_RELAXED))
+        .thenReturn(Boolean.toString(relaxedValidation));
     lenient()
         .when(httpServletRequest.getHeader(HEADER_FHIR_PROFILE))
         .thenReturn("ars-profile-snapshots");

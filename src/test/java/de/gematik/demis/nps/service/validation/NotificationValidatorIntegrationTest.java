@@ -36,6 +36,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE_VERSION;
+import static de.gematik.demis.nps.service.validation.NotificationValidator.HEADER_VALIDATION_RELAXED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity.FATAL;
@@ -76,7 +77,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
     properties = {
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
-      "feature.flag.relaxed_validation=false",
       "feature.flag.feign_interceptor_enabled=true"
     })
 @AutoConfigureWireMock(port = 0)
@@ -168,8 +168,15 @@ class NotificationValidatorIntegrationTest extends WithMockFhirPackageContext {
     void validationOkayWithSpecificVersion(final MessageType messageType) {
       final String apiVersion = "6";
       final String profile = "fhir-profile-snapshots";
+      final String relaxedValidationActivated = "false";
       setRequestHeaders(
-          Map.of(HEADER_FHIR_PACKAGE_VERSION, apiVersion, HEADER_FHIR_PACKAGE, profile));
+          Map.of(
+              HEADER_FHIR_PACKAGE_VERSION,
+              apiVersion,
+              HEADER_FHIR_PACKAGE,
+              profile,
+              HEADER_VALIDATION_RELAXED,
+              relaxedValidationActivated));
       final String contentType =
           switch (messageType) {
             case JSON -> APPLICATION_JSON_VALUE;
@@ -186,7 +193,10 @@ class NotificationValidatorIntegrationTest extends WithMockFhirPackageContext {
     @EnumSource(MessageType.class)
     void validationOkayWithoutSpecificVersion(final MessageType messageType) {
       final String profile = "fhir-profile-snapshots";
-      setRequestHeaders(Map.of(HEADER_FHIR_PACKAGE, profile));
+      final String relaxedValidationActivated = "false";
+      setRequestHeaders(
+          Map.of(
+              HEADER_FHIR_PACKAGE, profile, HEADER_VALIDATION_RELAXED, relaxedValidationActivated));
       final String contentType =
           switch (messageType) {
             case JSON -> APPLICATION_JSON_VALUE;

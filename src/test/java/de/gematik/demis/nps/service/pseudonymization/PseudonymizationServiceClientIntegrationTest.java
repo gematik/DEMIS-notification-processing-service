@@ -47,10 +47,10 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(properties = "nps.client.pseudonymization=http://localhost:${wiremock.server.port}")
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock
 class PseudonymizationServiceClientIntegrationTest extends WithMockFhirPackageContext {
 
   private static final String EXPECTED_REQUEST_BODY =

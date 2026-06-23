@@ -92,6 +92,7 @@ feature:
     fhir_core_split: false
     feign_interceptor_enabled: false
     new.error.message.for.failed.routing: false
+    filter.invalid.xml.codepoints: false
 
 
 demis:

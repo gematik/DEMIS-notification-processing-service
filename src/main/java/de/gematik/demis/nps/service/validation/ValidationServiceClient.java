@@ -29,8 +29,8 @@ package de.gematik.demis.nps.service.validation;
 
 import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -57,12 +57,14 @@ interface ValidationServiceClient {
       value = "/$validate",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
-  Response validateJsonBundle(@RequestHeader HttpHeaders headers, @RequestBody String bundleAsJson);
+  Response validateJsonBundle(
+      @RequestHeader MultiValueMap<String, String> headers, @RequestBody String bundleAsJson);
 
   @PostMapping(
       value = "/$validate",
       consumes = MediaType.APPLICATION_XML_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
-  Response validateXmlBundle(@RequestHeader HttpHeaders headers, @RequestBody String bundleAsXml);
+  Response validateXmlBundle(
+      @RequestHeader MultiValueMap<String, String> headers, @RequestBody String bundleAsXml);
   // --------------------------------------------------------------------------
 }

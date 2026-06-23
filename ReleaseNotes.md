@@ -2,13 +2,18 @@
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.13.0
+- upgraded to spring boot 4 
+- updated spring-parent to 4.0.5
+- added FEATURE_FLAG_FILTER_INVALID_XML_CODEPOINTS
+- added pre-encryption filtering of invalid XML code points
+
 ## Release 2.12.2
 - arranged jvm options and resource limits
 - optimized custom environment variables handling in helm chart
 - updated docker base image to gematik1/osadl-alpine-openjdk25-jre:1.0.5
 - replaced ff FEATURE_FLAG_RELAXED_VALIDATION by x-validation-relaxed request header control
 - harmonized error handling of type resolver and pre-check with validation-service behavior.
-
 
 ## Release 2.12.1
 - added debug-logs

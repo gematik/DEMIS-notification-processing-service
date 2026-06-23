@@ -35,3 +35,6 @@ demis:
   codemapping:
     cache-reload-cron: "0 0 0 * * ?"
 
+feature:
+  flag:
+    filter.invalid.xml.codepoints: true

@@ -34,7 +34,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.NotifiedPersonNominalDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationBundleLaboratoryDataBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.builder.infectious.laboratory.NotificationLaboratoryDataBuilder;
@@ -67,6 +66,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 class PseudoServiceTest {
@@ -86,7 +86,7 @@ class PseudoServiceTest {
   @SneakyThrows
   private static PseudonymizationResponse decodePseudonym(final Extension e) {
     if (e.getValue() instanceof Base64BinaryType binaryType) {
-      return new ObjectMapper().readValue(binaryType.getValue(), PseudonymizationResponse.class);
+      return new JsonMapper().readValue(binaryType.getValue(), PseudonymizationResponse.class);
     }
     return null;
   }
@@ -149,7 +149,7 @@ class PseudoServiceTest {
         new PseudoService(
             pseudonymizationServiceClient,
             notificationUpdateService,
-            new ObjectMapper(),
+            new JsonMapper(),
             statistics,
             new RequestProcessorState());
     final RoutingData routingData = RoutingDataUtil.empty61For("");

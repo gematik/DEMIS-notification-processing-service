@@ -53,14 +53,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(
     properties = {
       "nps.client.fhir-storage-writer.address=http://localhost:${wiremock.server.port}",
       "nps.client.fhir-storage-writer.context-path=/"
     })
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock
 class FhirStorageWriterClientIntegrationTest extends WithMockFhirPackageContext {
   private static final String ENDPOINT = "/";
 

@@ -29,6 +29,8 @@ package de.gematik.demis.nps.service.encryption;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
+import de.gematik.demis.nps.base.util.XmlSanitizer;
+import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class EncryptionService {
   private final CertificateProvider certificateProvider;
   private final FhirContext fhirContext;
   private final BinaryCreator binaryCreator;
+  private final FeatureFlagsConfigProperties featureFlagsConfigProperties;
 
   /** Encrypt a bundle for the health office */
   public Binary encryptFor(final Bundle bundle, final String healthOffice) {
@@ -66,7 +69,10 @@ public class EncryptionService {
     final X509Certificate certificate = certificateProvider.getCertificate(targetHealthOfficeId);
 
     final IParser parser = fhirContext.newXmlParser();
-    final String xmlPlain = parser.encodeResourceToString(bundle);
+    String xmlPlain = parser.encodeResourceToString(bundle);
+    if (featureFlagsConfigProperties.isEnabled("filter.invalid.xml.codepoints")) {
+      xmlPlain = XmlSanitizer.filterInvalidXmlCodePoints(xmlPlain);
+    }
     return dataEncryption.encryptData(xmlPlain.getBytes(StandardCharsets.UTF_8), certificate);
   }
 }

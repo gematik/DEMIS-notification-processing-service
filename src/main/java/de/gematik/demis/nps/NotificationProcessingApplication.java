@@ -29,19 +29,21 @@ package de.gematik.demis.nps;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@SpringBootApplication(
+    exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class})
 @ConfigurationPropertiesScan
 @EnableFeignClients(
     basePackages = {"de.gematik.demis.nps", "de.gematik.demis.service.base.clients"})
 @EnableScheduling
 public class NotificationProcessingApplication {
 
-  public static void main(final String[] args) {
+  static void main(final String[] args) {
     SpringApplication.run(NotificationProcessingApplication.class, args);
   }
 }

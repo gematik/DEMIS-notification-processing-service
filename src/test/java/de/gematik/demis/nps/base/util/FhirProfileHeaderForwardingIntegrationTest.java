@@ -40,9 +40,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -52,6 +51,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.wiremock.spring.EnableWireMock;
 
 class FhirProfileHeaderForwardingIntegrationTest {
 
@@ -59,16 +59,16 @@ class FhirProfileHeaderForwardingIntegrationTest {
   private static final String ENDPOINT_VS = "/$validate";
   private static final String REQUEST_BODY_DISEASE =
       """
-                           {
-                             "resourceType": "Bundle",
-                             "meta": {
-                               "profile": [
-                                 "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"
-                               ]
-                             },
-                             "entry": []
-                           }
-                           """;
+                    {
+                      "resourceType": "Bundle",
+                      "meta": {
+                        "profile": [
+                          "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"
+                        ]
+                      },
+                      "entry": []
+                    }
+                    """;
   private static final String RESPONSE_BODY = "{\"outcome\":\"does not matter\"}";
 
   /**
@@ -77,7 +77,7 @@ class FhirProfileHeaderForwardingIntegrationTest {
    */
   @SpringBootTest
   @AutoConfigureMockMvc
-  @AutoConfigureWireMock(port = 0)
+  @EnableWireMock
   @TestPropertySource(
       properties = {
         "nps.client.validation=http://localhost:${wiremock.server.port}",
@@ -153,7 +153,7 @@ class FhirProfileHeaderForwardingIntegrationTest {
         "nps.client.validation=http://localhost:${wiremock.server.port}",
         "feature.flag.feign_interceptor_enabled=true"
       })
-  @AutoConfigureWireMock(port = 0)
+  @EnableWireMock
   @Import(HeaderForwardingInNonHttpContextTest.DummyService.class)
   @Nested
   class HeaderForwardingInNonHttpContextTest {

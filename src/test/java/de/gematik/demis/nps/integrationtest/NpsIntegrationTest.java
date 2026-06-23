@@ -107,18 +107,18 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.UseMainMethod;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.BasicJsonTester;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -136,7 +136,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       "demis.codemapping.disease.concept-maps=NotificationDiseaseCategoryToTransmissionCategory",
       "demis.codemapping.cache-reload-cron=0 0 0 * * ?"
     })
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock
 @ActiveProfiles("integrationtest")
 @AutoConfigureMockMvc
 @ExtendWith(MockitoExtension.class)

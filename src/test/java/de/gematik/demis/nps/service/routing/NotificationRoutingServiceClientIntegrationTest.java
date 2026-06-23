@@ -43,10 +43,10 @@ import de.gematik.demis.nps.test.WithMockFhirPackageContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(properties = "nps.client.routing=http://localhost:${wiremock.server.port}")
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock()
 class NotificationRoutingServiceClientIntegrationTest extends WithMockFhirPackageContext {
 
   private static final String FHIR_JSON = "does not matter";

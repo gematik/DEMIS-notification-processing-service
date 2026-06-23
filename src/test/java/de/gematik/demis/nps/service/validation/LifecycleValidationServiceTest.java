@@ -63,15 +63,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(
     properties = {
       "nps.client.validation=http://localhost:${wiremock.server.port}/VS",
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
     })
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock
 class LifecycleValidationServiceTest extends WithMockFhirPackageContext {
 
   private static final String REQUEST_BODY = "my body";

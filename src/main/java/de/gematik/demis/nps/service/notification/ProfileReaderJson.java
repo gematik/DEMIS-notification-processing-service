@@ -29,15 +29,16 @@ package de.gematik.demis.nps.service.notification;
 
 import static de.gematik.demis.nps.service.notification.NotificationTypeResolver.*;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import java.io.IOException;
 import java.io.StringReader;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Utility for extracting the first {@code Bundle.meta.profile[0]} URL from a JSON notification
@@ -49,8 +50,8 @@ class ProfileReaderJson {
   private static final String NOT_A_JSON_OBJECT = "Root is not a JSON object";
   private final JsonFactory jsonFactory;
 
-  public ProfileReaderJson(ObjectMapper objectMapper) {
-    this.jsonFactory = objectMapper.getFactory();
+  public ProfileReaderJson(JsonMapper objectMapper) {
+    this.jsonFactory = objectMapper.tokenStreamFactory();
   }
 
   /**
@@ -91,7 +92,7 @@ class ProfileReaderJson {
       }
 
       while (p.nextToken() != JsonToken.END_OBJECT) {
-        if (p.currentToken() != JsonToken.FIELD_NAME) continue;
+        if (p.currentToken() != JsonToken.PROPERTY_NAME) continue;
 
         String field = p.currentName();
         JsonToken v = p.nextToken();
@@ -106,7 +107,7 @@ class ProfileReaderJson {
 
       return null;
 
-    } catch (IOException e) {
+    } catch (StreamReadException e) {
       throw new NpsServiceException(
           ErrorCode.UNPROCESSABLE_ENTITY, "Unable to parse FHIR JSON.", e);
     }
@@ -135,7 +136,7 @@ class ProfileReaderJson {
       }
 
       while (p.nextToken() != JsonToken.END_OBJECT) {
-        if (p.currentToken() != JsonToken.FIELD_NAME) continue;
+        if (p.currentToken() != JsonToken.PROPERTY_NAME) continue;
 
         String field = p.currentName();
         JsonToken v = p.nextToken();
@@ -170,7 +171,7 @@ class ProfileReaderJson {
 
       // one parameter object
       while (p.nextToken() != JsonToken.END_OBJECT) {
-        if (p.currentToken() != JsonToken.FIELD_NAME) continue;
+        if (p.currentToken() != JsonToken.PROPERTY_NAME) continue;
 
         String field = p.currentName();
         JsonToken v = p.nextToken();
@@ -199,7 +200,7 @@ class ProfileReaderJson {
     String profileCandidate = null;
 
     while (p.nextToken() != JsonToken.END_OBJECT) {
-      if (p.currentToken() != JsonToken.FIELD_NAME) continue;
+      if (p.currentToken() != JsonToken.PROPERTY_NAME) continue;
 
       String field = p.currentName();
       JsonToken v = p.nextToken();
@@ -240,7 +241,7 @@ class ProfileReaderJson {
   private String readFirstProfileFromMetaObject(JsonParser p) throws IOException {
     String profileCandidate = null;
     while (p.nextToken() != JsonToken.END_OBJECT) {
-      if (p.currentToken() != JsonToken.FIELD_NAME) continue;
+      if (p.currentToken() != JsonToken.PROPERTY_NAME) continue;
 
       String field = p.currentName();
       p.nextToken(); // move to field value
@@ -266,7 +267,7 @@ class ProfileReaderJson {
     return profileCandidate;
   }
 
-  private static void skipIfContainer(JsonParser p, JsonToken t) throws IOException {
+  private static void skipIfContainer(JsonParser p, JsonToken t) {
     if (t == JsonToken.START_OBJECT || t == JsonToken.START_ARRAY) {
       p.skipChildren();
     }

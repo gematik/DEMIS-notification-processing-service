@@ -27,8 +27,6 @@ package de.gematik.demis.nps.service.pseudonymization;
  * #L%
  */
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.gematik.demis.nps.base.profile.DemisExtensions;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -39,6 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Base64BinaryType;
 import org.hl7.fhir.r4.model.Extension;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @Slf4j
@@ -46,19 +46,19 @@ public class PseudoService {
 
   private final PseudonymizationServiceClient pseudonymizationServiceClient;
   private final NotificationUpdateService notificationUpdateService;
-  private final ObjectMapper objectMapper;
+  private final JsonMapper objectMapper;
   private final Statistics statistics;
   private final RequestProcessorState requestProcessorState;
 
   public PseudoService(
       PseudonymizationServiceClient pseudonymizationServiceClient,
       NotificationUpdateService notificationUpdateService,
-      ObjectMapper objectMapper,
+      JsonMapper jsonMapper,
       Statistics statistics,
       RequestProcessorState requestProcessorState) {
     this.pseudonymizationServiceClient = pseudonymizationServiceClient;
     this.notificationUpdateService = notificationUpdateService;
-    this.objectMapper = objectMapper;
+    this.objectMapper = jsonMapper;
     this.statistics = statistics;
     this.requestProcessorState = requestProcessorState;
   }
@@ -112,7 +112,7 @@ public class PseudoService {
   private byte[] jsonAsBytes(final Object o) {
     try {
       return objectMapper.writeValueAsBytes(o);
-    } catch (final JsonProcessingException e) {
+    } catch (final JacksonException e) {
       throw new IllegalStateException("error writing pseudonym as byte array", e);
     }
   }

@@ -67,11 +67,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(
     properties = {
@@ -79,7 +79,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "nps.client.lifecycle-vs=http://localhost:${wiremock.server.port}/LVS",
       "feature.flag.feign_interceptor_enabled=true"
     })
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock
 class NotificationValidatorIntegrationTest extends WithMockFhirPackageContext {
   private static final String ENDPOINT_VS = "/VS/$validate";
 

@@ -27,9 +27,9 @@ package de.gematik.demis.nps.service.notification;
  * #L%
  */
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.json.JsonMapper;
 
 class NotificationTypeResolverTest {
 
@@ -46,13 +47,12 @@ class NotificationTypeResolverTest {
 
   @BeforeEach
   void setUp() {
-    ObjectMapper objectMapper = new ObjectMapper();
 
     XMLInputFactory xmlInputFactory = XMLInputFactory.newFactory();
     xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
     xmlInputFactory.setProperty("javax.xml.stream.isSupportingExternalEntities", false);
 
-    var jsonReader = new ProfileReaderJson(objectMapper);
+    var jsonReader = new ProfileReaderJson(new JsonMapper());
     var xmlReader = new ProfileReaderXml(xmlInputFactory);
 
     underTest = new NotificationTypeResolver(jsonReader, xmlReader);
@@ -62,14 +62,14 @@ class NotificationTypeResolverTest {
 
   @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("happyPathCasesJson")
-  void resolves_profile_in_notification_Json(
+  void resolvesProfileInNotificationJson(
       String name, String payload, MessageType type, NotificationType expected) {
     assertThat(underTest.resolveFromNotification(payload, type)).isEqualTo(expected);
   }
 
   @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("happyPathCasesXml")
-  void resolves_profile_in_notification_Xml(
+  void resolvesProfileInNotificationXml(
       String name, String payload, MessageType type, NotificationType expected) {
     assertThat(underTest.resolveFromNotification(payload, type)).isEqualTo(expected);
   }
@@ -80,8 +80,8 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "disease json exact",
             """
-        { "resourceType":"Bundle","meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"]},"entry":[] }
-        """,
+                { "resourceType":"Bundle","meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"]},"entry":[] }
+                """,
             MessageType.JSON,
             NotificationType.DISEASE),
         Arguments.of(
@@ -96,8 +96,34 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "lab json exact",
             """
-        { "resourceType":"Bundle","meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"]} }
-        """,
+                { "resourceType":"Bundle","meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"]} }
+                """,
+            MessageType.JSON,
+            NotificationType.LABORATORY),
+        Arguments.of(
+            "json root Bundle ignores entry resource profile",
+            """
+                {
+                  "resourceType": "Bundle",
+                  "entry": [
+                    {
+                      "resource": {
+                        "resourceType": "Patient",
+                        "meta": {
+                          "profile": [
+                            "https://demis.rki.de/fhir/StructureDefinition/Boo"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "meta": {
+                    "profile": [
+                      "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
+                    ]
+                  }
+                }
+                """,
             MessageType.JSON,
             NotificationType.LABORATORY),
         Arguments.of(
@@ -110,77 +136,184 @@ class NotificationTypeResolverTest {
 
         // PARAM WRAPPER
         Arguments.of(
-            "Notification wrapped within parameters",
+            "Notification wrapped within parameters (A)",
             """
-                {
-                  "resourceType": "Parameters",
-                  "meta": {
-                    "profile": [
-                      "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationRequestParameters"
-                    ]
-                  },
-                  "parameter": [
                     {
-                      "name": "content",
-                      "resource": {
-                        "resourceType": "Bundle",
-                        "meta": {
-                          "lastUpdated": "2021-11-12T22:50:01.000+01:00",
-                          "profile": [
-                            "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
-                          ]
+                      "resourceType": "Parameters",
+                      "meta": {
+                        "profile": [
+                          "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationRequestParameters"
+                        ]
+                      },
+                      "parameter": [
+                        {
+                          "name": "content",
+                          "resource": {
+                            "resourceType": "Bundle",
+                            "meta": {
+                              "lastUpdated": "2021-11-12T22:50:01.000+01:00",
+                              "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
+                              ]
+                            }
+                          }
                         }
-                      }
+                      ]
                     }
-                  ]
-                }
-            """,
+                """,
             MessageType.JSON,
             NotificationType.LABORATORY),
-
+        Arguments.of(
+            "Notification wrapped within parameters (B)",
+            """
+                    {
+                      "resourceType": "Parameters",
+                      "meta": {
+                        "profile": [
+                          "https://demis.rki.de/fhir/StructureDefinition/Something"
+                        ]
+                      },
+                      "parameter": [
+                        {
+                          "name": "content",
+                          "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/Boo"
+                              ],
+                          "resource": {
+                            "resourceType": "Bundle",
+                            "meta": {
+                              "lastUpdated": "2021-11-12T22:50:01.000+01:00",
+                              "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                """,
+            MessageType.JSON,
+            NotificationType.LABORATORY),
+        Arguments.of(
+            "Notification wrapped within parameters (C)",
+            """
+                    {
+                      "resourceType": "Parameters",
+                      "meta": {
+                        "profile": [
+                          "https://demis.rki.de/fhir/StructureDefinition/Something"
+                        ]
+                      },
+                      "parameter": [
+                        {
+                          "resource": {
+                            "resourceType": "Device",
+                            "meta": {
+                              "lastUpdated": "2021-11-12T22:50:01.000+01:00",
+                              "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/Boo"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "name": "content",
+                          "resource": {
+                            "resourceType": "Bundle",
+                            "meta": {
+                              "lastUpdated": "2021-11-12T22:50:01.000+01:00",
+                              "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                """,
+            MessageType.JSON,
+            NotificationType.LABORATORY),
+        // MULTIPLE META LIKE ELEMENTS
+        Arguments.of(
+            "Profile got read only from meta profile",
+            """
+                    {
+                      "resourceType": "Parameters",
+                      "meta": {
+                        "profile": [
+                          "https://demis.rki.de/fhir/StructureDefinition/Something"
+                        ]
+                      },
+                      "parameter": [
+                        {
+                          "name": "content",
+                          "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/Boo"
+                              ],
+                          "resource": {
+                            "resourceType": "Bundle",
+                            "foo": {
+                              "lastUpdated": "2021-11-12T22:50:01.000+01:00",
+                              "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/WrongProfile"
+                              ]
+                            },
+                            "meta": {
+                              "lastUpdated": "2021-11-12T22:50:01.000+01:00",
+                              "profile": [
+                                "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                """,
+            MessageType.JSON,
+            NotificationType.LABORATORY),
         // ORDER
         Arguments.of(
             "Order in json doesnt matter (1)",
             """
-                 {
-                         "meta": { "profile": ["https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationRequestParameters"] },
-                          "parameter": [
-                            {
-                              "name": "content",
-                              "resource": {
-                                "meta": {
-                                  "lastUpdated": "2021-11-12T22:50:01.000+01:00",
-                                  "profile": ["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"]
-                                },
-                                "resourceType": "Bundle"
-                              }
-                            }
-                          ],
-                          "resourceType": "Parameters"
-               }
-              """,
+                   {
+                     "meta": { "profile": ["https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationRequestParameters"] },
+                      "parameter": [
+                        {
+                          "name": "content",
+                          "resource": {
+                            "meta": {
+                              "lastUpdated": "2021-11-12T22:50:01.000+01:00",
+                              "profile": ["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"]
+                            },
+                            "resourceType": "Bundle"
+                          }
+                        }
+                      ],
+                      "resourceType": "Parameters"
+                 }
+                """,
             MessageType.JSON,
             NotificationType.LABORATORY),
         Arguments.of(
             "Order in json doesnt matter (2)",
             """
-                     { "foo":"bar", "meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"]},"entry":[], "resourceType":"Bundle", "bou":"baa" }
+                       { "foo":"bar", "meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"]},"entry":[], "resourceType":"Bundle", "bou":"baa" }
 
-              """,
+                """,
             MessageType.JSON,
             NotificationType.DISEASE),
         Arguments.of(
             "Escaped profile URL in JSON",
             """
-                    {
-                      "resourceType": "Bundle",
-                      "meta": {
-                        "profile": [
-                          "https:\\/\\/demis.rki.de\\/fhir\\/StructureDefinition\\/NotificationBundleLaboratory"
-                        ]
-                      }
-                    }
-                    """,
+                {
+                  "resourceType": "Bundle",
+                  "meta": {
+                    "profile": [
+                      "https:\\/\\/demis.rki.de\\/fhir\\/StructureDefinition\\/NotificationBundleLaboratory"
+                    ]
+                  }
+                }
+                """,
             MessageType.JSON,
             NotificationType.LABORATORY));
   }
@@ -191,18 +324,18 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "disease xml exact",
             """
-                    <Bundle xmlns="http://hl7.org/fhir">
-                      <meta><profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"/></meta>
-                      <entry><resource><Patient/></resource></entry>
-                    </Bundle>
-                    """,
+                <Bundle xmlns="http://hl7.org/fhir">
+                  <meta><profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"/></meta>
+                  <entry><resource><Patient/></resource></entry>
+                </Bundle>
+                """,
             MessageType.XML,
             NotificationType.DISEASE),
         Arguments.of(
             "disease json prefix",
             """
-                            { "resourceType":"Bundle","meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDiseaseFoo"]},"entry":[] }
-                            """,
+                { "resourceType":"Bundle","meta":{"profile":["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDiseaseFoo"]},"entry":[] }
+                """,
             MessageType.JSON,
             NotificationType.DISEASE),
 
@@ -210,19 +343,19 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "lab xml exact",
             """
-                    <Bundle xmlns="http://hl7.org/fhir">
-                      <meta><profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"/></meta>
-                    </Bundle>
-                    """,
+                <Bundle xmlns="http://hl7.org/fhir">
+                  <meta><profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"/></meta>
+                </Bundle>
+                """,
             MessageType.XML,
             NotificationType.LABORATORY),
         Arguments.of(
             "lab xml prefix",
             """
-                                <Bundle xmlns="http://hl7.org/fhir">
-                                  <meta><profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratoryFoo"/></meta>
-                                </Bundle>
-                                """,
+                <Bundle xmlns="http://hl7.org/fhir">
+                  <meta><profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratoryFoo"/></meta>
+                </Bundle>
+                """,
             MessageType.XML,
             NotificationType.LABORATORY),
 
@@ -230,39 +363,39 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "lab xml within parameters",
             """
-                        <Parameters xmlns="http://hl7.org/fhir">
-                           <parameter>
-                              <name value="content"></name>
-                              <resource>
-                                 <Bundle xmlns="http://hl7.org/fhir">
-                                    <meta>
-                                       <lastUpdated value="2025-02-17T05:59:31.000+01:00"></lastUpdated>
-                                       <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"></profile>
-                                    </meta>
-                                 </Bundle>
-                              </resource>
-                           </parameter>
-                        </Parameters>
-                        """,
+                <Parameters xmlns="http://hl7.org/fhir">
+                   <parameter>
+                      <name value="content"></name>
+                      <resource>
+                         <Bundle xmlns="http://hl7.org/fhir">
+                            <meta>
+                               <lastUpdated value="2025-02-17T05:59:31.000+01:00"></lastUpdated>
+                               <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"></profile>
+                            </meta>
+                         </Bundle>
+                      </resource>
+                   </parameter>
+                </Parameters>
+                """,
             MessageType.XML,
             NotificationType.LABORATORY),
         Arguments.of(
             "Formatting doesn't matter",
             """
-                    <Bundle xmlns="http://hl7.org/fhir">
-                      <meta>
-                        <profile value    =
-                        "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"/>
-                      </meta>
-                    </Bundle>
-                    """,
+                <Bundle xmlns="http://hl7.org/fhir">
+                  <meta>
+                    <profile value    =
+                    "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"/>
+                  </meta>
+                </Bundle>
+                """,
             MessageType.XML,
             NotificationType.LABORATORY));
   }
 
   @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("firstProfileWinsCases")
-  void uses_first_profile_in_meta_profile(
+  void usesFirstProfileInMetaProfile(
       String name, String payload, MessageType type, NotificationType expected) {
     assertThat(underTest.resolveFromNotification(payload, type)).isEqualTo(expected);
   }
@@ -272,33 +405,33 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "json first is disease",
             """
-        {
-          "resourceType":"Bundle",
-          "meta":{"profile":[
-            "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease",
-            "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
-          ]}
-        }
-        """,
+                {
+                  "resourceType":"Bundle",
+                  "meta":{"profile":[
+                    "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease",
+                    "https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"
+                  ]}
+                }
+                """,
             MessageType.JSON,
             NotificationType.DISEASE),
         Arguments.of(
             "xml first is disease",
             """
-        <Bundle xmlns="http://hl7.org/fhir">
-          <meta>
-            <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"/>
-            <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"/>
-          </meta>
-        </Bundle>
-        """,
+                <Bundle xmlns="http://hl7.org/fhir">
+                  <meta>
+                    <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"/>
+                    <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"/>
+                  </meta>
+                </Bundle>
+                """,
             MessageType.XML,
             NotificationType.DISEASE));
   }
 
   @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("errorCases")
-  void throws_expected_error_code(
+  void throwsExpectedErrorCode(
       String name, String payload, MessageType type, ErrorCode expectedCode) {
     assertThatThrownBy(() -> underTest.resolveFromNotification(payload, type))
         .isInstanceOf(NpsServiceException.class)
@@ -313,43 +446,43 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "json missing meta.profile",
             """
-        { "resourceType":"Bundle", "meta": { "tag": [] } }
-        """,
+                { "resourceType":"Bundle", "meta": { "tag": [] } }
+                """,
             MessageType.JSON,
             ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "xml missing meta.profile",
             """
-        <Bundle xmlns="http://hl7.org/fhir"><meta><tag><system value="x"/><code value="y"/></tag></meta></Bundle>
-        """,
+                <Bundle xmlns="http://hl7.org/fhir"><meta><tag><system value="x"/><code value="y"/></tag></meta></Bundle>
+                """,
             MessageType.XML,
             ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "json blank profile",
             """
-        { "resourceType":"Bundle", "meta": { "profile": ["   "] } }
-        """,
+                { "resourceType":"Bundle", "meta": { "profile": ["   "] } }
+                """,
             MessageType.JSON,
             ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "xml blank profile",
             """
-        <Bundle xmlns="http://hl7.org/fhir"><meta><profile value="   "/></meta></Bundle>
-        """,
+                <Bundle xmlns="http://hl7.org/fhir"><meta><profile value="   "/></meta></Bundle>
+                """,
             MessageType.XML,
             ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "json unknown profile",
             """
-        { "resourceType":"Bundle", "meta": { "profile": ["https://example.org/UnknownBundleProfile"] } }
-        """,
+                { "resourceType":"Bundle", "meta": { "profile": ["https://example.org/UnknownBundleProfile"] } }
+                """,
             MessageType.JSON,
             ErrorCode.UNSUPPORTED_PROFILE),
         Arguments.of(
             "xml unknown profile",
             """
-        <Bundle xmlns="http://hl7.org/fhir"><meta><profile value="https://example.org/UnknownBundleProfile"/></meta></Bundle>
-        """,
+                <Bundle xmlns="http://hl7.org/fhir"><meta><profile value="https://example.org/UnknownBundleProfile"/></meta></Bundle>
+                """,
             MessageType.XML,
             ErrorCode.UNSUPPORTED_PROFILE),
         Arguments.of(
@@ -362,43 +495,43 @@ class NotificationTypeResolverTest {
         Arguments.of(
             "json meta.profile not array",
             """
-        { "resourceType":"Bundle", "meta": { "profile": "not-an-array" } }
-        """,
+                { "resourceType":"Bundle", "meta": { "profile": "not-an-array" } }
+                """,
             MessageType.JSON,
             ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "xml profile missing value attribute",
             """
-        <Bundle xmlns="http://hl7.org/fhir"><meta><profile/></meta></Bundle>
-        """,
+                <Bundle xmlns="http://hl7.org/fhir"><meta><profile/></meta></Bundle>
+                """,
             MessageType.XML,
             ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "message type null",
             """
-        { "resourceType":"Bundle", "meta": { "profile": ["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"] } }
-        """,
+                { "resourceType":"Bundle", "meta": { "profile": ["https://demis.rki.de/fhir/StructureDefinition/NotificationBundleDisease"] } }
+                """,
             null,
             ErrorCode.UNPROCESSABLE_ENTITY),
         Arguments.of(
             "The Bundle element is too deep within the XML structure",
             """
-                    <Parameters xmlns="http://hl7.org/fhir">
-                       <parameter>
-                          <name value="content"></name>
-                          <resource>
-                          <foo>
-                             <Bundle xmlns="http://hl7.org/fhir">
-                                <meta>
-                                   <lastUpdated value="2025-02-17T05:59:31.000+01:00"></lastUpdated>
-                                   <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"></profile>
-                                </meta>
-                             </Bundle>
-                            </foo>
-                          </resource>
-                       </parameter>
-                    </Parameters>
-                    """,
+                <Parameters xmlns="http://hl7.org/fhir">
+                   <parameter>
+                      <name value="content"></name>
+                      <resource>
+                      <foo>
+                         <Bundle xmlns="http://hl7.org/fhir">
+                            <meta>
+                               <lastUpdated value="2025-02-17T05:59:31.000+01:00"></lastUpdated>
+                               <profile value="https://demis.rki.de/fhir/StructureDefinition/NotificationBundleLaboratory"></profile>
+                            </meta>
+                         </Bundle>
+                        </foo>
+                      </resource>
+                   </parameter>
+                </Parameters>
+                """,
             MessageType.XML,
             ErrorCode.UNPROCESSABLE_ENTITY));
   }

@@ -43,16 +43,16 @@ import de.gematik.demis.service.base.error.ServiceCallException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.TestPropertySource;
+import org.wiremock.spring.EnableWireMock;
 
 @SpringBootTest(
     properties = {
       "nps.client.pdfgen=http://localhost:${wiremock.server.port}",
       "feature.flag.nbl.for.notByName.enabled=true"
     })
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock
 @TestPropertySource(
     properties = {
       "demis.codemapping.client.base-url=http://dummy",

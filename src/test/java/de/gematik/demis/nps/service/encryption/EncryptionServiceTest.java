@@ -29,12 +29,15 @@ package de.gematik.demis.nps.service.encryption;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.XmlParser;
 import de.gematik.demis.nps.base.profile.DemisSystems;
 import de.gematik.demis.nps.base.util.TimeProvider;
+import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.hl7.fhir.r4.model.Binary;
@@ -44,6 +47,7 @@ import org.hl7.fhir.r4.model.Identifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,6 +62,8 @@ class EncryptionServiceTest {
 
   @Mock private XmlParser xmlParser;
 
+  @Mock private FeatureFlagsConfigProperties featureFlagsConfigProperties;
+
   private final BinaryCreator binaryCreator = new BinaryCreator(new TimeProvider());
 
   @InjectMocks private EncryptionService underTest;
@@ -65,7 +71,12 @@ class EncryptionServiceTest {
   @BeforeEach
   void setup() {
     underTest =
-        new EncryptionService(dataEncryption, certificateProvider, fhirContext, binaryCreator);
+        new EncryptionService(
+            dataEncryption,
+            certificateProvider,
+            fhirContext,
+            binaryCreator,
+            featureFlagsConfigProperties);
     when(fhirContext.newXmlParser()).thenReturn(xmlParser);
     when(xmlParser.encodeResourceToString(any())).thenReturn("test");
     when(dataEncryption.encryptData(any(), any())).thenReturn(new byte[0]);
@@ -74,6 +85,7 @@ class EncryptionServiceTest {
   /** We are using the tag to retrieve the Binary from the FSS (at least in the core-tests). */
   @Test
   void thatRelatedIdentifierTagIsSetOnBinary() {
+    when(xmlParser.encodeResourceToString(any())).thenReturn("test");
     final Bundle bundle = new Bundle();
     bundle
         .getMeta()
@@ -103,6 +115,7 @@ class EncryptionServiceTest {
    */
   @Test
   void thatAnExceptionIsRaisedIfResponsibleTagIsMissingOnInput() {
+    when(xmlParser.encodeResourceToString(any())).thenReturn("test");
     final Bundle bundle = new Bundle();
     bundle.setId("test-bundle-id");
     final Identifier identifier = new Identifier().setValue("original-id");
@@ -110,5 +123,41 @@ class EncryptionServiceTest {
 
     assertThatExceptionOfType(NoSuchElementException.class)
         .isThrownBy(() -> underTest.encryptFor(bundle, "1.01.0.53"));
+  }
+
+  @Test
+  void encryptFor_passesUnfilteredXml_whenFlagDisabled() {
+    when(xmlParser.encodeResourceToString(any())).thenReturn("<id>diagnostic-report-id\u0001</id>");
+    when(featureFlagsConfigProperties.isEnabled("filter.invalid.xml.codepoints")).thenReturn(false);
+    final Bundle bundle = new Bundle();
+    bundle
+        .getMeta()
+        .addTag()
+        .setSystem(DemisSystems.RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM)
+        .setCode("required to avoid nosuchelement exception");
+
+    underTest.encryptFor(bundle, "1.01.0.53");
+    final ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+    verify(dataEncryption).encryptData(captor.capture(), any());
+    assertThat(new String(captor.getValue(), StandardCharsets.UTF_8))
+        .isEqualTo("<id>diagnostic-report-id\u0001</id>");
+  }
+
+  @Test
+  void encryptFor_passesFilteredXml_whenFlagEnabled() {
+    when(xmlParser.encodeResourceToString(any())).thenReturn("<id>diagnostic-report-id\u0001</id>");
+    when(featureFlagsConfigProperties.isEnabled("filter.invalid.xml.codepoints")).thenReturn(true);
+    final Bundle bundle = new Bundle();
+    bundle
+        .getMeta()
+        .addTag()
+        .setSystem(DemisSystems.RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM)
+        .setCode("required to avoid nosuchelement exception");
+
+    underTest.encryptFor(bundle, "1.01.0.53");
+    final ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+    verify(dataEncryption).encryptData(captor.capture(), any());
+    assertThat(new String(captor.getValue(), StandardCharsets.UTF_8))
+        .isEqualTo("<id>diagnostic-report-id</id>");
   }
 }

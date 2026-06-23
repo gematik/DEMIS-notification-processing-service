@@ -62,7 +62,6 @@ import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.Parameters;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -184,8 +183,8 @@ public class NotificationValidator {
 
     if (!featureFlags.isEnabled("feign_interceptor_enabled")) {
       final Map<String, String> rawHeaders = getHeadersToForward();
-      final HttpHeaders additionalHeaders =
-          new HttpHeaders(MultiValueMap.fromSingleValue(rawHeaders));
+      final MultiValueMap<String, String> additionalHeaders =
+          MultiValueMap.fromSingleValue(rawHeaders);
 
       return switch (contentType) {
         case JSON ->

@@ -128,7 +128,7 @@ class EncryptionServiceTest {
   @Test
   void encryptFor_passesUnfilteredXml_whenFlagDisabled() {
     when(xmlParser.encodeResourceToString(any())).thenReturn("<id>diagnostic-report-id\u0001</id>");
-    when(featureFlagsConfigProperties.isEnabled("filter.invalid.xml.codepoints")).thenReturn(false);
+    when(featureFlagsConfigProperties.isEnabled("filter_invalid_xml_codepoints")).thenReturn(false);
     final Bundle bundle = new Bundle();
     bundle
         .getMeta()
@@ -146,7 +146,7 @@ class EncryptionServiceTest {
   @Test
   void encryptFor_passesFilteredXml_whenFlagEnabled() {
     when(xmlParser.encodeResourceToString(any())).thenReturn("<id>diagnostic-report-id\u0001</id>");
-    when(featureFlagsConfigProperties.isEnabled("filter.invalid.xml.codepoints")).thenReturn(true);
+    when(featureFlagsConfigProperties.isEnabled("filter_invalid_xml_codepoints")).thenReturn(true);
     final Bundle bundle = new Bundle();
     bundle
         .getMeta()

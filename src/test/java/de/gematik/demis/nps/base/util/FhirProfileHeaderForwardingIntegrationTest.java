@@ -29,7 +29,7 @@ package de.gematik.demis.nps.base.util;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static de.gematik.demis.nps.base.util.FhirPackageContext.*;
-import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE;
+import static de.gematik.demis.nps.config.NpsHeaders.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -70,6 +70,7 @@ class FhirProfileHeaderForwardingIntegrationTest {
                     }
                     """;
   private static final String RESPONSE_BODY = "{\"outcome\":\"does not matter\"}";
+  public static final String X_DEFAULT_FHIR_PACKAGE_VERSIONS = "disease:v6;laboratory:v7";
 
   /**
    * This class tests the header forwarding behaviour in context of an incoming HTTP request to the
@@ -97,17 +98,21 @@ class FhirProfileHeaderForwardingIntegrationTest {
     }
 
     @Test
-    void profile_header_forwarded_if_present() throws Exception {
+    void headers_forwarded_if_present() throws Exception {
       mockMvc.perform(
           post(ENDPOINT_NPS)
               .content(REQUEST_BODY_DISEASE)
               .contentType(MediaType.APPLICATION_JSON)
               .accept(MediaType.APPLICATION_JSON)
-              .header(HEADER_FHIR_PACKAGE, "a-random-profile"));
+              .header(HEADER_FHIR_PACKAGE, "a-random-profile")
+              .header(HEADER_FHIR_PACKAGE_VERSION, "a random version"));
 
       verify(
           postRequestedFor(urlEqualTo(ENDPOINT_VS))
               .withHeader(HEADER_FHIR_PACKAGE, equalTo("a-random-profile")));
+      verify(
+          postRequestedFor(urlEqualTo(ENDPOINT_VS))
+              .withHeader(HEADER_FHIR_PACKAGE_VERSION, equalTo("a random version")));
     }
 
     @Test
@@ -135,11 +140,15 @@ class FhirProfileHeaderForwardingIntegrationTest {
           post(ENDPOINT_NPS)
               .content(REQUEST_BODY_DISEASE)
               .contentType(MediaType.APPLICATION_JSON)
-              .accept(MediaType.APPLICATION_JSON));
+              .accept(MediaType.APPLICATION_JSON)
+              .header(HEADER_DEFAULT_FHIR_PACKAGE_VERSIONS, X_DEFAULT_FHIR_PACKAGE_VERSIONS));
 
       verify(
           postRequestedFor(urlEqualTo(ENDPOINT_VS))
               .withHeader(HEADER_FHIR_PACKAGE, equalTo(DISEASE_PACKAGE)));
+      verify(
+          postRequestedFor(urlEqualTo(ENDPOINT_VS))
+              .withHeader(HEADER_FHIR_PACKAGE_VERSION, equalTo("v6")));
     }
   }
 

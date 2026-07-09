@@ -42,4 +42,12 @@ public final class NpsHeaders {
   @Deprecated public static final String HEADER_FHIR_PROFILE = "x-fhir-profile";
   public static final String HEADER_FHIR_PACKAGE = "x-fhir-package";
   public static final String HEADER_SENDER = "x-sender";
+
+  /**
+   * Define default versions to be used when no version is specified in endpoint. Expected value
+   * format: semicolon-separated list of package:version pairs Example:
+   * x-default-fhir-package-versions: disease:v7;laboratory:v6
+   */
+  public static final String HEADER_DEFAULT_FHIR_PACKAGE_VERSIONS =
+      "x-default-fhir-package-versions";
 }

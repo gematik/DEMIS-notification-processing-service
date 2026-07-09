@@ -39,7 +39,7 @@ deploymentLabels: { }
 
 # Environment Variables to be defined
 customEnvVars:
-  JAVA_TOOL_OPTIONS: "-XX:ActiveProcessorCount=2 -XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=160m -XX:+UseG1GC"
+  JAVA_TOOL_OPTIONS: "-XX:ActiveProcessorCount=2 -XX:MaxRAMPercentage=75.0 -XX:MaxMetaspaceSize=160m -XX:+UseG1GC"
   TZ: "Europe/Berlin"
   SPRING_CONFIG_IMPORT: "optional:configtree:/secrets/*/"
   FEATURE_FLAG_NOTIFICATION_PRE_CHECK: "false"
@@ -47,7 +47,6 @@ customEnvVars:
   FEATURE_FLAG_PERMISSION_CHECK_ENABLED: "false"
   FEATURE_FLAG_CUSTODIAN_ENABLED: "false"
   FEATURE_FLAG_MOVE_ERROR_ID_TO_DIAGNOSTICS: "false"
-  FEATURE_FLAG_NBL_FOR_NOTBYNAME_ENABLED: "false"
   FEATURE_FLAG_FHIR_CORE_SPLIT: "false"
   FEATURE_FLAG_FEIGN_INTERCEPTOR_ENABLED: "false"
   FEATURE_FLAG_NEW_ERROR_MESSAGE_FOR_FAILED_ROUTING: "false"
@@ -132,10 +131,10 @@ service:
 # Resources
 resources:
   limits:
-    memory: "900Mi"
+    memory: "850Mi"
   requests:
     cpu: "300m"
-    memory: "900Mi"
+    memory: "850Mi"
 
 autoscaling:
   enabled: false

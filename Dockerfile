@@ -41,7 +41,7 @@ ARG VERSION
 LABEL de.gematik.vendor="gematik GmbH" \
       maintainer="software-development@gematik.de" \
       de.gematik.app="DEMIS Notification Processing Service" \
-      de.gematik.git-repo-name="https://gitlab.prod.ccs.gematik.solutions/git/demis/services/notification-processing-service" \
+      de.gematik.git-repo-name="https://gitlab.prod.ccs.gematik.solutions/demis/services/notification-processing-service.git" \
       de.gematik.commit-sha=$COMMIT_HASH \
       de.gematik.version=$VERSION \
       de.gematik.source.digest=$SOURCE_DIGEST

@@ -88,12 +88,10 @@ feature:
     notifications.7_3: false
     permission.check.enabled: false
     custodian.enabled: false
-    nbl.for.notByName.enabled: false
     fhir_core_split: false
     feign_interceptor_enabled: false
     new.error.message.for.failed.routing: false
-    filter.invalid.xml.codepoints: false
-
+    filter_invalid_xml_codepoints: false
 
 demis:
   codemapping:

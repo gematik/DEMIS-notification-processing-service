@@ -39,19 +39,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
 /**
- * This class holds the value of the {@link NpsHeaders#HEADER_FHIR_PACKAGE } to be used for outgoing
- * requests during the processing of a notification. It is initialized once per request and can be
- * accessed throughout the processing of the notification. The value is determined based on the
- * header value in the incoming request or derived from the notification type if the header is not
- * present in the incoming request.
+ * This class holds the value of the headers to be used for outgoing requests during the processing
+ * of a notification. It is initialized once per request and can be accessed throughout the
+ * processing of the notification.
  */
 @Component
 @RequestScope
 @RequiredArgsConstructor
 public class FhirPackageContext {
   private final HttpServletRequest request;
-  private final NotificationTypeResolver notificationTypeResolver;
   private final FeatureFlagsConfigProperties featureFlagsConfigProperties;
+  private final NotificationTypeResolver notificationTypeResolver;
+  private final FhirPackageVersionResolver fhirPackageVersionResolver;
 
   // The naming derived from the full package name
   // i.e. rki.demis.disease -> "disease", rki.demis.laboratory -> "laboratory"
@@ -63,9 +62,19 @@ public class FhirPackageContext {
 
   // Holds the value of the x-fhir-package header to be used for outgoing requests.
   private String outgoingFhirPackageHeaderValue;
+  // Holds the value of the x-fhir-package-version header to be used for outgoing requests.
+  private String outgoingFhirPackageVersionHeaderValue;
 
   public void initialize(String fhirNotification, MessageType messageType) {
 
+    initializeOutgoingFhirPackageHeaderValue(fhirNotification, messageType);
+    if (featureFlagsConfigProperties.isEnabled(FEATURE_FLAG_FHIR_CORE_SPLIT)) {
+      initializeOutgoingFhirPackageVersionHeaderValue();
+    }
+  }
+
+  private void initializeOutgoingFhirPackageHeaderValue(
+      String fhirNotification, MessageType messageType) {
     if (StringUtils.isNotBlank(this.outgoingFhirPackageHeaderValue)) {
       // already initialized, do nothing
       return;
@@ -88,12 +97,53 @@ public class FhirPackageContext {
     this.outgoingFhirPackageHeaderValue = deriveFhirPackageFromSubmissionType(notificationType);
   }
 
+  private void initializeOutgoingFhirPackageVersionHeaderValue() {
+    if (StringUtils.isNotBlank(this.outgoingFhirPackageVersionHeaderValue)) {
+      // already initialized, do nothing
+      return;
+    }
+
+    var incomingFhirPackageVersionHeader =
+        request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE_VERSION);
+    if (StringUtils.isNotBlank(incomingFhirPackageVersionHeader)) {
+      this.outgoingFhirPackageVersionHeaderValue = incomingFhirPackageVersionHeader;
+      return;
+    }
+
+    this.outgoingFhirPackageVersionHeaderValue =
+        getDefaultVersionFor(this.outgoingFhirPackageHeaderValue);
+  }
+
+  private String getDefaultVersionFor(String packageName) {
+    if (StringUtils.isBlank(packageName)) {
+      throw new IllegalStateException(
+          "No FHIR package value found. Cannot derive default version.");
+    }
+
+    var defaultVersions = request.getHeader(NpsHeaders.HEADER_DEFAULT_FHIR_PACKAGE_VERSIONS);
+    return fhirPackageVersionResolver
+        .resolveVersion(defaultVersions, packageName)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "No default FHIR package version found for package '%s'"
+                        .formatted(packageName)));
+  }
+
   public String getOutgoingFhirPackageHeaderValue() {
     if (StringUtils.isBlank(this.outgoingFhirPackageHeaderValue)) {
       throw new IllegalStateException(
-          "FhirProfileContext has not been initialized for the current request.");
+          "Outgoing FHIR package header value is missing. Initialize FhirPackageContext first.");
     }
     return this.outgoingFhirPackageHeaderValue;
+  }
+
+  public String getOutgoingFhirPackageVersionHeaderValue() {
+    if (StringUtils.isBlank(this.outgoingFhirPackageVersionHeaderValue)) {
+      throw new IllegalStateException(
+          "Outgoing FHIR package version header value is missing. Initialize FhirPackageContext first.");
+    }
+    return this.outgoingFhirPackageVersionHeaderValue;
   }
 
   private String deriveFhirPackageFromSubmissionType(NotificationType notificationType) {

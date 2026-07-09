@@ -47,11 +47,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.TestPropertySource;
 import org.wiremock.spring.EnableWireMock;
 
-@SpringBootTest(
-    properties = {
-      "nps.client.pdfgen=http://localhost:${wiremock.server.port}",
-      "feature.flag.nbl.for.notByName.enabled=true"
-    })
+@SpringBootTest(properties = {"nps.client.pdfgen=http://localhost:${wiremock.server.port}"})
 @EnableWireMock
 @TestPropertySource(
     properties = {

@@ -27,7 +27,6 @@ package de.gematik.demis.nps.service.processing;
  * #L%
  */
 
-import static de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory.P_7_3;
 import static de.gematik.demis.nps.service.notification.Action.ENCRYPT;
 import static de.gematik.demis.nps.service.notification.Action.ENCRYPTION;
 
@@ -39,7 +38,6 @@ import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.error.NpsServiceException;
 import de.gematik.demis.nps.service.encryption.EncryptionService;
 import de.gematik.demis.nps.service.notbyname.ExcerptCreator;
-import de.gematik.demis.nps.service.notbyname.NotByNameRegressionService;
 import de.gematik.demis.nps.service.notification.Action;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
@@ -55,7 +53,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /** Process validated Bundles according to the specified actions from the NRS */
@@ -68,21 +65,14 @@ public class ReceiverActionService {
   private final RKIBundleValidator rkiBundleValidator;
   private final NpsConfigProperties configProperties;
   private final EncryptionService encryptionService;
-  private final NotByNameRegressionService notByNameRegressionService;
-  private final boolean isNblForNotByNameCreationEnabled;
 
   public ReceiverActionService(
       final RKIBundleValidator rkiBundleValidator,
       final NpsConfigProperties configProperties,
-      final EncryptionService encryptionService,
-      final NotByNameRegressionService notByNameRegressionService,
-      @Value("${feature.flag.nbl.for.notByName.enabled}")
-          boolean isNblForNotByNameCreationEnabled) {
+      final EncryptionService encryptionService) {
     this.rkiBundleValidator = rkiBundleValidator;
     this.configProperties = configProperties;
     this.encryptionService = encryptionService;
-    this.notByNameRegressionService = notByNameRegressionService;
-    this.isNblForNotByNameCreationEnabled = isNblForNotByNameCreationEnabled;
   }
 
   /** Attempt to cast the given Resource to {@link Bundle} or return null if that fails */
@@ -243,20 +233,13 @@ public class ReceiverActionService {
           yield Optional.empty();
         }
 
-        yield Optional.ofNullable(switchBetweenNotByNameCreators(notification));
+        yield Optional.ofNullable(ExcerptCreator.createNotByNameBundle(notification));
       }
       case P_7_3 -> Optional.ofNullable(ExcerptCreator.createAnonymousBundle(notification));
       default ->
           throw new NpsServiceException(
               ErrorCode.NRS_PROCESSING_ERROR, "Unexpected notification category");
     };
-  }
-
-  private Bundle switchBetweenNotByNameCreators(Notification notification) {
-    if (isNblForNotByNameCreationEnabled) {
-      return ExcerptCreator.createNotByNameBundle(notification);
-    }
-    return notByNameRegressionService.createNotificationNotByName(notification);
   }
 
   /**

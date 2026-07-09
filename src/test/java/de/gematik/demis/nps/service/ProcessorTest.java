@@ -242,6 +242,7 @@ class ProcessorTest {
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
     when(notificationValidator.validateFhir(any(), any()))
         .thenReturn(new InternalOperationOutcome(new OperationOutcome(), "someBundleString"));
+    when(notificationFhirService.getDiseaseCodeRoot(any(), any())).thenReturn("cvd");
 
     final Processor processor = createProcessor(false);
     // WHEN we process a notification
@@ -286,7 +287,7 @@ class ProcessorTest {
     result.setIdentifier(new Identifier().setValue("bundle-id"));
     when(notificationValidator.validateFhir(any(), any()))
         .thenReturn(new InternalOperationOutcome(new OperationOutcome(), "someBundleString"));
-
+    when(notificationFhirService.getDiseaseCodeRoot(any(), any())).thenReturn("cvd");
     // WHEN we try to parse the bundle return a placeholder Bundle
     when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
     // AND when the receiverActionService processes anything return a new placeholder Bundle
@@ -522,6 +523,7 @@ class ProcessorTest {
       when(fhirParser.parseBundleOrParameter(FHIR_NOTIFICATION, CONTENT_TYPE)).thenReturn(result);
       when(notificationValidator.validateFhir(any(), any()))
           .thenReturn(new InternalOperationOutcome(new OperationOutcome(), "someBundleString"));
+      when(notificationFhirService.getDiseaseCodeRoot(any(), any())).thenReturn("cvd");
     }
   }
 

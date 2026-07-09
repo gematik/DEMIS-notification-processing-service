@@ -23,7 +23,7 @@
   },
   "identifier": {
     "system": "https://demis.rki.de/fhir/NamingSystem/NotificationBundleId",
-    "value": "fee6005e-5686-4b7b-b6ee-98b0e98a9d42"
+    "value": "53"
   },
   "type": "document",
   "timestamp": "2021-03-04T20:16:01.000+01:00",
@@ -51,15 +51,8 @@
           "display": "Infectious disease Note"
         } ]
       },
-      "category": [ {
-        "coding": [ {
-          "system": "http://loinc.org",
-          "code": "11502-2",
-          "display": "Laboratory report"
-        } ]
-      } ],
       "subject": {
-        "reference": "Patient/c9201e8c-0425-4fb4-89c3-95f2405f290a"
+        "reference": "Patient/50"
       },
       "date": "2021-03-04T20:16:00+01:00",
       "author": [ {
@@ -80,10 +73,10 @@
       } ]
     }
   }, {
-    "fullUrl": "https://demis.rki.de/fhir/Patient/c9201e8c-0425-4fb4-89c3-95f2405f290a",
+    "fullUrl": "https://demis.rki.de/fhir/Patient/50",
     "resource": {
       "resourceType": "Patient",
-      "id": "c9201e8c-0425-4fb4-89c3-95f2405f290a",
+      "id": "50",
       "meta": {
         "profile": [ "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonNotByName" ]
       },
@@ -92,7 +85,7 @@
         "valueBase64Binary": "eyJ0eXBlIjoiZGVtaXNQc2V1ZG9ueW0iLCJvdXRkYXRlZFBzZXVkb255bSI6eyJmYW1pbHlOYW1lIjpbIkVBQUFnaGtBQUlBQUdBQUFCQkFoSUFRQUNsZ2dBQkJCQUFBQUNBd0VDQWlVQUpBUUFCQUlBQUFBQVFBZ0FBRUJCZ0JJQUFBQUVBZ0Fna0FBQWlGZ0lBSUFBQVNBQ0FRQVFBQUJJQUdBSUVDZ0FBVUlBQUNBQWdBQUFFTUFsSUNBQUFBQUFBQWtNQUFBeFdFZ2dBQlFrUUFRQUFJcE1RQkFBQUFDQUFnZ0FnWT0iXSwiZmlyc3ROYW1lIjpbIlFBREFBQkFBVUFBQUFDQUFwQUFBQUFBQUNRQUFBRkFBQWdFQUFRUUFDQUNBQkFBQUFGQUFBQkFBQUVBRUVBQUFBZ0FBQUFFSUJBQUFnQVVDQUFBQUFJQUFBUUFDQ0NBQUFBQUJBQUFBWUFBQUVBQUFCQ0FBQUZBUUFBQUJDQVJBQUFRQWhBRUFFQUlBWUFBQUFBQVFHQUVGQUFJQUJBQmdBQUFBRVFvQUFBQT0iXSwiZGF0ZU9mQmlydGgiOiJnaEFBZ0NnQUNBQ0lpQUlZb0FnSWdBNEFDQWdRQ2lnSUFJUW1ESVFFUUFzTUNBZ0tBUUFJQW9oSWlTQUlxUUFLQWdwb29DZ0lnQ2hJU2tCSVFHQ0pIUT09IiwiZGlzZWFzZUNvZGUiOiJjdmQifSwiYWN0aXZlUHNldWRvbnltIjp7ImZhbWlseU5hbWUiOlsiSkVBUUJBQUFFQUJnQW9BUUFCZ0FBSWdnQUFSQUlBQUFBQkNHQUFFQUVDQWdRQ3FnQ0FBR0FDZ0VHR0l3SUFBQkFCQkFBRWdnS0VBQUFnQUNBQVFBQUFBQkVTQVFBQ3hJS0FBQUFBQWdRQUFCQUFRQVFnRUNBQUFBS0FBQUFDQ0FCQ2lJQllBQUFBb0JnQUFNQ2dnQUlCQmdDQUFBQUFBQUVnQUFBUUFBTElNPSJdLCJmaXJzdE5hbWUiOlsiQUVBZ0JBSUFBVUJBQUFRQUFBQUFJQUFBQVFKQUFFQWdBQUFFQXdBQkFBQUlJQUFnQUFBRUVBQUJBRUFBQUFBQUFBSUNBQUlCQUFnZ0FBQUFBQVFBQUdHQUFBQWdBQUFFQUFJQUFBRUlRQ0FDQXFBQUFHSUFRZ3NBQUFJQWdBQUFKQ0FBQ1FBQUlnRkJBRUFBUUFJQUFRQkFBZ0FBQUFDQUFCQUFBQUFnQUVBPSJdLCJkYXRlT2ZCaXJ0aCI6ImdFRkJEcENBTXlBQUFBRUNDQ2dJQ0FBRUFTQkFMQkxrTUFFRkFBS0NHQ0pBa0VJUW9FQUFjQUFRMkFJc2xVQUFJZ0VFQVEyQUtDQkFxQVV4QWd5eUFBPT0iLCJkaXNlYXNlQ29kZSI6ImN2ZCJ9fQ=="
       } ],
       "gender": "female",
-      "birthDate": "1950-02-01",
+      "birthDate": "1950-02",
       "address": [ {
         "extension": [ {
           "url": "https://demis.rki.de/fhir/StructureDefinition/AddressUse",
@@ -193,42 +186,33 @@
       } ]
     }
   }, {
-    "fullUrl": "https://demis.rki.de/fhir/DiagnosticReport/5d3a54e0-0af5-4e61-a917-c1e0f063af4b",
+    "fullUrl": "https://demis.rki.de/fhir/Specimen/5497b5f4-2994-4c8c-a94e-e37ad111e220",
     "resource": {
-      "resourceType": "DiagnosticReport",
-      "id": "5d3a54e0-0af5-4e61-a917-c1e0f063af4b",
+      "resourceType": "Specimen",
+      "id": "5497b5f4-2994-4c8c-a94e-e37ad111e220",
       "meta": {
-        "profile": [ "https://demis.rki.de/fhir/StructureDefinition/LaboratoryReportCVDP" ]
+        "profile": [ "https://demis.rki.de/fhir/StructureDefinition/SpecimenCVDP" ]
       },
-      "basedOn": [ {
-        "type": "ServiceRequest",
-        "identifier": {
-          "system": "https://demis.rki.de/fhir/NamingSystem/ServiceRequestId",
-          "value": "2021-000672922"
-        }
-      } ],
-      "status": "final",
-      "code": {
+      "status": "available",
+      "type": {
         "coding": [ {
-          "system": "https://demis.rki.de/fhir/CodeSystem/notificationCategory",
-          "code": "cvdp",
-          "display": "Severe-Acute-Respiratory-Syndrome-Coronavirus-2 (SARS-CoV-2)"
+          "system": "http://snomed.info/sct",
+          "code": "309164002",
+          "display": "Upper respiratory swab sample (specimen)"
         } ]
       },
       "subject": {
-        "reference": "Patient/c9201e8c-0425-4fb4-89c3-95f2405f290a"
+        "reference": "Patient/50"
       },
-      "issued": "2021-03-04T20:15:00.000+01:00",
-      "result": [ {
-        "reference": "Observation/4cf6dbcb-07b4-4794-bbd3-c052a1d67135"
-      } ],
-      "conclusion": "Ich bin die textuelle Conclusion ...",
-      "conclusionCode": [ {
-        "coding": [ {
-          "system": "https://demis.rki.de/fhir/CodeSystem/conclusionCode",
-          "code": "pathogenDetected",
-          "display": "Meldepflichtiger Erreger nachgewiesen"
-        } ]
+      "receivedTime": "2021-03-04T15:40:00+01:00",
+      "collection": {
+        "collector": {
+          "reference": "PractitionerRole/c2063949-baae-4c60-a099-13b905d2f29f"
+        },
+        "collectedDateTime": "2021-03-04T09:50:00+01:00"
+      },
+      "note": [ {
+        "text": "Ich bin eine interessante Zusatzinformation ..."
       } ]
     }
   }, {
@@ -254,7 +238,7 @@
         } ]
       },
       "subject": {
-        "reference": "Patient/c9201e8c-0425-4fb4-89c3-95f2405f290a"
+        "reference": "Patient/50"
       },
       "valueCodeableConcept": {
         "coding": [ {
@@ -285,33 +269,42 @@
       }
     }
   }, {
-    "fullUrl": "https://demis.rki.de/fhir/Specimen/5497b5f4-2994-4c8c-a94e-e37ad111e220",
+    "fullUrl": "https://demis.rki.de/fhir/DiagnosticReport/5d3a54e0-0af5-4e61-a917-c1e0f063af4b",
     "resource": {
-      "resourceType": "Specimen",
-      "id": "5497b5f4-2994-4c8c-a94e-e37ad111e220",
+      "resourceType": "DiagnosticReport",
+      "id": "5d3a54e0-0af5-4e61-a917-c1e0f063af4b",
       "meta": {
-        "profile": [ "https://demis.rki.de/fhir/StructureDefinition/SpecimenCVDP" ]
+        "profile": [ "https://demis.rki.de/fhir/StructureDefinition/LaboratoryReportCVDP" ]
       },
-      "status": "available",
-      "type": {
+      "basedOn": [ {
+        "type": "ServiceRequest",
+        "identifier": {
+          "system": "https://demis.rki.de/fhir/NamingSystem/ServiceRequestId",
+          "value": "2021-000672922"
+        }
+      } ],
+      "status": "final",
+      "code": {
         "coding": [ {
-          "system": "http://snomed.info/sct",
-          "code": "309164002",
-          "display": "Upper respiratory swab sample (specimen)"
+          "system": "https://demis.rki.de/fhir/CodeSystem/notificationCategory",
+          "code": "cvdp",
+          "display": "Severe-Acute-Respiratory-Syndrome-Coronavirus-2 (SARS-CoV-2)"
         } ]
       },
       "subject": {
-        "reference": "Patient/c9201e8c-0425-4fb4-89c3-95f2405f290a"
+        "reference": "Patient/50"
       },
-      "receivedTime": "2021-03-04T15:40:00+01:00",
-      "collection": {
-        "collector": {
-          "reference": "PractitionerRole/c2063949-baae-4c60-a099-13b905d2f29f"
-        },
-        "collectedDateTime": "2021-03-04T09:50:00+01:00"
-      },
-      "note": [ {
-        "text": "Ich bin eine interessante Zusatzinformation ..."
+      "issued": "2021-03-04T20:15:00.000+01:00",
+      "result": [ {
+        "reference": "Observation/4cf6dbcb-07b4-4794-bbd3-c052a1d67135"
+      } ],
+      "conclusion": "Ich bin die textuelle Conclusion ...",
+      "conclusionCode": [ {
+        "coding": [ {
+          "system": "https://demis.rki.de/fhir/CodeSystem/conclusionCode",
+          "code": "pathogenDetected",
+          "display": "Meldepflichtiger Erreger nachgewiesen"
+        } ]
       } ]
     }
   } ]

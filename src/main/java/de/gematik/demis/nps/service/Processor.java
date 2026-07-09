@@ -27,12 +27,11 @@ package de.gematik.demis.nps.service;
  * #L%
  */
 
-import static de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory.P_7_3;
-
 import com.google.common.collect.Sets;
 import de.gematik.demis.fhirparserlibrary.FhirParser;
 import de.gematik.demis.fhirparserlibrary.MessageType;
 import de.gematik.demis.nps.base.util.FhirPackageContext;
+import de.gematik.demis.nps.base.util.NotificationConstraintValidator;
 import de.gematik.demis.nps.base.util.RequestNotificationProperties;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
@@ -159,12 +158,10 @@ public class Processor {
             testUserRecipient,
             internalOperationOutcome);
     updateRequestScopeSummary(notification);
-    if (!isProcessing73Enabled
-        && Objects.equals(notification.getRoutingData().notificationCategory(), P_7_3)) {
-      throw new UnsupportedOperationException(
-          "7.3 notifications can't be processed due to disabled feature flag");
-    }
-
+    NotificationConstraintValidator.validate73ProcessingConstraints(
+        notification.getRoutingData().notificationCategory(),
+        notification.getDiseaseCodeRoot(),
+        isProcessing73Enabled);
     if (isPermissionCheckEnabled) {
       final Set<String> allowedRoles = notification.getRoutingData().allowedRoles();
       // Assume that empty allowedRoles means no one is allowed to send

@@ -70,7 +70,7 @@ public class EncryptionService {
 
     final IParser parser = fhirContext.newXmlParser();
     String xmlPlain = parser.encodeResourceToString(bundle);
-    if (featureFlagsConfigProperties.isEnabled("filter.invalid.xml.codepoints")) {
+    if (featureFlagsConfigProperties.isEnabled("filter_invalid_xml_codepoints")) {
       xmlPlain = XmlSanitizer.filterInvalidXmlCodePoints(xmlPlain);
     }
     return dataEncryption.encryptData(xmlPlain.getBytes(StandardCharsets.UTF_8), certificate);

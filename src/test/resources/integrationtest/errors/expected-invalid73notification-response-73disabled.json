@@ -1,0 +1,19 @@
+{
+  "resourceType": "OperationOutcome",
+  "meta": {
+    "profile": [
+      "https://demis.rki.de/fhir/StructureDefinition/ProcessNotificationResponse"
+    ]
+  },
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"></div>"
+  },
+  "issue": [
+    {
+      "severity": "error",
+      "code": "exception",
+      "diagnostics": "7.3 notifications can't be processed due to disabled feature flag (fee6005e-5686-4b7b-b6ee-98b0e98a9d42)"
+    }
+  ]
+}

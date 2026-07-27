@@ -53,8 +53,19 @@ import de.gematik.demis.nps.service.routing.AddressOriginEnum;
 import de.gematik.demis.nps.service.routing.NotificationReceiver;
 import de.gematik.demis.nps.service.routing.RoutingData;
 import de.gematik.demis.nps.test.RoutingDataUtil;
-import java.util.*;
-import org.hl7.fhir.r4.model.*;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.SequencedSet;
+import java.util.Set;
+import org.hl7.fhir.r4.model.Binary;
+import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Composition;
+import org.hl7.fhir.r4.model.Identifier;
+import org.hl7.fhir.r4.model.Meta;
+import org.hl7.fhir.r4.model.Organization;
+import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,7 +74,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReceiptServiceTest {
+class ReceiptServiceRegressionTest {
 
   private ReceiptBundleCreator receiptBundleCreator;
   @Mock private PdfGenServiceClient pdfGenServiceClient;
@@ -90,7 +101,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -150,7 +161,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -217,7 +228,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -276,7 +287,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -334,7 +345,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -394,7 +405,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     Bundle bundle = new Bundle().setIdentifier(new Identifier().setValue("test-identifier"));
     bundle.setMeta(new Meta().addTag(RESPONSIBLE_HEALTH_DEPARTMENT_CODING_SYSTEM, "1.1.", null));
@@ -440,7 +451,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     // We just need to ensure correct data flow, and we don't mind what's the organization exactly
     final Organization value = new Organization();
@@ -485,7 +496,7 @@ class ReceiptServiceTest {
             statistics,
             new RequestProcessorState(),
             false,
-            true);
+            false);
 
     // We just need to ensure correct data flow, and we don't mind what is the organization exactly
     final Organization value = new Organization();
@@ -533,7 +544,7 @@ class ReceiptServiceTest {
               statistics,
               new RequestProcessorState(),
               true,
-              true);
+              false);
     }
 
     @Test

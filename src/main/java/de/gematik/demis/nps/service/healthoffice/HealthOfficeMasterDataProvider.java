@@ -45,14 +45,12 @@ class HealthOfficeMasterDataProvider {
 
   @Bean
   public HealthOfficeMasterDataService healthOfficeMasterDataService(
-      final TransmittingSiteSearchParser parser,
-      final SubsidiaryService subsidiaryService,
-      final NpsConfigProperties config) {
+      final TransmittingSiteSearchParser parser, final NpsConfigProperties config) {
     final String dataFile = getDataFile(config.healthOfficesLiveTest());
 
     final Map<String, Organization> map =
         parser.readTransmittingSiteSearchXml(dataFile).stream()
-            .filter(data -> !subsidiaryService.isSubsidiary(data.code()))
+            .filter(data -> !SubsidiaryValidator.isSubsidiary(data.code()))
             .collect(
                 Collectors.toMap(
                     TransmittingSite::code, HealthOfficeOrganizationCreator::createOrganization));

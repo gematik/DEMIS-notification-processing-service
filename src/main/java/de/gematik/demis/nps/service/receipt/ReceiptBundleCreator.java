@@ -114,9 +114,7 @@ class ReceiptBundleCreator {
       return this;
     }
 
-    public ReceiptBundleBuilder addPdf(final byte[] pdfBytes) {
-      final Binary pdfBinary = createPdfBinary(pdfBytes);
-
+    public ReceiptBundleBuilder addPdf(final Binary pdfBinary) {
       composition
           .addSection()
           .setTitle(RESPONSE_PDF_RECEIPT_SECTION_TITLE)
@@ -171,14 +169,6 @@ class ReceiptBundleCreator {
       bundle.addEntry().setFullUrl(url).setResource(resource);
 
       return new Reference(resource);
-    }
-
-    private Binary createPdfBinary(byte[] data) {
-      final Binary binary = new Binary();
-      binary.setId(uuidGenerator.generateUuid());
-      binary.setContentTypeElement(CODETYPE_PDF);
-      binary.setData(data);
-      return binary;
     }
   }
 }

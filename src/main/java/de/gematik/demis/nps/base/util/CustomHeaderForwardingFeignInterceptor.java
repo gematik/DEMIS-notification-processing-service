@@ -27,7 +27,6 @@ package de.gematik.demis.nps.base.util;
  * #L%
  */
 
-import static de.gematik.demis.nps.base.util.FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_PACKAGE;
 
 import de.gematik.demis.nps.config.FeatureFlagsConfigProperties;
@@ -86,8 +85,7 @@ public class CustomHeaderForwardingFeignInterceptor implements RequestIntercepto
           HEADER_FHIR_PACKAGE, fhirPackageContext.getOutgoingFhirPackageHeaderValue());
     }
 
-    if (!hasXFhirPackageVersionHeader(requestTemplate)
-        && featureFlagsConfigProperties.isEnabled(FEATURE_FLAG_FHIR_CORE_SPLIT)) {
+    if (!hasXFhirPackageVersionHeader(requestTemplate)) {
       requestTemplate.header(
           NpsHeaders.HEADER_FHIR_PACKAGE_VERSION,
           fhirPackageContext.getOutgoingFhirPackageVersionHeaderValue());

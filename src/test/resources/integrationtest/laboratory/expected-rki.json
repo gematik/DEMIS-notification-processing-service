@@ -78,6 +78,7 @@
       "resourceType": "Patient",
       "id": "50",
       "meta": {
+        "lastUpdated": "2024-01-02T14:19:29.000+01:00",
         "profile": [ "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonNotByName" ]
       },
       "extension": [ {

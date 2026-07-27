@@ -97,7 +97,7 @@
         "resourceType": "Patient",
         "id": "aabb3705-f9f3-37e9-b2bb-6f3da1f55bd3",
         "meta": {
-          "lastUpdated": "2021-03-04T20:16:01.000+01:00",
+          "lastUpdated": "2024-01-02T14:19:29.000+01:00",
           "profile": [
             "https://demis.rki.de/fhir/StructureDefinition/NotifiedPersonNotByName"
           ]

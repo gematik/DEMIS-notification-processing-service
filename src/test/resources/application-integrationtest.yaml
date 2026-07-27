@@ -45,4 +45,4 @@ feature:
     notification_pre_check: true
     move-error-id-to-diagnostics: true
     notifications.7_3: true
-    new.error.message.for.failed.routing: true
+    receipt.with.nbl: true

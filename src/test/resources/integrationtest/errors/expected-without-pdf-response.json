@@ -18,10 +18,10 @@
         "type": "collection",
         "entry": [
           {
-            "fullUrl": "https://demis.rki.de/fhir/Composition/fee6005e-5686-4b7b-b6ee-98b0e98a9d42",
+            "fullUrl": "https://demis.rki.de/fhir/Composition/54",
             "resource": {
               "resourceType": "Composition",
-              "id": "fee6005e-5686-4b7b-b6ee-98b0e98a9d42",
+              "id": "54",
               "meta": {
                 "profile": [
                   "https://demis.rki.de/fhir/StructureDefinition/NotificationReceipt"

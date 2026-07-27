@@ -27,18 +27,17 @@ package de.gematik.demis.nps.service.healthoffice;
  * #L%
  */
 
-import org.springframework.stereotype.Service;
-
 /**
  * Central utility regarding subsidiary health offices (Gesundheitsämter). This feature is used to
  * serve different health office programs (such as SORMAS) with incoming notices.<br>
  * This class provides static members and is not intended for instantiation.
  */
-@Service
-public final class SubsidiaryService {
+public final class SubsidiaryValidator {
 
   /** Prefix for central/regular health office (Gesundheitsamt) IDs. */
   private static final String CENTRAL_OFFICE_PREFIX = "1.";
+
+  private SubsidiaryValidator() {}
 
   /**
    * Tests if the given {@code healthOfficeId} is an ID of a subsidiary health office.
@@ -46,7 +45,7 @@ public final class SubsidiaryService {
    * @param healthOfficeId the ID to be checked
    * @return {@code true} if {@code healthOfficeId} is an subsidiary health office ID.
    */
-  public boolean isSubsidiary(String healthOfficeId) {
+  public static boolean isSubsidiary(String healthOfficeId) {
     return !healthOfficeId.startsWith(CENTRAL_OFFICE_PREFIX);
   }
 }

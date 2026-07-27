@@ -37,7 +37,9 @@ import de.gematik.demis.nps.base.util.UuidGenerator;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import lombok.SneakyThrows;
+import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Organization;
 import org.json.JSONObject;
@@ -164,12 +166,17 @@ class ReceiptBundleCreatorTest {
     when(uuidGenerator.generateUuid()).thenReturn("U4-aaaa-bbbb-cccc");
     when(timeProvider.now()).thenReturn(toDate(LocalDate.of(2023, 12, 22)));
 
+    final Binary binary = new Binary();
+    binary.setId("U4-aaaa-bbbb-cccc");
+    binary.setContentTypeElement(new CodeType("application/pdf"));
+    binary.setData("Mein - Pdf".getBytes(StandardCharsets.UTF_8));
+
     final Bundle result =
         underTest
             .builder()
             .addNotificationId(new Identifier().setValue("1234567890"))
             .addResponsibleHealthOffice(createOrga("GA-1.98"))
-            .addPdf("Mein - Pdf".getBytes(StandardCharsets.UTF_8))
+            .addPdf(binary)
             .addRelatesNotificationId("555999")
             .build();
 

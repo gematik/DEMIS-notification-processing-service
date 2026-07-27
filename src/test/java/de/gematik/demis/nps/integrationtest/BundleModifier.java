@@ -51,13 +51,25 @@ class BundleModifier {
         getJsonParser().parseResource(Bundle.class, processedNotificationForHealthOffice);
     bundle.getMeta().setTag(List.of());
     removePseudonym(bundle);
+    removeLastUpdated(bundle);
+    return fhirResourceToJson(bundle);
+  }
+
+  static String removeLastUpdated(final String processedNotificationForHealthOffice) {
+    final Bundle bundle =
+        getJsonParser().parseResource(Bundle.class, processedNotificationForHealthOffice);
+    removeLastUpdated(bundle);
     return fhirResourceToJson(bundle);
   }
 
   static void removePseudonym(final Bundle bundle) {
     final Patient patient = BundleQueries.findFirstResource(bundle, Patient.class).orElseThrow();
-    patient.getMeta().setLastUpdated(null);
     patient.setExtension(List.of());
+  }
+
+  static void removeLastUpdated(final Bundle bundle) {
+    final Patient patient = BundleQueries.findFirstResource(bundle, Patient.class).orElseThrow();
+    patient.getMeta().setLastUpdated(null);
   }
 
   static void updateResponsibleHealthOffice(

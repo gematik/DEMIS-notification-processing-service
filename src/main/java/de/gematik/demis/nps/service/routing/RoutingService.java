@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -47,16 +46,11 @@ public class RoutingService {
 
   private final NotificationRoutingServiceClient client;
   private final RequestProcessorState requestProcessorState;
-  private final boolean newErrorMessageEnabled;
 
   public RoutingService(
-      final NotificationRoutingServiceClient client,
-      final RequestProcessorState state,
-      @Value("${feature.flag.new.error.message.for.failed.routing}")
-          final boolean newErrorMessageEnabled) {
+      final NotificationRoutingServiceClient client, final RequestProcessorState state) {
     this.client = client;
     this.requestProcessorState = state;
-    this.newErrorMessageEnabled = newErrorMessageEnabled;
   }
 
   @Nonnull
@@ -104,12 +98,7 @@ public class RoutingService {
 
   private void throwMissingRoutingInformationException() {
     requestProcessorState.setRoutingSuccessful(false);
-    if (newErrorMessageEnabled) {
-      throw new NpsServiceException(
-          ErrorCode.DESTINATION_MISSING, "No destination could be determined");
-    } else {
-      throw new NpsServiceException(
-          ErrorCode.MISSING_RESPONSIBLE, "no health office is responsible");
-    }
+    throw new NpsServiceException(
+        ErrorCode.DESTINATION_MISSING, "No destination could be determined");
   }
 }

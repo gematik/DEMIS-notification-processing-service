@@ -57,7 +57,7 @@ class RoutingServiceTest {
       List.of(new NotificationReceiver("", "", SequencedSets.of(), false));
   private final NotificationRoutingServiceClient mock =
       mock(NotificationRoutingServiceClient.class);
-  final RoutingService routingService = new RoutingService(mock, new RequestProcessorState(), true);
+  final RoutingService routingService = new RoutingService(mock, new RequestProcessorState());
 
   @MethodSource("invalidResponses")
   @ParameterizedTest
@@ -71,32 +71,17 @@ class RoutingServiceTest {
 
   @Test
   void that422StatusCodeIsForwardedAsIs() {
-    final RoutingService routingServiceNewErrorMessage =
-        new RoutingService(mock, new RequestProcessorState(), true);
+    final RoutingService routingServiceErrorMessage =
+        new RoutingService(mock, new RequestProcessorState());
     when(mock.ruleBased(anyString(), anyBoolean(), anyString()))
         .thenThrow(
             new ServiceCallException(
                 "", ServiceCallErrorCode.NRS, HttpStatus.UNPROCESSABLE_ENTITY.value(), null));
 
-    assertThatThrownBy(() -> routingServiceNewErrorMessage.getRoutingInformation(REQUEST))
+    assertThatThrownBy(() -> routingServiceErrorMessage.getRoutingInformation(REQUEST))
         .isInstanceOf(NpsServiceException.class)
         .hasMessageContaining("No destination could be determined")
         .hasFieldOrPropertyWithValue("errorCode", "DESTINATION_MISSING");
-  }
-
-  @Test
-  void that422StatusCodeIsForwardedAsIs_Regression() {
-    final RoutingService routingServiceRegression =
-        new RoutingService(mock, new RequestProcessorState(), false);
-    when(mock.ruleBased(anyString(), anyBoolean(), anyString()))
-        .thenThrow(
-            new ServiceCallException(
-                "", ServiceCallErrorCode.NRS, HttpStatus.UNPROCESSABLE_ENTITY.value(), null));
-
-    assertThatThrownBy(() -> routingServiceRegression.getRoutingInformation(REQUEST))
-        .isInstanceOf(NpsServiceException.class)
-        .hasMessageContaining("no health office is responsible")
-        .hasFieldOrPropertyWithValue("errorCode", "MISSING_RESPONSIBLE");
   }
 
   @Test

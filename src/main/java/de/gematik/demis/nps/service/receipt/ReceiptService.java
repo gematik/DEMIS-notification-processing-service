@@ -28,15 +28,20 @@ package de.gematik.demis.nps.service.receipt;
  */
 
 import de.gematik.demis.fhirparserlibrary.FhirParser;
+import de.gematik.demis.notification.builder.demis.fhir.notification.builder.receipt.ReceiptBuilder;
 import de.gematik.demis.notification.builder.demis.fhir.notification.types.NotificationCategory;
+import de.gematik.demis.notification.builder.demis.fhir.notification.utils.Utils;
 import de.gematik.demis.nps.base.util.RequestProcessorState;
 import de.gematik.demis.nps.error.ErrorCode;
 import de.gematik.demis.nps.service.Statistics;
 import de.gematik.demis.nps.service.healthoffice.HealthOfficeMasterDataService;
 import de.gematik.demis.nps.service.notification.Notification;
 import de.gematik.demis.nps.service.receipt.ReceiptBundleCreator.ReceiptBundleBuilder;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.Organization;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -55,6 +60,7 @@ public class ReceiptService {
   private final FhirParser fhirParser;
   private final Statistics statistics;
   private final boolean isCustodianEnabled;
+  private final boolean isReceiptWithNbl;
   private final RequestProcessorState requestProcessorState;
 
   /**
@@ -74,13 +80,15 @@ public class ReceiptService {
       FhirParser fhirParser,
       Statistics statistics,
       RequestProcessorState requestProcessorState,
-      @Value("${feature.flag.custodian.enabled}") boolean isCustodianEnabled) {
+      @Value("${feature.flag.custodian.enabled}") boolean isCustodianEnabled,
+      @Value("${feature.flag.receipt.with.nbl}") boolean isReceiptWithNbl) {
     this.receiptBundleCreator = receiptBundleCreator;
     this.pdfGenServiceClient = pdfGenServiceClient;
     this.healthOfficeMasterDataService = healthOfficeMasterDataService;
     this.fhirParser = fhirParser;
     this.statistics = statistics;
     this.isCustodianEnabled = isCustodianEnabled;
+    this.isReceiptWithNbl = isReceiptWithNbl;
     this.requestProcessorState = requestProcessorState;
   }
 
@@ -92,46 +100,45 @@ public class ReceiptService {
    * @return the generated receipt bundle
    */
   public Bundle generateReceipt(final Notification notification) {
+    return isReceiptWithNbl
+        ? generateReceiptViaNbl(notification)
+        : generateReceiptRegression(notification);
+  }
+
+  private Bundle generateReceiptRegression(final Notification notification) {
     final ReceiptBundleBuilder receiptBuilder =
         receiptBundleCreator.builder().addNotificationId(notification.getBundle().getIdentifier());
 
-    final String responsibleHealthOfficeId =
-        notification.getResponsibleHealthOfficeId().orElseThrow();
-    final Organization healthOfficeOrganization;
-    if (isCustodianEnabled) {
-      healthOfficeOrganization =
-          healthOfficeMasterDataService.getHealthOfficeOrganization(responsibleHealthOfficeId);
-    } else {
-      healthOfficeOrganization =
-          healthOfficeMasterDataService.getHealthOfficeOrganization(
-              responsibleHealthOfficeId, notification.isTestUser());
-    }
+    final Organization healthOfficeOrganization = getHealthOfficeOrganization(notification);
+    final Organization custodianOrganization = getCustodianOrganization(notification);
     if (healthOfficeOrganization != null) {
       receiptBuilder.addResponsibleHealthOffice(healthOfficeOrganization);
-    } else {
-      log.warn("No Organization info for health office {}", responsibleHealthOfficeId);
     }
-
-    final String custodianId = notification.getRoutingData().custodian();
-    if (isCustodianEnabled && custodianId != null) {
-      final Organization custodianOrganization =
-          healthOfficeMasterDataService.getTestUserHealthOfficeOrganization(custodianId);
+    if (custodianOrganization != null) {
       receiptBuilder.addCustodian(custodianOrganization);
     }
-
     notification.getCompositionIdentifier().ifPresent(receiptBuilder::addRelatesNotificationId);
 
-    try {
-      final byte[] pdfBytes = generatePdf(notification);
-      receiptBuilder.addPdf(pdfBytes);
-      requestProcessorState.setPdfGenerationSuccessful(true);
-    } catch (final RuntimeException e) {
-      log.error("error creating pdf", e);
-      // do not abort processing
-      statistics.incIgnoredErrorCounter(ErrorCode.NO_PDF.getCode());
-      requestProcessorState.setPdfGenerationSuccessful(false);
-    }
+    final Optional<Binary> pdfBinary = generatePdfBinary(notification);
+    pdfBinary.ifPresent(receiptBuilder::addPdf);
     return receiptBuilder.build();
+  }
+
+  private Bundle generateReceiptViaNbl(final Notification notification) {
+    final Organization healthOfficeOrganization = getHealthOfficeOrganization(notification);
+    final Organization custodianOrganization = getCustodianOrganization(notification);
+
+    ReceiptBuilder receiptBuilder =
+        new ReceiptBuilder()
+            .setNotificationBundleId(notification.getBundle().getIdentifier().getValue())
+            .setGaOrganization(healthOfficeOrganization)
+            .setCustodianOrganization(custodianOrganization);
+
+    notification.getCompositionIdentifier().ifPresent(receiptBuilder::setRelatesToId);
+
+    final Optional<Binary> pdfBinary = generatePdfBinary(notification);
+    pdfBinary.ifPresent(receiptBuilder::setPdfQuittung);
+    return receiptBuilder.createNotificationReceiptBundle();
   }
 
   /**
@@ -143,19 +150,33 @@ public class ReceiptService {
    * @return the generated PDF as a byte array
    * @throws IllegalStateException if no responsible health office is found
    */
-  private byte[] generatePdf(final Notification notification) {
-    String bundleAsJson;
+  private Optional<Binary> generatePdfBinary(final Notification notification) {
+    try {
+      String bundleAsJson;
 
-    if (NotificationCategory.P_7_4.equals(notification.getRoutingData().notificationCategory())) {
-      bundleAsJson = getBundleFor74Notification(notification);
-    } else {
-      bundleAsJson = getPreEncryptedBundle(notification);
+      if (NotificationCategory.P_7_4.equals(notification.getRoutingData().notificationCategory())) {
+        bundleAsJson = getBundleFor74Notification(notification);
+      } else {
+        bundleAsJson = getPreEncryptedBundle(notification);
+      }
+      final byte[] pdfBytes =
+          switch (notification.getType()) {
+            case DISEASE -> pdfGenServiceClient.createDiseasePdfFromJson(bundleAsJson);
+            case LABORATORY -> pdfGenServiceClient.createLaboratoryPdfFromJson(bundleAsJson);
+          };
+      requestProcessorState.setPdfGenerationSuccessful(true);
+      final Binary pdfBinary = new Binary();
+      pdfBinary.setId(Utils.generateUuidString());
+      pdfBinary.setContentTypeElement(new CodeType("application/pdf"));
+      pdfBinary.setData(pdfBytes);
+      return Optional.of(pdfBinary);
+    } catch (final RuntimeException e) {
+      log.error("error creating pdf", e);
+      // do not abort processing
+      statistics.incIgnoredErrorCounter(ErrorCode.NO_PDF.getCode());
+      requestProcessorState.setPdfGenerationSuccessful(false);
     }
-
-    return switch (notification.getType()) {
-      case DISEASE -> pdfGenServiceClient.createDiseasePdfFromJson(bundleAsJson);
-      case LABORATORY -> pdfGenServiceClient.createLaboratoryPdfFromJson(bundleAsJson);
-    };
+    return Optional.empty();
   }
 
   private String getPreEncryptedBundle(Notification notification) {
@@ -182,5 +203,33 @@ public class ReceiptService {
    */
   private String getBundleFor74Notification(Notification notification) {
     return fhirParser.encodeToJson(notification.getBundle());
+  }
+
+  private Organization getHealthOfficeOrganization(final Notification notification) {
+    final String responsibleHealthOfficeId =
+        notification.getResponsibleHealthOfficeId().orElseThrow();
+    final Organization healthOfficeOrganization;
+    if (isCustodianEnabled) {
+      healthOfficeOrganization =
+          healthOfficeMasterDataService.getHealthOfficeOrganization(responsibleHealthOfficeId);
+    } else {
+      healthOfficeOrganization =
+          healthOfficeMasterDataService.getHealthOfficeOrganization(
+              responsibleHealthOfficeId, notification.isTestUser());
+    }
+    if (healthOfficeOrganization == null) {
+      log.warn("No Organization info for health office {}", responsibleHealthOfficeId);
+    }
+    return healthOfficeOrganization;
+  }
+
+  private Organization getCustodianOrganization(final Notification notification) {
+    final String custodianId = notification.getRoutingData().custodian();
+    Organization custodianOrganization = null;
+    if (isCustodianEnabled && custodianId != null) {
+      custodianOrganization =
+          healthOfficeMasterDataService.getTestUserHealthOfficeOrganization(custodianId);
+    }
+    return custodianOrganization;
   }
 }

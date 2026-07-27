@@ -56,9 +56,6 @@ public class FhirPackageContext {
   // i.e. rki.demis.disease -> "disease", rki.demis.laboratory -> "laboratory"
   static final String DISEASE_PACKAGE = "disease";
   static final String LABORATORY_PACKAGE = "laboratory";
-  static final String LEGACY_CORE_PACKAGE = "fhir-profile-snapshots";
-
-  static final String FEATURE_FLAG_FHIR_CORE_SPLIT = "fhir_core_split";
 
   // Holds the value of the x-fhir-package header to be used for outgoing requests.
   private String outgoingFhirPackageHeaderValue;
@@ -68,9 +65,7 @@ public class FhirPackageContext {
   public void initialize(String fhirNotification, MessageType messageType) {
 
     initializeOutgoingFhirPackageHeaderValue(fhirNotification, messageType);
-    if (featureFlagsConfigProperties.isEnabled(FEATURE_FLAG_FHIR_CORE_SPLIT)) {
-      initializeOutgoingFhirPackageVersionHeaderValue();
-    }
+    initializeOutgoingFhirPackageVersionHeaderValue();
   }
 
   private void initializeOutgoingFhirPackageHeaderValue(
@@ -84,11 +79,6 @@ public class FhirPackageContext {
 
     if (StringUtils.isNotBlank(incomingFhirPackageHeader)) {
       this.outgoingFhirPackageHeaderValue = incomingFhirPackageHeader;
-      return;
-    }
-
-    if (!featureFlagsConfigProperties.isEnabled(FEATURE_FLAG_FHIR_CORE_SPLIT)) {
-      this.outgoingFhirPackageHeaderValue = LEGACY_CORE_PACKAGE;
       return;
     }
 

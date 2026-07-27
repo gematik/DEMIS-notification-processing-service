@@ -29,6 +29,7 @@ package de.gematik.demis.nps.integrationtest;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
+import static de.gematik.demis.nps.config.NpsHeaders.HEADER_DEFAULT_FHIR_PACKAGE_VERSIONS;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_REQUEST_ORIGIN;
 import static de.gematik.demis.nps.config.NpsHeaders.HEADER_FHIR_SUBMISSION_TYPE;
 import static de.gematik.demis.nps.integrationtest.BundleModifier.*;
@@ -94,6 +95,7 @@ import org.hl7.fhir.r4.model.Binary;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.r4.model.Resource;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -209,6 +211,7 @@ class NpsIntegrationTest {
   private static final String REQUEST_ID = "aaa-bbb-ccc";
   private static final String USER_ID = "LABOR-12345";
   private static final String NPS_ENDPOINT = "/$process-notification";
+  public static final String DEFAULT_FHIR_PACKAGE_VERSIONS_VALUE = "disease:v6;laboratory:v6";
 
   @Autowired MockMvc mockMvc;
   @Autowired MeterRegistry meterRegistry;
@@ -221,6 +224,9 @@ class NpsIntegrationTest {
 
   @MockitoBean(answers = Answers.CALLS_REAL_METHODS)
   TimeProvider timeProvider;
+
+  private int idCounter;
+  private MockedStatic<Utils> utilities;
 
   private CounterVerifier counterVerifier;
 
@@ -249,74 +255,72 @@ class NpsIntegrationTest {
         FUTS, FUTS_CONCEPTMAP_DISEASE_CATEGORY_ENDPOINT, okJsonResource(FUTS_CONCEPTMAP_DISEASE));
 
     mockRedisRepository(List.of(USER_1_01_0_53, USER_TEST_INT, USER_1));
-    mockUuid();
     mockErrorUuid();
+    mockUtils();
     meterRegistry.clear();
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (utilities != null) {
+      utilities.close();
+    }
   }
 
   @ParameterizedTest
   @EnumSource(NotificationType.class)
   void success(final NotificationType type) throws Exception {
-    int[] idHelper = {50};
-    try (MockedStatic<Utils> utilities = mockStatic(Utils.class)) {
-      utilities.when(Utils::generateUuid).thenCallRealMethod();
-      utilities.when(Utils::generateUuidString).thenAnswer(_ -> Integer.toString(idHelper[0]++));
-      utilities.when(() -> Utils.getShortReferenceOrUrnUuid(any())).thenCallRealMethod();
-      utilities.when(Utils::getCurrentDateTime).thenCallRealMethod();
-      utilities.when(() -> Utils.hasFhirType(any())).thenCallRealMethod();
 
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, ok());
-      setupStub(DLS, ok());
-      final String resourceName =
-          switch (type) {
-            case LABORATORY -> NRS_RESPONSE_OKAY_LABORATORY;
-            case DISEASE -> NRS_RESPONSE_OKAY_DISEASE;
-          };
-      setupStub(NRS, okJsonResource(resourceName));
-      setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(FSW, ok());
-      setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
+    setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
+    setupStub(LVS, ok());
+    setupStub(DLS, ok());
+    final String resourceName =
+        switch (type) {
+          case LABORATORY -> NRS_RESPONSE_OKAY_LABORATORY;
+          case DISEASE -> NRS_RESPONSE_OKAY_DISEASE;
+        };
+    setupStub(NRS, okJsonResource(resourceName));
+    setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
+    setupStub(FSW, ok());
+    setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
-      final String resourceDir =
-          switch (type) {
-            case LABORATORY -> LABORATORY_DIR;
-            case DISEASE -> DISEASE_DIR;
-          };
+    final String resourceDir =
+        switch (type) {
+          case LABORATORY -> LABORATORY_DIR;
+          case DISEASE -> DISEASE_DIR;
+        };
 
-      final String input = resource(resourceDir + INPUT_NOTIFICATION_JSON);
-      final String expectedNotificationForHealthOffice = resource(resourceDir + EXPECTED_GA_JSON);
+    final String input = resource(resourceDir + INPUT_NOTIFICATION_JSON);
+    final String expectedNotificationForHealthOffice = resource(resourceDir + EXPECTED_GA_JSON);
 
-      executeTest(input, OK, resourceDir + EXPECTED_RESPONSE_JSON);
+    executeTest(input, OK, resourceDir + EXPECTED_RESPONSE_JSON);
 
-      removePseudonymAndResponsibleTags(expectedNotificationForHealthOffice);
+    // assert requests to the called services
 
-      // assert requests to the called services
+    assertThat(getRequestBody(VS)).isEqualTo(input);
 
-      assertThat(getRequestBody(VS)).isEqualTo(input);
+    assertThat(getRequestBody(LVS)).isEqualToIgnoringWhitespace(input);
 
-      assertThat(getRequestBody(LVS)).isEqualToIgnoringWhitespace(input);
+    assertPSGenCall(resourceDir + EXPECTED_PS_REQUEST_JSON);
 
-      assertPSGenCall(resourceDir + EXPECTED_PS_REQUEST_JSON);
+    assertThat(getRequestBody(NRS)).isEqualToIgnoringWhitespace(input);
 
-      assertThat(getRequestBody(NRS)).isEqualToIgnoringWhitespace(input);
+    // pdf service becomes exactly the notification, which is stored for the health office
+    assertThat(getRequestBody(PDF))
+        .isEqualToIgnoringWhitespace(expectedNotificationForHealthOffice);
 
-      // pdf service becomes exactly the notification, which is stored for the health office
-      assertThat(getRequestBody(PDF))
-          .isEqualToIgnoringWhitespace(expectedNotificationForHealthOffice);
+    assertFhirStorageRequest(
+        rkiBundle -> assertFhirResource(rkiBundle, resource(resourceDir + EXPECTED_RKI_JSON)),
+        healthOfficeBundle ->
+            assertFhirResource(healthOfficeBundle, expectedNotificationForHealthOffice),
+        USER_1_01_0_53);
 
-      assertFhirStorageRequest(
-          rkiBundle -> assertFhirResource(rkiBundle, resource(resourceDir + EXPECTED_RKI_JSON)),
-          healthOfficeBundle ->
-              assertFhirResource(healthOfficeBundle, expectedNotificationForHealthOffice),
-          USER_1_01_0_53);
-
-      counterVerifier.assertSuccessCounter(type, DISEASE_CODE);
-    }
+    counterVerifier.assertSuccessCounter(type, DISEASE_CODE);
   }
 
   @Test
   void process7_4Notification() throws Exception {
+
     setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
     setupStub(LVS, ok());
     setupStub(DLS, ok());
@@ -358,48 +362,37 @@ class NpsIntegrationTest {
   void process7_3Notification(
       final String nrsResponseOkay, final String dir, final NotificationType notificationType)
       throws Exception {
-    int[] idHelper = {50};
-    try (MockedStatic<Utils> utilities = mockStatic(Utils.class)) {
-      utilities
-          .when(Utils::getCurrentDate)
-          .thenReturn(Date.from(OffsetDateTime.parse("2021-03-04T20:16:01.000+01:00").toInstant()));
-      utilities.when(Utils::generateUuid).thenCallRealMethod();
-      utilities.when(Utils::generateUuidString).thenAnswer(_ -> Integer.toString(idHelper[0]++));
-      utilities.when(() -> Utils.getShortReferenceOrUrnUuid(any())).thenCallRealMethod();
-      utilities.when(Utils::getCurrentDateTime).thenCallRealMethod();
-      utilities.when(() -> Utils.hasFhirType(any())).thenCallRealMethod();
 
-      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-      setupStub(LVS, ok());
-      setupStub(DLS, ok());
-      setupStub(NRS, okJsonResource(nrsResponseOkay));
-      setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
-      setupStub(FSW, ok());
-      setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
+    setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
+    setupStub(LVS, ok());
+    setupStub(DLS, ok());
+    setupStub(NRS, okJsonResource(nrsResponseOkay));
+    setupStub(PS, okJsonResource(PS_RESPONSE_OKAY));
+    setupStub(FSW, ok());
+    setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
-      final String input = resource(dir + INPUT_NOTIFICATION_7_3_JSON);
-      final String expectedNotificationForRKI = resource(dir + EXPECTED_RKI_7_3_JSON);
+    final String input = resource(dir + INPUT_NOTIFICATION_7_3_JSON);
+    final String expectedNotificationForRKI = resource(dir + EXPECTED_RKI_7_3_JSON);
 
-      executeTest(input, OK, dir + EXPECTED_RESPONSE_7_3_JSON);
+    executeTest(input, OK, dir + EXPECTED_RESPONSE_7_3_JSON);
 
-      // assert requests to the called services
+    // assert requests to the called services
 
-      assertThat(getRequestBody(VS)).isEqualTo(input);
+    assertThat(getRequestBody(VS)).isEqualTo(input);
 
-      assertThat(getRequestBody(LVS)).isEqualToIgnoringWhitespace(input);
+    assertThat(getRequestBody(LVS)).isEqualToIgnoringWhitespace(input);
 
-      assertThat(getRequestBody(NRS)).isEqualToIgnoringWhitespace(input);
+    assertThat(getRequestBody(NRS)).isEqualToIgnoringWhitespace(input);
 
-      // pdf service becomes exactly the notification, which is stored for the health office
-      assertThat(getRequestBody(PDF)).isEqualToIgnoringWhitespace(expectedNotificationForRKI);
+    // pdf service becomes exactly the notification, which is stored for the health office
+    assertThat(getRequestBody(PDF)).isEqualToIgnoringWhitespace(expectedNotificationForRKI);
 
-      assertFhirStorageRequest(
-          rkiBundleExcerpt ->
-              assertFhirResource(rkiBundleExcerpt, resource(dir + EXPECTED_EXCERPT_RKI_7_3_JSON)),
-          rkiBundle -> assertFhirResource(rkiBundle, expectedNotificationForRKI),
-          USER_1);
-      counterVerifier.assertSuccessCounter(notificationType, "hiv");
-    }
+    assertFhirStorageRequest(
+        rkiBundleExcerpt ->
+            assertFhirResource(rkiBundleExcerpt, resource(dir + EXPECTED_EXCERPT_RKI_7_3_JSON)),
+        rkiBundle -> assertFhirResource(rkiBundle, expectedNotificationForRKI),
+        USER_1);
+    counterVerifier.assertSuccessCounter(notificationType, "hiv");
   }
 
   @Nested
@@ -567,40 +560,34 @@ class NpsIntegrationTest {
 
     @Test
     void pseudonymServiceReturnsBadRequest_shouldStillSucceedWithoutPseudonym() throws Exception {
-      int[] idHelper = {50};
-      try (MockedStatic<Utils> utilities = mockStatic(Utils.class)) {
-        utilities.when(Utils::generateUuid).thenCallRealMethod();
-        utilities.when(Utils::generateUuidString).thenAnswer(_ -> Integer.toString(idHelper[0]++));
-        utilities.when(() -> Utils.getShortReferenceOrUrnUuid(any())).thenCallRealMethod();
-        utilities.when(Utils::getCurrentDateTime).thenCallRealMethod();
-        utilities.when(() -> Utils.hasFhirType(any())).thenCallRealMethod();
 
-        setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
-        setupStub(LVS, ok());
-        setupStub(DLS, ok());
-        setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
-        setupStub(PS, statusJsonResource(400, PS_RESPONSE_400));
-        setupStub(FSW, ok());
-        setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
+      setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
+      setupStub(LVS, ok());
+      setupStub(DLS, ok());
+      setupStub(NRS, okJsonResource(NRS_RESPONSE_OKAY_LABORATORY));
+      setupStub(PS, statusJsonResource(400, PS_RESPONSE_400));
+      setupStub(FSW, ok());
+      setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
-        executeTest(OK, LABORATORY_DIR + EXPECTED_RESPONSE_JSON);
+      executeTest(OK, LABORATORY_DIR + EXPECTED_RESPONSE_JSON);
 
-        assertFhirStorageRequest(
-            rkiBundle ->
-                assertFhirResource(
-                    rkiBundle,
-                    modifyResource(
-                        resource(LABORATORY_DIR + EXPECTED_RKI_JSON),
-                        BundleModifier::removePseudonym)),
-            healthOfficeBundle ->
-                assertFhirResource(
-                    healthOfficeBundle,
-                    modifyResource(
-                        resource(LABORATORY_DIR + EXPECTED_GA_JSON),
-                        BundleModifier::removePseudonym)),
-            USER_1_01_0_53);
-        counterVerifier.assertSuccessCounter(LABORATORY, DISEASE_CODE);
-      }
+      String expectedNotificationForHealthOffice = resource(LABORATORY_DIR + EXPECTED_GA_JSON);
+
+      assertFhirStorageRequest(
+          rkiBundle ->
+              assertFhirResource(
+                  rkiBundle,
+                  modifyResource(
+                      resource(LABORATORY_DIR + EXPECTED_RKI_JSON),
+                      BundleModifier::removePseudonym)),
+          healthOfficeBundle ->
+              assertFhirResource(
+                  healthOfficeBundle,
+                  modifyResource(
+                      removeLastUpdated(expectedNotificationForHealthOffice),
+                      BundleModifier::removePseudonym)),
+          USER_1_01_0_53);
+      counterVerifier.assertSuccessCounter(LABORATORY, DISEASE_CODE);
     }
 
     @Test
@@ -629,6 +616,7 @@ class NpsIntegrationTest {
 
     @Test
     void pdfServiceReturnsInternalServerError_shouldStillSucceedWithoutPdf() throws Exception {
+
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
       setupStub(DLS, ok());
@@ -794,6 +782,7 @@ class NpsIntegrationTest {
     @ParameterizedTest
     @EnumSource(NotificationType.class)
     void success_isSuccessfulLog(final NotificationType type) throws Exception {
+
       setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
       setupStub(LVS, ok());
       setupStub(DLS, ok());
@@ -980,6 +969,7 @@ class NpsIntegrationTest {
             .content(fhirNotification)
             .header(HttpHeaders.ACCEPT, APPLICATION_JSON_VALUE)
             .header("x-request-id", REQUEST_ID)
+            .header(HEADER_DEFAULT_FHIR_PACKAGE_VERSIONS, DEFAULT_FHIR_PACKAGE_VERSIONS_VALUE)
             .header(NotificationController.HEADER_SENDER, USER_ID)
             .header(TestUserPropsValueResolver.HEADER_IS_TEST_NOTIFICATION, isTestUser);
     if (testUser != null) {
@@ -1032,8 +1022,14 @@ class NpsIntegrationTest {
         .getContentAsString();
   }
 
-  private void mockUuid() {
-    Mockito.when(uuidGenerator.generateUuid()).thenReturn(MOCK_UUID);
+  private void mockUtils() {
+    idCounter = 50;
+    utilities = mockStatic(Utils.class);
+    utilities.when(Utils::generateUuidString).thenAnswer(_ -> Integer.toString(idCounter++));
+    utilities
+        .when(Utils::getCurrentDate)
+        .thenReturn(Date.from(OffsetDateTime.parse("2024-01-02T14:19:29+01:00").toInstant()));
+    utilities.when(() -> Utils.getShortReferenceOrUrnUuid(any())).thenCallRealMethod();
   }
 
   private void mockErrorUuid() {

@@ -92,8 +92,6 @@ class FhirPackageContextTest {
   @Test
   void initialize_headersTakenDirectlyFromIncomingRequestIfAvailable() {
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn(ANY_PACKAGE);
-    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
-        .thenReturn(true);
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE_VERSION)).thenReturn(ANY_VERSION);
 
     underTest.initialize("SHOULD_NOT_BE_USED", MessageType.JSON);
@@ -107,8 +105,6 @@ class FhirPackageContextTest {
   @Test
   void initialize_isIdempotent_subsequentCallsAreIgnored() {
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn(ANY_PACKAGE);
-    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
-        .thenReturn(true);
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE_VERSION)).thenReturn(ANY_VERSION);
 
     underTest.initialize("{json1}", MessageType.JSON);
@@ -122,7 +118,6 @@ class FhirPackageContextTest {
 
     assertEquals(ANY_PACKAGE, underTest.getOutgoingFhirPackageHeaderValue());
     assertEquals(ANY_VERSION, underTest.getOutgoingFhirPackageVersionHeaderValue());
-    verify(featureFlagsConfigProperties).isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT);
     verifyNoInteractions(request, notificationTypeResolver, fhirPackageVersionResolver);
   }
 
@@ -135,28 +130,11 @@ class FhirPackageContextTest {
     assertThrows(IllegalStateException.class, () -> underTest.getOutgoingFhirPackageHeaderValue());
   }
 
-  @Test
-  void initialize_packageFallsBackToLegacyWhenFeatureFlagIsOff() {
-    when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn(null);
-    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
-        .thenReturn(false);
-
-    underTest.initialize("{json}", MessageType.JSON);
-
-    assertEquals(
-        FhirPackageContext.LEGACY_CORE_PACKAGE, underTest.getOutgoingFhirPackageHeaderValue());
-    assertThrows(
-        IllegalStateException.class, () -> underTest.getOutgoingFhirPackageVersionHeaderValue());
-    verifyNoInteractions(notificationTypeResolver, fhirPackageVersionResolver);
-  }
-
   @ParameterizedTest
   @EnumSource(NotificationType.class)
   void initialize_packageDerivedFromNotificationTypeWhenFeatureFlagIsOn(
       NotificationType notificationType) {
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn(null);
-    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
-        .thenReturn(true);
     when(notificationTypeResolver.resolveFromNotification("{json}", MessageType.JSON))
         .thenReturn(notificationType);
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE_VERSION)).thenReturn(ANY_VERSION);
@@ -183,8 +161,6 @@ class FhirPackageContextTest {
   @Test
   void initialize_versionResolvedFromDefaultHeaderWhenVersionHeaderAbsent() {
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn("laboratory");
-    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
-        .thenReturn(true);
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE_VERSION)).thenReturn(null);
     when(request.getHeader(NpsHeaders.HEADER_DEFAULT_FHIR_PACKAGE_VERSIONS))
         .thenReturn("disease:v7;laboratory:v6");
@@ -199,8 +175,6 @@ class FhirPackageContextTest {
   @Test
   void initialize_throwsWhenNoEntryMatchesPackageInDefaultHeader() {
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE)).thenReturn("laboratory");
-    when(featureFlagsConfigProperties.isEnabled(FhirPackageContext.FEATURE_FLAG_FHIR_CORE_SPLIT))
-        .thenReturn(true);
     when(request.getHeader(NpsHeaders.HEADER_FHIR_PACKAGE_VERSION)).thenReturn(null);
     when(request.getHeader(NpsHeaders.HEADER_DEFAULT_FHIR_PACKAGE_VERSIONS))
         .thenReturn("disease:v6");

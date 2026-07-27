@@ -30,7 +30,6 @@ package de.gematik.demis.nps.base.util;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static de.gematik.demis.nps.base.util.FhirPackageContext.*;
 import static de.gematik.demis.nps.config.NpsHeaders.*;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -116,25 +115,7 @@ class FhirProfileHeaderForwardingIntegrationTest {
     }
 
     @Test
-    void profile_header_set_if_not_present_ff_off() throws Exception {
-
-      when(featureFlagsConfigProperties.isEnabled(FEATURE_FLAG_FHIR_CORE_SPLIT)).thenReturn(false);
-
-      mockMvc.perform(
-          post(ENDPOINT_NPS)
-              .content(REQUEST_BODY_DISEASE)
-              .contentType(MediaType.APPLICATION_JSON)
-              .accept(MediaType.APPLICATION_JSON));
-
-      verify(
-          postRequestedFor(urlEqualTo(ENDPOINT_VS))
-              .withHeader(HEADER_FHIR_PACKAGE, equalTo(LEGACY_CORE_PACKAGE)));
-    }
-
-    @Test
-    void profile_header_set_if_not_present_ff_on() throws Exception {
-
-      when(featureFlagsConfigProperties.isEnabled(FEATURE_FLAG_FHIR_CORE_SPLIT)).thenReturn(true);
+    void profile_header_set_if_not_present() throws Exception {
 
       mockMvc.perform(
           post(ENDPOINT_NPS)

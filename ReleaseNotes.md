@@ -2,12 +2,19 @@
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.15.0
+- moved receipt generation to notification builder library
+- added FF FEATURE_FLAG_RECEIPT_WITH_NBL
+- updated spring-parent to 4.1.1
+- removed FEATURE_FLAG_NEW_ERROR_MESSAGE_FOR_FAILED_ROUTING
+
 ## Release 2.14.0
 - set x-fhir-package-version header if not provided in incoming request
 - arranged jvm options and resource limits
 - removed FEATURE_FLAG_NBL_FOR_NOTBYNAME_ENABLED
 - hardened §7.3 gate keeping
 - fixed handling of falsy custom environment variables (false, 0) in helm chart
+- removed FEATUR_FLAG_FHIR_CORE_SPLIT
 
 ## Release 2.13.0
 - upgraded to spring boot 4 

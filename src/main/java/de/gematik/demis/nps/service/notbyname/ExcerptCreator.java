@@ -40,18 +40,16 @@ public class ExcerptCreator {
 
   private ExcerptCreator() {}
 
-  public static Bundle createAnonymousBundle(final Notification notification) {
+  public static Bundle createExcerptBundle73(final Notification notification) {
     Bundle excerptBundle;
     try {
       excerptBundle =
           switch (notification.getType()) {
             case LABORATORY ->
-                LaboratoryExcerptBuilder.createExcerptNotifiedPersonAnonymousFromNonNominalBundle(
-                    notification.getBundle());
+                LaboratoryExcerptBuilder.createExcerptFrom73Bundle(notification.getBundle());
 
             case DISEASE ->
-                DiseaseExcerptBuilder.createExcerptNotifiedPersonAnonymousFromNonNominalBundle(
-                    notification.getBundle());
+                DiseaseExcerptBuilder.createExcerptFrom73Bundle(notification.getBundle());
           };
     } catch (UnprocessableEntityException e) {
       throw new NpsServiceException(ErrorCode.UNPROCESSABLE_ENTITY, e.getMessage());
@@ -61,18 +59,16 @@ public class ExcerptCreator {
     return excerptBundle;
   }
 
-  public static Bundle createNotByNameBundle(final Notification notification) {
+  public static Bundle createExcerptBundle(final Notification notification) {
     Bundle excerptBundle;
     try {
       excerptBundle =
           switch (notification.getType()) {
             case LABORATORY ->
-                LaboratoryExcerptBuilder.createExcerptNotifiedPersonNotByNameFromNominalBundle(
-                    notification.getBundle());
+                LaboratoryExcerptBuilder.createExcerptFrom71Bundle(notification.getBundle());
 
             case DISEASE ->
-                DiseaseExcerptBuilder.createExcerptNotifiedPersonNotByNameFromNominalBundle(
-                    notification.getBundle());
+                DiseaseExcerptBuilder.createExcerptFrom61Bundle(notification.getBundle());
           };
     } catch (UnprocessableEntityException e) {
       throw new NpsServiceException(ErrorCode.UNPROCESSABLE_ENTITY, e.getMessage());

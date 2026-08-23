@@ -233,9 +233,9 @@ public class ReceiverActionService {
           yield Optional.empty();
         }
 
-        yield Optional.ofNullable(ExcerptCreator.createNotByNameBundle(notification));
+        yield Optional.ofNullable(ExcerptCreator.createExcerptBundle(notification));
       }
-      case P_7_3 -> Optional.ofNullable(ExcerptCreator.createAnonymousBundle(notification));
+      case P_7_3 -> Optional.ofNullable(ExcerptCreator.createExcerptBundle73(notification));
       default ->
           throw new NpsServiceException(
               ErrorCode.NRS_PROCESSING_ERROR, "Unexpected notification category");

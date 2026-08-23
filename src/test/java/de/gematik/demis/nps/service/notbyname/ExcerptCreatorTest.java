@@ -74,7 +74,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.laboratoryExample())
             .build();
 
-    Bundle result = ExcerptCreator.createAnonymousBundle(notification);
+    Bundle result = ExcerptCreator.createExcerptBundle73(notification);
 
     assertThat(result.getMeta().getTag()).isNotEmpty();
     assertThat(result.getMeta().getTag()).hasSize(2);
@@ -102,7 +102,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.diseaseExample())
             .build();
 
-    Bundle result = ExcerptCreator.createAnonymousBundle(notification);
+    Bundle result = ExcerptCreator.createExcerptBundle73(notification);
 
     assertThat(result.getMeta().getTag()).isNotEmpty();
     assertThat(result.getMeta().getTag()).hasSize(1);
@@ -130,7 +130,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.laboratoryExample())
             .build();
 
-    assertThatThrownBy(() -> ExcerptCreator.createAnonymousBundle(notification))
+    assertThatThrownBy(() -> ExcerptCreator.createExcerptBundle73(notification))
         .isInstanceOf(NpsServiceException.class)
         .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
         .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
@@ -156,7 +156,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.diseaseExample())
             .build();
 
-    assertThatThrownBy(() -> ExcerptCreator.createAnonymousBundle(notification))
+    assertThatThrownBy(() -> ExcerptCreator.createExcerptBundle73(notification))
         .isInstanceOf(NpsServiceException.class)
         .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
         .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
@@ -178,7 +178,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.laboratoryExample())
             .build();
 
-    Bundle result = ExcerptCreator.createNotByNameBundle(notification);
+    Bundle result = ExcerptCreator.createExcerptBundle(notification);
 
     assertThat(result.getMeta().getTag()).isNotEmpty();
     assertThat(result.getMeta().getTag()).hasSize(2);
@@ -204,7 +204,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.diseaseExample())
             .build();
 
-    Bundle result = ExcerptCreator.createNotByNameBundle(notification);
+    Bundle result = ExcerptCreator.createExcerptBundle(notification);
 
     assertThat(result.getMeta().getTag()).isNotEmpty();
     assertThat(result.getMeta().getTag()).hasSize(1);
@@ -233,7 +233,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.laboratoryExample())
             .build();
 
-    assertThatThrownBy(() -> ExcerptCreator.createNotByNameBundle(notification))
+    assertThatThrownBy(() -> ExcerptCreator.createExcerptBundle(notification))
         .isInstanceOf(NpsServiceException.class)
         .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
         .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");
@@ -255,7 +255,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.laboratoryExample())
             .build();
 
-    Bundle result = ExcerptCreator.createNotByNameBundle(notification);
+    Bundle result = ExcerptCreator.createExcerptBundle(notification);
 
     assertThat(result.getEntry().get(8))
         .extracting(e -> e.getResource())
@@ -286,7 +286,7 @@ class ExcerptCreatorTest {
             .routingData(RoutingDataUtil.diseaseExample())
             .build();
 
-    assertThatThrownBy(() -> ExcerptCreator.createNotByNameBundle(notification))
+    assertThatThrownBy(() -> ExcerptCreator.createExcerptBundle(notification))
         .isInstanceOf(NpsServiceException.class)
         .hasFieldOrPropertyWithValue("errorCode", "UNPROCESSABLE_ENTITY")
         .hasMessageContaining("Reference 'Patient/invalid-ref' is not resolvable");

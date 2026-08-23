@@ -139,10 +139,14 @@ class NpsIntegrationTest {
   // Test resources
   private static final String INPUT_NOTIFICATION_JSON = "input-notification.json";
   private static final String INPUT_NOTIFICATION_7_3_JSON = "input-notification-7_3.json";
+  private static final String INPUT_NOTIFICATION_7_3_ANONYMOUS_JSON =
+      "input-notification-7_3_anonymous.json";
   private static final String INPUT_NOTIFICATION_7_4_JSON = "input-notification-7_4.json";
   private static final String INPUT_UNSUPPORTED_REPORT_JSON = "input-unsupported-report.json";
   private static final String EXPECTED_RESPONSE_JSON = "expected-response.json";
   private static final String EXPECTED_RESPONSE_7_3_JSON = "expected-response-7_3.json";
+  private static final String EXPECTED_RESPONSE_7_3_ANONYMOUS_JSON =
+      "expected-response-7_3_anonymous.json";
   private static final String EXPECTED_RESPONSE_7_4_JSON = "expected-response-7_4.json";
   private static final String EXPECTED_RESPONSE_TESTUSER_JSON = "expected-response-testuser.json";
   private static final String EXPECTED_GA_JSON = "expected-ga.json";
@@ -150,6 +154,9 @@ class NpsIntegrationTest {
   private static final String EXPECTED_RKI_JSON = "expected-rki.json";
   private static final String EXPECTED_RKI_7_3_JSON = "expected-rki-7_3.json";
   private static final String EXPECTED_EXCERPT_RKI_7_3_JSON = "expected-excerpt-rki-7_3.json";
+  private static final String EXPECTED_RKI_7_3_ANONYMOUS_JSON = "expected-rki-7_3_anonymous.json";
+  private static final String EXPECTED_EXCERPT_RKI_7_3_ANONYMOUS_JSON =
+      "expected-excerpt-rki-7_3_anonymous.json";
   private static final String EXPECTED_RKI_7_4_JSON = "expected-rki-7_4.json";
   private static final String EXPECTED_PS_REQUEST_JSON = "expected-ps-request.json";
 
@@ -158,6 +165,8 @@ class NpsIntegrationTest {
   private static final String VS_RESPONSE_422 = "vs-response-422";
   private static final String NRS_RESPONSE_OKAY_LABORATORY = "nrs-response-okay-laboratory";
   private static final String NRS_RESPONSE_OKAY_LABORATORY_7_3 = "nrs-response-okay-laboratory-7_3";
+  private static final String NRS_RESPONSE_OKAY_LABORATORY_7_3_ANONYMOUS =
+      "nrs-response-okay-laboratory-7_3_anonymous";
   private static final String NRS_RESPONSE_OKAY_LABORATORY_7_4 = "nrs-response-okay-laboratory-7_4";
   private static final String NRS_RESPONSE_OKAY_LABORATORY_WITH_TEST_USER =
       "nrs-response-okay-laboratory-with-test-user";
@@ -353,14 +362,42 @@ class NpsIntegrationTest {
 
   static Stream<Arguments> notificationArgs() {
     return Stream.of(
-        Arguments.of(NRS_RESPONSE_OKAY_LABORATORY_7_3, LABORATORY_DIR, LABORATORY),
-        Arguments.of(NRS_RESPONSE_OKAY_DISEASE_7_3, DISEASE_DIR, DISEASE));
+        Arguments.of(
+            INPUT_NOTIFICATION_7_3_JSON,
+            NRS_RESPONSE_OKAY_LABORATORY_7_3,
+            EXPECTED_RESPONSE_7_3_JSON,
+            EXPECTED_RKI_7_3_JSON,
+            EXPECTED_EXCERPT_RKI_7_3_JSON,
+            LABORATORY_DIR,
+            LABORATORY),
+        Arguments.of(
+            INPUT_NOTIFICATION_7_3_ANONYMOUS_JSON,
+            NRS_RESPONSE_OKAY_LABORATORY_7_3_ANONYMOUS,
+            EXPECTED_RESPONSE_7_3_ANONYMOUS_JSON,
+            EXPECTED_RKI_7_3_ANONYMOUS_JSON,
+            EXPECTED_EXCERPT_RKI_7_3_ANONYMOUS_JSON,
+            LABORATORY_DIR,
+            LABORATORY),
+        Arguments.of(
+            INPUT_NOTIFICATION_7_3_JSON,
+            NRS_RESPONSE_OKAY_DISEASE_7_3,
+            EXPECTED_RESPONSE_7_3_JSON,
+            EXPECTED_RKI_7_3_JSON,
+            EXPECTED_EXCERPT_RKI_7_3_JSON,
+            DISEASE_DIR,
+            DISEASE));
   }
 
   @ParameterizedTest
   @MethodSource("notificationArgs")
   void process7_3Notification(
-      final String nrsResponseOkay, final String dir, final NotificationType notificationType)
+      final String inputFileName,
+      final String nrsResponseOkay,
+      final String expectedResponseFileName,
+      final String expectedRki73FileName,
+      final String expectedExcerptFileName,
+      final String dir,
+      final NotificationType notificationType)
       throws Exception {
 
     setupStub(VS, okJsonResource(VS_RESPONSE_OKAY));
@@ -371,10 +408,10 @@ class NpsIntegrationTest {
     setupStub(FSW, ok());
     setupStub(PDF, okByteResource(RECEIPT_LAB_PDF));
 
-    final String input = resource(dir + INPUT_NOTIFICATION_7_3_JSON);
-    final String expectedNotificationForRKI = resource(dir + EXPECTED_RKI_7_3_JSON);
+    final String input = resource(dir + inputFileName);
+    final String expectedNotificationForRKI = resource(dir + expectedRki73FileName);
 
-    executeTest(input, OK, dir + EXPECTED_RESPONSE_7_3_JSON);
+    executeTest(input, OK, dir + expectedResponseFileName);
 
     // assert requests to the called services
 
@@ -389,7 +426,7 @@ class NpsIntegrationTest {
 
     assertFhirStorageRequest(
         rkiBundleExcerpt ->
-            assertFhirResource(rkiBundleExcerpt, resource(dir + EXPECTED_EXCERPT_RKI_7_3_JSON)),
+            assertFhirResource(rkiBundleExcerpt, resource(dir + expectedExcerptFileName)),
         rkiBundle -> assertFhirResource(rkiBundle, expectedNotificationForRKI),
         USER_1);
     counterVerifier.assertSuccessCounter(notificationType, "hiv");

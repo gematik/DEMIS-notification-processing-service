@@ -54,7 +54,7 @@
           }
         ]
       },
-      "diagnostics": "null (fee6005e-5686-4b7b-b6ee-98b0e98a9d42)"
+      "diagnostics": "Fhir Bundle validation failed. (fee6005e-5686-4b7b-b6ee-98b0e98a9d42)"
     }
   ]
 }

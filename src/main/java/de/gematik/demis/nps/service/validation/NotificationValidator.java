@@ -137,7 +137,7 @@ public class NotificationValidator {
         operationOutcome.getIssue().stream()
             .anyMatch(issue -> issue.getSeverity() == IssueSeverity.FATAL);
     final ErrorCode errorCode = hasFatalIssue ? FHIR_VALIDATION_FATAL : FHIR_VALIDATION_ERROR;
-    throw new NpsServiceException(errorCode, operationOutcome);
+    throw new NpsServiceException(errorCode, operationOutcome, "Fhir Bundle validation failed.");
   }
 
   private record RelaxedValidationResult(boolean isValid, String reparsedString) {}

@@ -2,8 +2,11 @@ f<div style="text-align:right"><img src="media/Gematik_Logo_Flag_small.png" alt=
 
 # Notification-Processing-Service Release Notes
 
+## Release 2.15.2
+- added more detailed text for null message after validation failed (e.g. email)
+
 ## Release 2.15.1
-- updated spring-parent to 4.1.8
+- updated spring-parent to 4.1.11
 - added header x-sender for header forwarding
 - updated docker base image to gematik1/osadl-alpine-openjdk25-jre:1.0.7
 - added vex documents to repository
